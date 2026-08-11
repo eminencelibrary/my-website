@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eminence Library - Live Seat Booking</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #ff6600;
+            --primary-hover: #e65c00;
+            --bg-light: #f8fafc;
+            --color-vacant: #22c55e;
+            --color-waiting: #ef4444;
+            --color-booked: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--bg-light); 
+            color: #334155; 
+            padding-bottom: 80px; 
+        }
+
+        header { 
+            background-color: var(--primary-color); 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .main-logo-banner { max-width: 200px; height: auto; display: block; }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn { 
+            padding: 8px 14px; 
+            font-weight: 700; 
+            border-radius: 20px; 
+            font-size: 0.78rem; 
+            text-transform: uppercase;
+            cursor: pointer; 
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .nav-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+
+        .btn-home-link { background: #1e293b; color: #ffffff; }
+        .btn-admin { background: #0f172a; color: #ffffff; }
+
+        .container { max-width: 1350px; margin: 20px auto; padding: 0 15px; }
+
+        .chart-heading-box {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
+            text-align: center;
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto 12px auto;
+            border-left: 4px solid var(--primary-color);
+        }
+        .chart-heading-box h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .chart-heading-box h2 i {
+            color: var(--primary-color);
+            font-size: 0.85rem;
+        }
+
+        .legend-box {
+            display: flex; justify-content: center; gap: 20px;
+            background: #fff; padding: 10px; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px;
+            flex-wrap: wrap; font-size: 0.8rem; font-weight: 600;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+        .dot-vacant { background: var(--color-vacant); }
+        .dot-waiting { background: var(--color-waiting); }
+
+        .center-refresh-wrapper {
+            text-align: center;
+            margin: 15px 0 20px 0;
+        }
+        .btn-center-refresh {
+            background: #ff6600;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.4);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            animation: fastBlink 0.8s infinite alternate;
+        }
+        .btn-center-refresh:hover {
+            transform: scale(1.05);
+            background: #e65c00;
+        }
+
+        @keyframes fastBlink {
+            0% { opacity: 1; box-shadow: 0 0 15px rgba(255, 102, 0, 0.9); transform: scale(1); }
+            100% { opacity: 0.4; box-shadow: 0 0 2px rgba(255, 102, 0, 0.2); transform: scale(0.97); }
+        }
+
+        .halls-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 950px) {
+            .halls-wrapper { grid-template-columns: 1fr; }
+        }
+
+        .hall-section {
+            background: #fff; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            overflow-x: auto;
+        }
+        .hall-title {
+            color: var(--primary-color); font-size: 0.95rem;
+            border-bottom: 2px solid #ffe0cc; padding-bottom: 6px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* Compact Seat Style (Chote Seats & Icons) */
+        .seat {
+            aspect-ratio: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            border-radius: 6px; font-weight: 700; font-size: 0.68rem;
+            cursor: pointer; transition: all 0.2s ease;
+            user-select: none; position: relative;
+            padding: 2px;
+            background: #ffffff;
+            border: 1.2px solid #cbd5e1;
+            width: 36px;
+            height: 36px;
+        }
+
+        .seat img.seat-icon {
+            width: 17px;
+            height: 17px;
+            object-fit: contain;
+            margin-bottom: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .seat.vacant {
+            background-color: #f0fdf4;
+            border-color: #22c55e;
+        }
+        .seat.vacant span { color: #166534; }
+        .seat.vacant:hover { transform: scale(1.08); box-shadow: 0 2px 10px rgba(34, 197, 94, 0.4); }
+
+        .seat.waiting, .seat.booked {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+            opacity: 0.6;
+            filter: blur(1.0px);
+        }
+
+        .seat.waiting {
+            animation: pulse 1.8s infinite;
+        }
+
+        .seat.waiting span, .seat.booked span { color: #64748b; }
+        .seat.booked { cursor: not-allowed; }
+
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 0.3; } 100% { opacity: 0.6; } }
+
+        /* HALL 1 Precise CSS Grid Layout (36px sizing) */
+        .hall1-grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 36px);
+            grid-template-rows: repeat(14, 36px);
+            gap: 5px;
+            align-items: start;
+            justify-content: start;
+            min-width: 320px;
+        }
+
+        /* HALL 2 Precise CSS Grid Layout (36px sizing) */
+        .hall2-grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 36px);
+            grid-template-rows: repeat(6, 36px);
+            gap: 5px;
+            align-items: start;
+            justify-content: start;
+            min-width: 240px;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: none; justify-content: center;
+            align-items: center; z-index: 1000; padding: 15px;
+        }
+        .modal-card {
+            background: #fff; width: 100%; max-width: 420px;
+            border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-title { color: var(--primary-color); margin-bottom: 12px; font-size: 1rem; }
+        
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1;
+            border-radius: 6px; font-size: 0.85rem; outline: none;
+        }
+
+        .btn-submit {
+            width: 100%; background: var(--primary-color); color: white;
+            padding: 9px; border: none; border-radius: 6px; font-weight: 700;
+            cursor: pointer; margin-top: 8px; font-size: 0.85rem;
+        }
+        .btn-submit:hover { background: var(--primary-hover); }
+
+        footer { 
+            text-align: center; padding: 12px; background: #0f172a; 
+            color: white; font-size: 0.8rem; width: 100%; position: fixed; 
+            bottom: 0; left: 0; z-index: 100; 
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-box">
+            <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
+        </div>
+        <div class="nav-buttons">
+            <a href="AAPA_DOSRA_PAGE.html" class="nav-btn btn-home-link">
+                <i class="fa-solid fa-house"></i> Home
+            </a>
+            <button class="nav-btn btn-admin" onclick="openAdminModal()">
+                <i class="fa-solid fa-user-shield"></i> Admin Panel
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="chart-heading-box">
+            <h2><i class="fa-solid fa-chart-pie"></i> Eminence Library Live Seat Availability Chart</h2>
+        </div>
+
+        <div class="legend-box">
+            <div class="legend-item"><span class="dot dot-vacant"></span> Vacant (Available)</div>
+            <div class="legend-item"><span class="dot dot-waiting"></span> Waiting </div>
+            <div class="legend-item"><span class="dot dot-waiting"></span> Booked </div>
+
+        </div>
+
+        <div class="center-refresh-wrapper">
+            <button class="btn-center-refresh" onclick="location.reload()">
+                <i class="fa-solid fa-rotate-right"></i> Click for Live Seat Update
+            </button>
+        </div>
+
+        <div class="halls-wrapper">
+            <!-- HALL 1 -->
+            <div class="hall-section">
+                <div class="hall-title">
+                    <span><i class="fa-solid fa-couch"></i> HALL 1 (Seats 1-59)</span>
+                    <small style="font-size: 0.72rem; color: #64748b;">Ground Floor</small>
+                </div>
+                
+                <div class="hall1-grid-container" id="hall1GridContainer"></div>
+            </div>
+
+            <!-- HALL 2 -->
+            <div class="hall-section">
+                <div class="hall-title">
+                    <span><i class="fa-solid fa-couch"></i> HALL 2 (Seats 61-83)</span>
+                    <small style="font-size: 0.72rem; color: #64748b;">First Floor</small>
+                </div>
+
+                <div class="hall2-grid-container" id="hall2GridContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT MODAL -->
+    <div class="modal-overlay" id="studentModal">
+        <div class="modal-card">
+            <h4 class="modal-title"><i class="fa-solid fa-chair"></i> Request Seat #<span id="selectedSeatNum"></span></h4>
+            <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;">
+                Note: Aapka form submit hone ke baad seat Admin verification ke liye Waiting List me chali jayegi.
+            </p>
+            <form id="bookingForm" onsubmit="handleStudentSubmit(event)">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="sName" required placeholder="Enter Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number *</label>
+                    <input type="text" id="sMobile" maxlength="10" required placeholder="10 Digit Mobile No.">
+                </div>
+                <div class="form-group">
+                    <label>UID / Roll No. (Optional)</label>
+                    <input type="text" id="sUid" placeholder="Enter UID if registered">
+                </div>
+                <div class="form-group">
+                    <label>Fee Status</label>
+                    <select id="sFeeStatus">
+                        <option value="Paid (Pending Verification)">Paid (Paid via UPI/Cash)</option>
+                        <option value="Unpaid (Pending Verification)">Unpaid (Pay Later at Library)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit"><i class="fa-paper-plane"></i> Submit & Request Seat</button>
+                <button type="button" class="btn-submit" style="background:#64748b; margin-top:6px;" onclick="closeModal('studentModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-card">
+            <h4 class="modal-title"><i class="fa-solid fa-lock"></i> Admin Management</h4>
+            
+            <div id="adminLoginSec">
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="adminPass" placeholder="Enter Password (Default: admin123)">
+                </div>
+                <button class="btn-submit" onclick="loginAdmin()">Login</button>
+            </div>
+
+            <div id="adminControlSec" style="display: none;">
+                <div style="background: #fff0e6; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+                    <label style="font-weight:700; font-size:0.8rem; color:#ea580c;">Search Member Record</label>
+                    <input type="text" id="searchMemberInput" placeholder="Enter Mobile or UID" style="margin-top:4px;">
+                    <button class="btn-submit" style="padding:6px; font-size:0.8rem; margin-top:5px;" onclick="searchMember()">Search</button>
+                    <div id="adminSearchResult" style="font-size:0.75rem; margin-top:5px; font-weight:600;"></div>
+                </div>
+
+                <hr style="margin: 15px 0;">
+
+                <div class="form-group">
+                    <label>Manage Specific Seat Number</label>
+                    <input type="number" id="manageSeatNo" placeholder="Seat No (1-59, 61-83)">
+                </div>
+                <div class="form-group">
+                    <label>Action / Status</label>
+                    <select id="manageSeatStatus">
+                        <option value="booked">Mark as BOOKED (Confirm Allotment)</option>
+                        <option value="vacant">Mark as VACANT (Available)</option>
+                        <option value="waiting">Mark as WAITING</option>
+                    </select>
+                </div>
+
+                <button class="btn-submit" onclick="applySeatChange()">Update Seat Status</button>
+                <button class="btn-submit" id="btnNotifyStudent" style="background:#22c55e; display:none; margin-top:6px;" onclick="notifyStudentWhatsApp()">
+                    <i class="fa-brands fa-whatsapp"></i> Send Allotment Msg To Student
+                </button>
+
+                <hr style="margin: 15px 0;">
+                
+                <button class="btn-submit" style="background:#ef4444;" onclick="resetAllSeats()">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Reset Entire System
+                </button>
+            </div>
+
+            <button type="button" class="btn-submit" style="background:#64748b; margin-top:10px;" onclick="closeModal('adminModal')">Close</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        const ADMIN_PHONE = "919799995511";
+        let currentSelectedSeat = null;
+        let seatsData = JSON.parse(localStorage.getItem('eminence_seats')) || {};
+
+        function saveSeats() {
+            localStorage.setItem('eminence_seats', JSON.stringify(seatsData));
+            renderLayouts();
+        }
+
+        function initLayout() {
+            renderLayouts();
+        }
+
+        function createSeatNode(num, row, col) {
+            const seat = document.createElement("div");
+            const info = seatsData[num] || { status: 'vacant' };
+            
+            let seatImage = "desk1.png";
+            if (info.status === 'booked' || info.status === 'waiting') {
+                seatImage = "desk2.png";
+            }
+
+            seat.className = `seat ${info.status}`;
+            seat.style.gridRow = row;
+            seat.style.gridColumn = col;
+            seat.innerHTML = `<img src="${seatImage}" alt="Seat" class="seat-icon"><span>${num}</span>`;
+            seat.onclick = () => onSeatClick(num, info);
+            return seat;
+        }
+
+        function renderLayouts() {
+            // --- HALL 1 RENDERING VIA CSS GRID ---
+            const h1Container = document.getElementById("hall1GridContainer");
+            h1Container.innerHTML = "";
+
+            // 1. Top Row: 12 to 18 (Row 1, Cols 1 to 7)
+            for (let i = 12; i <= 18; i++) {
+                h1Container.appendChild(createSeatNode(i, 1, i - 11));
+            }
+
+            // 2. Left Column: 1 to 11 (Col 1, Rows 2 to 12)
+            for (let i = 11; i >= 1; i--) {
+                let rowPos = 13 - i;
+                h1Container.appendChild(createSeatNode(i, rowPos, 1));
+            }
+
+            // 3. Right Vertical Column: 19 to 32 (Col 8, Rows 1 to 14)
+            for (let i = 19; i <= 32; i++) {
+                let rowPos = i - 18;
+                h1Container.appendChild(createSeatNode(i, rowPos, 8));
+            }
+
+            // 4. Center Column: 49 to 57 (Col 3, Rows 3 to 11)
+            for (let i = 57, r = 3; i >= 49; i--, r++) {
+                h1Container.appendChild(createSeatNode(i, r, 3));
+            }
+
+            // 5. Inner Double Block (Left: 58, 41-48 on Col 5, Rows 3 onwards)
+            const leftInnerSeats = [58, 41, 42, 43, 44, 45, 46, 47, 48];
+            leftInnerSeats.forEach((seatNum, index) => {
+                let rowPos = 3 + index; 
+                h1Container.appendChild(createSeatNode(seatNum, rowPos, 5));
+            });
+
+            // 6. Inner Double Block (Right: 59, 40-33 on Col 6, Rows 3 onwards)
+            const rightInnerSeats = [59, 40, 39, 38, 37, 36, 35, 34, 33];
+            rightInnerSeats.forEach((seatNum, index) => {
+                let rowPos = 3 + index; 
+                h1Container.appendChild(createSeatNode(seatNum, rowPos, 6));
+            });
+
+
+            // --- HALL 2 RENDERING VIA CSS GRID ---
+            const h2Container = document.getElementById("hall2GridContainer");
+            h2Container.innerHTML = "";
+
+            // 1. Top Row: 65 to 70 (Row 1, Cols 1 to 6)
+            for (let i = 65; i <= 70; i++) {
+                h2Container.appendChild(createSeatNode(i, 1, i - 64));
+            }
+
+            // 2. Left Column: 64 to 61 (Col 1, Rows 2 to 5)
+            const h2LeftSeats = [64, 63, 62, 61];
+            h2LeftSeats.forEach((seatNum, index) => {
+                let rowPos = 2 + index;
+                h2Container.appendChild(createSeatNode(seatNum, rowPos, 1));
+            });
+
+            // 3. Right Column: 71 to 74 (Col 6, Rows 2 to 5)
+            const h2RightSeats = [71, 72, 73, 74];
+            h2RightSeats.forEach((seatNum, index) => {
+                let rowPos = 2 + index;
+                h2Container.appendChild(createSeatNode(seatNum, rowPos, 6));
+            });
+
+            // 4. Center Double Block (Left Sub-column: 80, 79, 78 on Col 3, Rows 3 to 5)
+            const h2LeftSub = [80, 79, 78];
+            h2LeftSub.forEach((seatNum, index) => {
+                let rowPos = 3 + index;
+                h2Container.appendChild(createSeatNode(seatNum, rowPos, 3));
+            });
+
+            // 5. Center Double Block (Right Sub-column: 77, 76, 75 on Col 4, Rows 3 to 5)
+            const h2RightSub = [77, 76, 75];
+            h2RightSub.forEach((seatNum, index) => {
+                let rowPos = 3 + index;
+                h2Container.appendChild(createSeatNode(seatNum, rowPos, 4));
+            });
+
+            // 6. Bottom Row: 81, 82, 83 (Row 6)
+            h2Container.appendChild(createSeatNode(81, 6, 3));
+            h2Container.appendChild(createSeatNode(82, 6, 4));
+            h2Container.appendChild(createSeatNode(83, 6, 6));
+        }
+
+        function onSeatClick(seatNum, info) {
+            if (info.status === 'booked') {
+                alert(`Seat #${seatNum} is already Booked.`);
+                return;
+            }
+            if (info.status === 'waiting') {
+                alert(`Seat #${seatNum} is currently under verification/waiting.`);
+                return;
+            }
+
+            currentSelectedSeat = seatNum;
+            document.getElementById("selectedSeatNum").innerText = seatNum;
+            document.getElementById("studentModal").style.display = "flex";
+        }
+
+        function handleStudentSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById("sName").value.trim();
+            const mobile = document.getElementById("sMobile").value.trim();
+            const uid = document.getElementById("sUid").value.trim() || 'N/A';
+            const feeStatus = document.getElementById("sFeeStatus").value;
+
+            seatsData[currentSelectedSeat] = {
+                status: 'waiting',
+                studentName: name,
+                mobile: mobile,
+                uid: uid,
+                feeStatus: feeStatus
+            };
+
+            saveSeats();
+            closeModal('studentModal');
+
+            const msg = `*NEW SEAT REQUEST*\n\nSeat No: ${currentSelectedSeat}\nName: ${name}\nMobile: ${mobile}\nUID: ${uid}\nFee Status: ${feeStatus}\n\nPlease verify and allot from Admin Panel.`;
+            const waLink = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`;
+            
+            alert(`Seat #${currentSelectedSeat} Verification ke liye bhej di gayi hai! Admin ko notify karne ke liye OK par click karein.`);
+            window.open(waLink, '_blank');
+
+            document.getElementById("bookingForm").reset();
+        }
+
+        /* ADMIN FUNCTIONS */
+        function openAdminModal() {
+            document.getElementById("adminModal").style.display = "flex";
+        }
+
+        function loginAdmin() {
+            const pass = document.getElementById("adminPass").value;
+            if (pass === "admin123") {
+                document.getElementById("adminLoginSec").style.display = "none";
+                document.getElementById("adminControlSec").style.display = "block";
+            } else {
+                alert("Incorrect Password!");
+            }
+        }
+
+        function applySeatChange() {
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const newStatus = document.getElementById("manageSeatStatus").value;
+
+            if (!seatNo || (seatNo < 1 || (seatNo > 59 && seatNo < 61) || seatNo > 83)) {
+                alert("Please enter a valid Seat Number (1-59 or 61-83)");
+                return;
+            }
+
+            if (!seatsData[seatNo]) seatsData[seatNo] = {};
+            seatsData[seatNo].status = newStatus;
+
+            saveSeats();
+            alert(`Seat #${seatNo} Updated! Status: ${newStatus.toUpperCase()}`);
+
+            if (newStatus === 'booked' && seatsData[seatNo].mobile) {
+                document.getElementById("btnNotifyStudent").style.display = "block";
+            } else {
+                document.getElementById("btnNotifyStudent").style.display = "none";
+            }
+        }
+
+        function notifyStudentWhatsApp() {
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const student = seatsData[seatNo];
+
+            if (student && student.mobile) {
+                const msg = `*Eminence Library - Seat Allotment Success*\n\nHello ${student.studentName},\nYour Seat #${seatNo} has been successfully verified and ALLOTTED to you.\n\nThank You!`;
+                window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            } else {
+                alert("No student contact details found for this seat.");
+            }
+        }
+
+        function searchMember() {
+            const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
+            const res = document.getElementById("adminSearchResult");
+            let found = [];
+
+            for (let seat in seatsData) {
+                let s = seatsData[seat];
+                if (s.mobile === query || (s.uid && s.uid.toLowerCase() === query)) {
+                    found.push(`Seat #${seat}: ${s.studentName} (${s.status.toUpperCase()})`);
+                }
+            }
+
+            if (found.length > 0) {
+                res.style.color = "green";
+                res.innerHTML = found.join("<br>");
+            } else {
+                res.style.color = "red";
+                res.innerHTML = "No record found for this Mobile/UID.";
+            }
+        }
+
+        function resetAllSeats() {
+            if (confirm("Kya aap sach me poora Seat System reset karna chahte hain? Sabhi seats VACANT ho jayengi.")) {
+                seatsData = {};
+                saveSeats();
+                alert("System Reset Successfully!");
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = "none";
+        }
+
+        window.onload = initLayout;
+    </script>
+</body>
+</html>

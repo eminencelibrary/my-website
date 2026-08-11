@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eminence Library - Live Seat Booking</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        // Yahan apni Google Apps Script ka Web App URL paste karein
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_RkiknpCeHFwsUuAQ3_mBYIhpw5UEywWem9qzLM47oU53g-mGyUvANRp75uDkxk4/exec";
+
+        const ADMIN_PHONE = "919799995511";
+        let activeBranch = 'core';
+        let currentSelectedSeat = null;
+        let allData = { core: {}, nexus: {} };
+
+        // Server (Google Sheet) se data fetch karne ka function
+        function fetchSheetData(isInitial = false) {
+            fetch(SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        allData = data;
+                        renderLayouts();
+                    }
+                })
+                .catch(err => console.log("Fetch error: ", err));
+        }
+
+        // Server par data save karne ka function
+        function saveToSheet() {
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(allData)
+            })
+            .then(response => response.text())
+            .then(result => {
+                fetchSheetData(); // Turant layout refresh karein
+            })
+            .catch(err => alert("Error saving data: " + err));
+        }
+
+        // Auto Poll: Har 4 second me background se data fetch karega taaki sabhi mobiles par live update mile
+        setInterval(() => {
+            fetchSheetData();
+        }, 4000);
+
+        window.onload = function() {
+            fetchSheetData(true);
+        };
+
+        window.switchBranch = function(branchKey) {
+            activeBranch = branchKey;
+            document.querySelectorAll('.branch-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.branch-section').forEach(s => s.classList.remove('active-branch'));
+
+            if (branchKey === 'core') {
+                document.getElementById('tabCore').classList.add('active');
+                document.getElementById('coreBranchSection').classList.add('active-branch');
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Core Branch - Live Seat Availability';
+            } else {
+                document.getElementById('tabNexus').classList.add('active');
+                document.getElementById('nexusBranchSection').classList.add('active-branch');
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Nexus Branch (1-65) - Live Seat Availability';
+            }
+            renderLayouts();
+        }
+
+        function createSeatNode(num, row, col) {
+            const seat = document.createElement("div");
+            const branchSeats = allData[activeBranch] || {};
+            const info = branchSeats[num] || { status: 'vacant' };
+            
+            let seatImage = "Desk1.png";
+            let statusLabel = "Available";
+
+            if (info.status === 'booked') {
+                seatImage = "Desk2.png";
+                statusLabel = "Booked";
+            } else if (info.status === 'waiting') {
+                seatImage = "Desk3.png";
+                statusLabel = "In Queue (Waiting)";
+            }
+
+            seat.className = `seat ${info.status}`;
+            seat.style.gridRow = row;
+            seat.style.gridColumn = col;
+            
+            seat.innerHTML = `
+                <img src="${seatImage}" alt="Seat" class="seat-icon">
+                <span>${num}</span>
+                <div class="seat-tooltip">Seat #${num}<br>${statusLabel}</div>
+            `;
+            
+            seat.onclick = () => onSeatClick(num, info);
+            return seat;
+        }
+
+        function renderLayouts() {
+            if (activeBranch === 'core') {
+                const h1Container = document.getElementById("hall1GridContainer");
+                if(h1Container) {
+                    h1Container.innerHTML = "";
+                    for (let i = 12; i <= 18; i++) h1Container.appendChild(createSeatNode(i, 1, i - 11));
+                    for (let i = 11; i >= 1; i--) h1Container.appendChild(createSeatNode(i, 13 - i, 1));
+                    for (let i = 19; i <= 32; i++) h1Container.appendChild(createSeatNode(i, i - 18, 8));
+                    for (let i = 57, r = 3; i >= 49; i--, r++) h1Container.appendChild(createSeatNode(i, r, 3));
+
+                    [58, 41, 42, 43, 44, 45, 46, 47, 48].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 5)));
+                    [59, 40, 39, 38, 37, 36, 35, 34, 33].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 6)));
+                }
+
+                const h2Container = document.getElementById("hall2GridContainer");
+                if(h2Container) {
+                    h2Container.innerHTML = "";
+                    for (let i = 65; i <= 70; i++) h2Container.appendChild(createSeatNode(i, 1, i - 64));
+                    [64, 63, 62, 61].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 1)));
+                    [71, 72, 73, 74].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 6)));
+                    [80, 79, 78].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 3)));
+                    [77, 76, 75].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 4)));
+                    h2Container.appendChild(createSeatNode(81, 6, 3));
+                    h2Container.appendChild(createSeatNode(82, 6, 4));
+                    h2Container.appendChild(createSeatNode(83, 6, 6));
+                }
+
+            } else {
+                const nexusContainer = document.getElementById("nexusGridContainer");
+                if(nexusContainer) {
+                    nexusContainer.innerHTML = "";
+                    for (let i = 1; i <= 65; i++) {
+                        let r = Math.floor((i - 1) / 8) + 1;
+                        let c = ((i - 1) % 8) + 1;
+                        nexusContainer.appendChild(createSeatNode(i, r, c));
+                    }
+                }
+            }
+        }
+
+        function onSeatClick(seatNum, info) {
+            if (info.status === 'booked') {
+                alert(`Seat #${seatNum} is already Booked.`);
+                return;
+            }
+            if (info.status === 'waiting') {
+                alert(`Seat #${seatNum} is currently under verification/waiting.`);
+                return;
+            }
+
+            currentSelectedSeat = seatNum;
+            document.getElementById("selectedSeatNum").innerText = seatNum;
+            document.getElementById("selectedBranchName").innerText = activeBranch === 'core' ? 'Core' : 'Nexus';
+            document.getElementById("studentModal").style.display = "flex";
+        }
+
+        window.handleStudentSubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById("sName").value.trim();
+            const mobile = document.getElementById("sMobile").value.trim();
+            const uid = document.getElementById("sUid").value.trim() || 'N/A';
+            const feeStatus = document.getElementById("sFeeStatus").value;
+
+            if (!allData[activeBranch]) allData[activeBranch] = {};
+
+            allData[activeBranch][currentSelectedSeat] = {
+                status: 'waiting',
+                studentName: name,
+                mobile: mobile,
+                uid: uid,
+                feeStatus: feeStatus
+            };
+
+            saveToSheet();
+            closeModal('studentModal');
+
+            const msg = `*NEW SEAT REQUEST (${activeBranch.toUpperCase()})*\n\nSeat No: ${currentSelectedSeat}\nName: ${name}\nMobile: ${mobile}\nUID: ${uid}\nFee Status: ${feeStatus}\n\nPlease verify and allot from Admin Panel.`;
+            const waLink = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`;
+            
+            alert(`Seat #${currentSelectedSeat} Verification ke liye bhej di gayi hai! Admin ko notify karne ke liye OK par click karein.`);
+            window.open(waLink, '_blank');
+            document.getElementById("bookingForm").reset();
+        }
+
+        window.openAdminModal = function() {
+            document.getElementById("adminModal").style.display = "flex";
+        }
+
+        window.loginAdmin = function() {
+            const pass = document.getElementById("adminPass").value;
+            if (pass === "admin123") {
+                document.getElementById("adminLoginSec").style.display = "none";
+                document.getElementById("adminControlSec").style.display = "block";
+            } else {
+                alert("Incorrect Password!");
+            }
+        }
+
+        window.applySeatChange = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const newStatus = document.getElementById("manageSeatStatus").value;
+
+            let maxSeat = branch === 'core' ? 83 : 65;
+            if (!seatNo || seatNo < 1 || seatNo > maxSeat || (branch === 'core' && seatNo == 60)) {
+                alert(`Please enter a valid Seat Number for ${branch.toUpperCase()}`);
+                return;
+            }
+
+            if (!allData[branch]) allData[branch] = {};
+            if (!allData[branch][seatNo]) allData[branch][seatNo] = {};
+            allData[branch][seatNo].status = newStatus;
+
+            saveToSheet();
+            alert(`Seat #${seatNo} (${branch.toUpperCase()}) Updated! Status: ${newStatus.toUpperCase()}`);
+
+            if (newStatus === 'booked' && allData[branch][seatNo].mobile) {
+                document.getElementById("btnNotifyStudent").style.display = "block";
+            } else {
+                document.getElementById("btnNotifyStudent").style.display = "none";
+            }
+        }
+
+        window.notifyStudentWhatsApp = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const student = allData[branch] ? allData[branch][seatNo] : null;
+
+            if (student && student.mobile) {
+                const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nYour Seat #${seatNo} has been successfully verified and ALLOTTED to you.\n\nThank You!`;
+                window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            } else {
+                alert("No student contact details found for this seat.");
+            }
+        }
+
+        window.searchMember = function() {
+            const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
+            const res = document.getElementById("adminSearchResult");
+            let found = [];
+
+            for (let branch in allData) {
+                for (let seat in allData[branch]) {
+                    let s = allData[branch][seat];
+                    if (s.mobile === query || (s.uid && s.uid.toLowerCase() === query)) {
+                        found.push(`[${branch.toUpperCase()}] Seat #${seat}: ${s.studentName} (${s.status.toUpperCase()})`);
+                    }
+                }
+            }
+
+            if (found.length > 0) {
+                res.style.color = "green";
+                res.innerHTML = found.join("<br>");
+            } else {
+                res.style.color = "red";
+                res.innerHTML = "No record found for this Mobile/UID.";
+            }
+        }
+
+        window.resetAllSeats = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            if (confirm(`Kya aap sach me ${branch.toUpperCase()} branch ka poora Seat System reset karna chahte hain?`)) {
+                allData[branch] = {};
+                saveToSheet();
+                alert(`${branch.toUpperCase()} System Reset Successfully!`);
+            }
+        }
+
+        window.closeModal = function(id) {
+            document.getElementById(id).style.display = "none";
+        }
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #ff6600;
+            --primary-hover: #e65c00;
+            --bg-light: #f8fafc;
+            --color-vacant: #4ade80; /* Light Green */
+            --color-waiting: #eab308; /* Yellow */
+            --color-booked: #ef4444;  /* Red */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--bg-light); 
+            color: #334155; 
+            padding-bottom: 80px; 
+        }
+
+        header { 
+            background-color: var(--primary-color); 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .main-logo-banner { max-width: 200px; height: auto; display: block; }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn { 
+            padding: 8px 14px; 
+            font-weight: 700; 
+            border-radius: 20px; 
+            font-size: 0.78rem; 
+            text-transform: uppercase;
+            cursor: pointer; 
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .nav-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+
+        .btn-home-link { background: #1e293b; color: #ffffff; }
+        .btn-admin { background: #0f172a; color: #ffffff; }
+
+        .container { max-width: 1350px; margin: 20px auto; padding: 0 15px; }
+
+        /* Branch Selector Tabs */
+        .branch-tabs-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .branch-tab {
+            padding: 10px 25px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border-radius: 30px;
+            border: 2px solid var(--primary-color);
+            background: #fff;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .branch-tab.active {
+            background: var(--primary-color);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+        }
+
+        .chart-heading-box {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
+            text-align: center;
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            max-width: 520px;
+            width: 100%;
+            margin: 0 auto 12px auto;
+            border-left: 4px solid var(--primary-color);
+        }
+        .chart-heading-box h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .chart-heading-box h2 i {
+            color: var(--primary-color);
+            font-size: 0.85rem;
+        }
+
+        .legend-box {
+            display: flex; justify-content: center; gap: 25px;
+            background: #fff; padding: 12px 15px; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px;
+            flex-wrap: wrap; font-size: 0.82rem; font-weight: 600;
+            align-items: center;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-icon {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+            display: inline-block;
+        }
+
+        .halls-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .branch-section {
+            display: none;
+        }
+        .branch-section.active-branch {
+            display: block;
+        }
+
+        @media (max-width: 950px) {
+            .halls-wrapper { grid-template-columns: 1fr; }
+        }
+
+        .hall-section {
+            background: #fff; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        .hall-title {
+            color: var(--primary-color); font-size: 0.95rem;
+            border-bottom: 2px solid #ffe0cc; padding-bottom: 6px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* --- UPDATED SEAT SIZE & SPACING --- */
+        .seat {
+            aspect-ratio: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-weight: 700; font-size: 0.72rem;
+            cursor: pointer; transition: all 0.25s ease;
+            user-select: none; position: relative;
+            padding: 0;
+            background: transparent;
+            border: none;
+            width: 46px;
+            height: 46px;
+        }
+
+        /* Larger Seat Icon Size */
+        .seat img.seat-icon {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            margin-bottom: 2px;
+            transition: all 0.25s ease;
+        }
+
+        /* Tooltip Style */
+        .seat-tooltip {
+            visibility: hidden;
+            background-color: #0f172a;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-size: 0.7rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            pointer-events: none;
+        }
+        .seat-tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -4px;
+            border-width: 4px;
+            border-style: solid;
+            border-color: #0f172a transparent transparent transparent;
+        }
+
+        .seat:hover .seat-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* --- HOVER ZOOM & EFFECTS --- */
+        .seat.vacant span { color: #15803d; font-size: 0.68rem; }
+        .seat.vacant:hover img.seat-icon { 
+            transform: scale(1.15); 
+            filter: drop-shadow(0 2px 8px var(--color-vacant)); 
+        }
+
+        .seat.waiting span { color: #854d0e; font-size: 0.68rem; }
+        .seat.waiting:hover img.seat-icon { 
+            transform: scale(1.15); 
+            filter: drop-shadow(0 2px 8px var(--color-waiting)); 
+        }
+
+        .seat.booked span { color: #991b1b; font-size: 0.68rem; }
+        .seat.booked { cursor: not-allowed; opacity: 0.95; }
+        .seat.booked:hover img.seat-icon { 
+            transform: scale(1.2); 
+            filter: drop-shadow(0 3px 10px var(--color-booked)); 
+        }
+
+        /* CORE HALL 1 Grid with increased gap (46px size + 10px gap) */
+        .hall1-grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 46px);
+            grid-template-rows: repeat(14, 46px);
+            gap: 10px;
+            align-items: start;
+            justify-content: start;
+            min-width: 400px;
+        }
+
+        /* CORE HALL 2 Grid with increased gap */
+        .hall2-grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 46px);
+            grid-template-rows: repeat(6, 46px);
+            gap: 10px;
+            align-items: start;
+            justify-content: start;
+            min-width: 310px;
+        }
+
+        /* NEXUS BRANCH Grid with increased gap */
+        .nexus-grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 46px);
+            grid-template-rows: repeat(10, 46px);
+            gap: 10px;
+            align-items: start;
+            justify-content: start;
+            min-width: 400px;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: none; justify-content: center;
+            align-items: center; z-index: 1000; padding: 15px;
+        }
+        .modal-card {
+            background: #fff; width: 100%; max-width: 420px;
+            border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-title { color: var(--primary-color); margin-bottom: 12px; font-size: 1rem; }
+        
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1;
+            border-radius: 6px; font-size: 0.85rem; outline: none;
+        }
+
+        .btn-submit {
+            width: 100%; background: var(--primary-color); color: white;
+            padding: 9px; border: none; border-radius: 6px; font-weight: 700;
+            cursor: pointer; margin-top: 8px; font-size: 0.85rem;
+        }
+        .btn-submit:hover { background: var(--primary-hover); }
+
+        footer { 
+            text-align: center; padding: 12px; background: #0f172a; 
+            color: white; font-size: 0.8rem; width: 100%; position: fixed; 
+            bottom: 0; left: 0; z-index: 100; 
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-box">
+            <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
+        </div>
+        <div class="nav-buttons">
+            <a href="AAPA_DOSRA_PAGE.html" class="nav-btn btn-home-link">
+                <i class="fa-solid fa-house"></i> Home
+            </a>
+            <button class="nav-btn btn-admin" onclick="openAdminModal()">
+                <i class="fa-solid fa-user-shield"></i> Admin Panel
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Branch Selection Tabs -->
+        <div class="branch-tabs-container">
+            <button class="branch-tab active" id="tabCore" onclick="switchBranch('core')"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
+            <button class="branch-tab" id="tabNexus" onclick="switchBranch('nexus')"><i class="fa-solid fa-network-wired"></i> Nexus Branch (1-65)</button>
+        </div>
+
+        <div class="chart-heading-box">
+            <h2 id="chartHeadingText"><i class="fa-solid fa-chart-pie"></i> Core Branch - Live Seat Availability</h2>
+        </div>
+
+        <div class="legend-box">
+            <div class="legend-item">
+                <img src="Desk1.png" alt="Seat Available" class="legend-icon"> Seat Available
+            </div>
+            <div class="legend-item">
+                <img src="Desk3.png" alt="In Queue" class="legend-icon"> In Queue
+            </div>
+            <div class="legend-item">
+                <img src="Desk2.png" alt="Booked" class="legend-icon"> Booked
+            </div>
+        </div>
+
+        <!-- CORE BRANCH SECTION -->
+        <div class="branch-section active-branch" id="coreBranchSection">
+            <div class="halls-wrapper">
+                <!-- HALL 1 -->
+                <div class="hall-section">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> HALL 1 (Seats 1-59)</span>
+                        <small style="font-size: 0.72rem; color: #64748b;">Ground Floor</small>
+                    </div>
+                    <div class="hall1-grid-container" id="hall1GridContainer"></div>
+                </div>
+
+                <!-- HALL 2 -->
+                <div class="hall-section">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> HALL 2 (Seats 61-83)</span>
+                        <small style="font-size: 0.72rem; color: #64748b;">First Floor</small>
+                    </div>
+                    <div class="hall2-grid-container" id="hall2GridContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEXUS BRANCH SECTION -->
+        <div class="branch-section" id="nexusBranchSection">
+            <div class="halls-wrapper" style="grid-template-columns: 1fr;">
+                <div class="hall-section" style="max-width: 650px; margin: 0 auto;">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> NEXUS HALL (Seats 1-65)</span>
+                        <small style="font-size: 0.72rem; color: #64748b;">Main Hall</small>
+                    </div>
+                    <div class="nexus-grid-container" id="nexusGridContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT MODAL -->
+    <div class="modal-overlay" id="studentModal">
+        <div class="modal-card">
+            <h4 class="modal-title"><i class="fa-solid fa-chair"></i> Request Seat #<span id="selectedSeatNum"></span> (<span id="selectedBranchName">Core</span>)</h4>
+            <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;">
+                Note: Aapka form submit hone ke baad seat Admin verification ke liye Waiting List me chali jayegi.
+            </p>
+            <form id="bookingForm" onsubmit="handleStudentSubmit(event)">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="sName" required placeholder="Enter Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number *</label>
+                    <input type="text" id="sMobile" maxlength="10" required placeholder="10 Digit Mobile No.">
+                </div>
+                <div class="form-group">
+                    <label>UID / Roll No. (Optional)</label>
+                    <input type="text" id="sUid" placeholder="Enter UID if registered">
+                </div>
+                <div class="form-group">
+                    <label>Fee Status</label>
+                    <select id="sFeeStatus">
+                        <option value="Paid (Pending Verification)">Paid (Paid via UPI/Cash)</option>
+                        <option value="Unpaid (Pending Verification)">Unpaid (Pay Later at Library)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit"><i class="fa-paper-plane"></i> Submit & Request Seat</button>
+                <button type="button" class="btn-submit" style="background:#64748b; margin-top:6px;" onclick="closeModal('studentModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-card">
+            <h4 class="modal-title"><i class="fa-solid fa-lock"></i> Admin Management</h4>
+            
+            <div id="adminLoginSec">
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="adminPass" placeholder="Enter Password (Default: admin123)">
+                </div>
+                <button class="btn-submit" onclick="loginAdmin()">Login</button>
+            </div>
+
+            <div id="adminControlSec" style="display: none;">
+                <div class="form-group">
+                    <label>Select Branch</label>
+                    <select id="adminBranchSelect">
+                        <option value="core">Core Branch</option>
+                        <option value="nexus">Nexus Branch</option>
+                    </select>
+                </div>
+
+                <div style="background: #fff0e6; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+                    <label style="font-weight:700; font-size:0.8rem; color:#ea580c;">Search Member Record</label>
+                    <input type="text" id="searchMemberInput" placeholder="Enter Mobile or UID" style="margin-top:4px;">
+                    <button class="btn-submit" style="padding:6px; font-size:0.8rem; margin-top:5px;" onclick="searchMember()">Search</button>
+                    <div id="adminSearchResult" style="font-size:0.75rem; margin-top:5px; font-weight:600;"></div>
+                </div>
+
+                <hr style="margin: 15px 0;">
+
+                <div class="form-group">
+                    <label>Manage Specific Seat Number</label>
+                    <input type="number" id="manageSeatNo" placeholder="Seat No">
+                </div>
+                <div class="form-group">
+                    <label>Action / Status</label>
+                    <select id="manageSeatStatus">
+                        <option value="booked">Mark as BOOKED (Confirm Allotment)</option>
+                        <option value="vacant">Mark as VACANT (Available)</option>
+                        <option value="waiting">Mark as WAITING</option>
+                    </select>
+                </div>
+
+                <button class="btn-submit" onclick="applySeatChange()">Update Seat Status</button>
+                <button class="btn-submit" id="btnNotifyStudent" style="background:#22c55e; display:none; margin-top:6px;" onclick="notifyStudentWhatsApp()">
+                    <i class="fa-brands fa-whatsapp"></i> Send Allotment Msg To Student
+                </button>
+
+                <hr style="margin: 15px 0;">
+                
+                <button class="btn-submit" style="background:#ef4444;" onclick="resetAllSeats()">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Reset Current Branch System
+                </button>
+            </div>
+
+            <button type="button" class="btn-submit" style="background:#64748b; margin-top:10px;" onclick="closeModal('adminModal')">Close</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
+    </footer>
+</body>
+</html>
