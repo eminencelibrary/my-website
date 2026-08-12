@@ -3,445 +3,632 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eminence Library - A Co-Study Space</title>
+    <title>Eminence Library - Live Seat Booking</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script>
+        // Yahan apni Google Apps Script ka Web App URL paste karein
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_RkiknpCeHFwsUuAQ3_mBYIhpw5UEywWem9qzLM47oU53g-mGyUvANRp75uDkxk4/exec";
+
+        const ADMIN_PHONE = "919799995511";
+        let activeBranch = 'core';
+        let currentSelectedSeat = null;
+        let allData = { core: {}, nexus: {} };
+
+        // Server (Google Sheet) se data fetch karne ka function
+        function fetchSheetData(isInitial = false) {
+            fetch(SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        allData = data;
+                        renderLayouts();
+                    }
+                })
+                .catch(err => console.log("Fetch error: ", err));
+        }
+
+        // Server par data save karne ka function
+        function saveToSheet() {
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(allData)
+            })
+            .then(response => response.text())
+            .then(result => {
+                fetchSheetData(); // Turant layout refresh karein
+            })
+            .catch(err => alert("Error saving data: " + err));
+        }
+
+        // Auto Poll: Har 4 second me background se data fetch karega taaki sabhi mobiles par live update mile
+        setInterval(() => {
+            fetchSheetData();
+        }, 4000);
+
+        window.onload = function() {
+            fetchSheetData(true);
+        };
+
+        window.switchBranch = function(branchKey) {
+            activeBranch = branchKey;
+            document.querySelectorAll('.branch-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.branch-section').forEach(s => s.classList.remove('active-branch'));
+
+            if (branchKey === 'core') {
+                document.getElementById('tabCore').classList.add('active');
+                document.getElementById('coreBranchSection').classList.add('active-branch');
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Core Branch - Live Seat Availability';
+            } else {
+                document.getElementById('tabNexus').classList.add('active');
+                document.getElementById('nexusBranchSection').classList.add('active-branch');
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Nexus Branch (1-65) - Live Seat Availability';
+            }
+            renderLayouts();
+        }
+
+        function createSeatNode(num, row, col) {
+            const seat = document.createElement("div");
+            const branchSeats = allData[activeBranch] || {};
+            const info = branchSeats[num] || { status: 'vacant' };
+            
+            let seatImage = "Desk1.png";
+            let statusLabel = "Available";
+
+            if (info.status === 'booked') {
+                seatImage = "Desk2.png";
+                statusLabel = "Booked";
+            } else if (info.status === 'waiting') {
+                seatImage = "Desk4.png";
+                statusLabel = "In Queue (Waiting)";
+            }
+
+            seat.className = `seat ${info.status}`;
+            seat.style.gridRow = row;
+            seat.style.gridColumn = col;
+            
+            seat.innerHTML = `
+                <img src="${seatImage}" alt="Seat" class="seat-icon">
+                <span>${num}</span>
+                <div class="seat-tooltip">Seat #${num}<br>${statusLabel}</div>
+            `;
+            
+            seat.onclick = () => onSeatClick(num, info);
+            return seat;
+        }
+
+        function renderLayouts() {
+            if (activeBranch === 'core') {
+                const h1Container = document.getElementById("hall1GridContainer");
+                if(h1Container) {
+                    h1Container.innerHTML = "";
+                    for (let i = 12; i <= 18; i++) h1Container.appendChild(createSeatNode(i, 1, i - 11));
+                    for (let i = 11; i >= 1; i--) h1Container.appendChild(createSeatNode(i, 13 - i, 1));
+                    for (let i = 19; i <= 32; i++) h1Container.appendChild(createSeatNode(i, i - 18, 8));
+                    for (let i = 57, r = 3; i >= 49; i--, r++) h1Container.appendChild(createSeatNode(i, r, 3));
+
+                    [58, 41, 42, 43, 44, 45, 46, 47, 48].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 5)));
+                    [59, 40, 39, 38, 37, 36, 35, 34, 33].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 6)));
+                }
+
+                const h2Container = document.getElementById("hall2GridContainer");
+                if(h2Container) {
+                    h2Container.innerHTML = "";
+                    for (let i = 65; i <= 70; i++) h2Container.appendChild(createSeatNode(i, 1, i - 64));
+                    [64, 63, 62, 61].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 1)));
+                    [71, 72, 73, 74].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 6)));
+                    [80, 79, 78].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 3)));
+                    [77, 76, 75].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 4)));
+                    h2Container.appendChild(createSeatNode(81, 6, 3));
+                    h2Container.appendChild(createSeatNode(82, 6, 4));
+                    h2Container.appendChild(createSeatNode(83, 6, 6));
+                }
+
+            } else {
+                const nexusContainer = document.getElementById("nexusGridContainer");
+                if(nexusContainer) {
+                    nexusContainer.innerHTML = "";
+                    for (let i = 1; i <= 65; i++) {
+                        let r = Math.floor((i - 1) / 8) + 1;
+                        let c = ((i - 1) % 8) + 1;
+                        nexusContainer.appendChild(createSeatNode(i, r, c));
+                    }
+                }
+            }
+        }
+
+        function onSeatClick(seatNum, info) {
+            if (info.status === 'booked') {
+                alert(`Seat #${seatNum} is already Booked.`);
+                return;
+            }
+            if (info.status === 'waiting') {
+                alert(`Seat #${seatNum} is currently under verification/waiting.`);
+                return;
+            }
+
+            currentSelectedSeat = seatNum;
+            document.getElementById("selectedSeatNum").innerText = seatNum;
+            document.getElementById("selectedBranchName").innerText = activeBranch === 'core' ? 'Core' : 'Nexus';
+            document.getElementById("studentModal").style.display = "flex";
+        }
+
+        window.handleStudentSubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById("sName").value.trim();
+            const mobile = document.getElementById("sMobile").value.trim();
+            const uid = document.getElementById("sUid").value.trim() || 'N/A';
+            const feeStatus = document.getElementById("sFeeStatus").value;
+
+            if (!allData[activeBranch]) allData[activeBranch] = {};
+
+            allData[activeBranch][currentSelectedSeat] = {
+                status: 'waiting',
+                studentName: name,
+                mobile: mobile,
+                uid: uid,
+                feeStatus: feeStatus
+            };
+
+            saveToSheet();
+            closeModal('studentModal');
+
+            const msg = `*NEW SEAT REQUEST (${activeBranch.toUpperCase()})*\n\nSeat No: ${currentSelectedSeat}\nName: ${name}\nMobile: ${mobile}\nUID: ${uid}\nFee Status: ${feeStatus}\n\nPlease verify and allot from Admin Panel.`;
+            const waLink = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`;
+            
+            alert(`Seat #${currentSelectedSeat} Verification ke liye bhej di gayi hai! Admin ko notify karne ke liye OK par click karein.`);
+            window.open(waLink, '_blank');
+            document.getElementById("bookingForm").reset();
+        }
+
+        window.openAdminModal = function() {
+            document.getElementById("adminModal").style.display = "flex";
+        }
+
+        window.loginAdmin = function() {
+            const pass = document.getElementById("adminPass").value;
+            if (pass === "admin123") {
+                document.getElementById("adminLoginSec").style.display = "none";
+                document.getElementById("adminControlSec").style.display = "block";
+            } else {
+                alert("Incorrect Password!");
+            }
+        }
+
+        window.applySeatChange = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const newStatus = document.getElementById("manageSeatStatus").value;
+
+            let maxSeat = branch === 'core' ? 83 : 65;
+            if (!seatNo || seatNo < 1 || seatNo > maxSeat || (branch === 'core' && seatNo == 60)) {
+                alert(`Please enter a valid Seat Number for ${branch.toUpperCase()}`);
+                return;
+            }
+
+            if (!allData[branch]) allData[branch] = {};
+            if (!allData[branch][seatNo]) allData[branch][seatNo] = {};
+            allData[branch][seatNo].status = newStatus;
+
+            saveToSheet();
+            alert(`Seat #${seatNo} (${branch.toUpperCase()}) Updated! Status: ${newStatus.toUpperCase()}`);
+
+            if (newStatus === 'booked' && allData[branch][seatNo].mobile) {
+                document.getElementById("btnNotifyStudent").style.display = "block";
+            } else {
+                document.getElementById("btnNotifyStudent").style.display = "none";
+            }
+        }
+
+        window.notifyStudentWhatsApp = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const student = allData[branch] ? allData[branch][seatNo] : null;
+
+            if (student && student.mobile) {
+                const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nYour Seat #${seatNo} has been successfully verified and ALLOTTED to you.\n\nThank You!`;
+                window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            } else {
+                alert("No student contact details found for this seat.");
+            }
+        }
+
+        window.searchMember = function() {
+            const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
+            const res = document.getElementById("adminSearchResult");
+            let found = [];
+
+            for (let branch in allData) {
+                for (let seat in allData[branch]) {
+                    let s = allData[branch][seat];
+                    if (s.mobile === query || (s.uid && s.uid.toLowerCase() === query)) {
+                        found.push(`[${branch.toUpperCase()}] Seat #${seat}: ${s.studentName} (${s.status.toUpperCase()})`);
+                    }
+                }
+            }
+
+            if (found.length > 0) {
+                res.style.color = "green";
+                res.innerHTML = found.join("<br>");
+            } else {
+                res.style.color = "red";
+                res.innerHTML = "No record found for this Mobile/UID.";
+            }
+        }
+
+        window.resetAllSeats = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            if (confirm(`Kya aap sach me ${branch.toUpperCase()} branch ka poora Seat System reset karna chahte hain?`)) {
+                allData[branch] = {};
+                saveToSheet();
+                alert(`${branch.toUpperCase()} System Reset Successfully!`);
+            }
+        }
+
+        window.closeModal = function(id) {
+            document.getElementById(id).style.display = "none";
+        }
+    </script>
+    
     <style>
         :root {
             --primary-color: #ff6600;
             --primary-hover: #e65c00;
             --bg-light: #f8fafc;
-            --card-bg: #fffaf5;
-            --card-border: #ffeada;
-            --text-dark: #1e293b;
-            --text-muted: #64748b;
+            --color-vacant: #4ade80; /* Light Green */
+            --color-waiting: #eab308; /* Yellow */
+            --color-booked: #ef4444;  /* Red */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        html { scroll-behavior: smooth; }
-        html, body { width: 100%; overflow-x: hidden; }
-
         body { 
             font-family: 'Poppins', sans-serif; 
             background-color: var(--bg-light); 
             color: #334155; 
-            padding-bottom: 60px;
-            font-size: 0.9rem;
-            width: 100%;
-            margin: 0;
-        }
-        
-        h2, h3, h4, .cta-btn, th { font-family: 'Montserrat', sans-serif; }
-
-        input[type="text"], input[type="number"], select {
-            font-size: 14px !important; 
-            position: relative !important;
-            z-index: 10 !important;
-            pointer-events: auto !important;
-            touch-action: manipulation;
-            outline: none;
-            -webkit-appearance: none;
-            transition: all 0.3s ease;
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            margin-top: 4px;
-        }
-
-        input[type="text"]:focus, input[type="number"]:focus, select:focus {
-            border-color: var(--primary-color) !important;
-            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.15);
+            padding-bottom: 80px; 
         }
 
         header { 
             background-color: var(--primary-color); 
-            padding: 12px 25px; 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            width: 100%;
-        }
-        
-        .logo-box { display: flex; align-items: center; }
-        .main-logo-banner { max-width: 260px; width: 100%; height: auto; display: block; }
-        
-        .nav-buttons { 
+            padding: 12px 20px; 
             display: flex; 
-            gap: 10px; 
-            align-items: center;
-            flex-wrap: nowrap;
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            flex-wrap: wrap;
+            gap: 10px;
         }
+        .main-logo-banner { max-width: 200px; height: auto; display: block; }
         
-        .cta-btn { 
-            background: #ffffff; 
-            color: var(--primary-color); 
-            padding: 10px 16px; 
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn { 
+            padding: 8px 14px; 
             font-weight: 700; 
-            text-decoration: none; 
             border-radius: 20px; 
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); 
-            transition: all 0.3s ease; 
+            font-size: 0.78rem; 
             text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
+            cursor: pointer; 
+            border: none;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            cursor: pointer;
-            border: none;
-        }
-        
-        .cta-btn.google-fb-btn { color: #4285F4; border: 1px solid #4285F4; box-shadow: none; }
-        .cta-btn.google-fb-btn img { width: 14px; height: 14px; }
-        .cta-btn:hover { transform: translateY(-2px); opacity: 0.95; box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
-
-        .custom-marquee {
-            background-color: #fff0e6;
-            color: #d35400;
-            padding: 8px 0;
-            font-weight: 500;
-            font-size: 0.85rem;
-            border-bottom: 1px solid #ffe0cc;
-            border-top: 1px solid #ffe0cc;
-            width: 100%;
-        }
-
-        .main-wrapper {
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 15px 0 !important;
-            padding: 0 15px !important;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        section { 
-            background: white; 
-            padding: 14px; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02); 
-            border: 1px solid #edf2f7;
-            position: relative;
-        }
-
-        /* FACILITIES SECTION */
-        #facilities { 
-            padding: 10px 14px !important; 
-            background: #ffffff;
-            border: 1px solid #ffe8d6;
-            border-radius: 8px;
-            width: 100%;
-        }
-
-        #facilities h2 { 
-            color: var(--primary-color); 
-            border-bottom: 2px solid #ff9136; 
-            padding-bottom: 4px !important; 
-            margin-bottom: 8px !important; 
-            display: flex; 
-            align-items: center; 
-            gap: 6px; 
-            font-size: 0.95rem !important; 
-        }
-
-        .facilities-flexrow {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr); 
-            gap: 8px !important; 
-        }
-
-        .facility-inline-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            background: var(--card-bg);
-            padding: 6px 4px !important; 
-            border-radius: 6px;
-            border: 1px solid var(--card-border);
-            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
-        }
-
-        .facility-inline-card i { font-size: 1rem !important; color: var(--primary-color); margin-bottom: 3px !important; }
-        .facility-inline-card h3 { font-size: 0.75rem !important; color: var(--text-dark); font-weight: 600; margin-bottom: 1px !important; }
-        .facility-inline-card p { font-size: 0.65rem !important; color: var(--text-muted); line-height: 1.1; }
-
-        /* 3-COLUMN FLEX LAYOUT */
-        .middle-content-grid {
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            gap: 15px !important;
-            align-items: flex-start !important;
-            width: 100% !important;
-        }
-
-        /* LEFT COLUMN */
-        .col-updates {
-            width: 300px !important;
-            flex-shrink: 0 !important;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        /* MIDDLE COLUMN HAS CARDS IN GRID */
-        .col-reg-pay {
-            flex: 1 !important;
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 12px !important;
-        }
-
-        /* RIGHT COLUMN */
-        .col-gif {
-            width: 340px !important;
-            flex-shrink: 0 !important;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        #registration, #quick-payment, #seating-card {
-            background: #fffaf5;
-            border: 1px solid #ffe8d6;
-            border-radius: 10px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-sizing: border-box;
-            min-height: 140px;
-        }
-
-        .equal-desk-btn {
-            display: inline-block;
-            background: #ea580c;
-            color: white;
-            padding: 8px 10px;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.78rem;
-            box-shadow: 0 2px 4px rgba(234, 88, 12, 0.2);
-            transition: background 0.2s ease, transform 0.2s ease;
-            text-align: center;
-            width: 100%;
         }
-        .equal-desk-btn:hover { background: #c2410c; transform: translateY(-1px); }
-        
-        .payment-box { display: flex; flex-direction: column; gap: 8px; align-items: center; background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; }
-        .qr-code-box { text-align: center; background: #fff; padding: 6px; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 130px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .payment-details { width: 100%; }
+        .nav-btn:hover { transform: translateY(-2px); opacity: 0.95; }
 
-        .sidebar-box {
-            background: #ffffff;
-            border: 1px solid #ffe8d6;
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        }
+        .btn-home-link { background: #1e293b; color: #ffffff; }
+        .btn-admin { background: #0f172a; color: #ffffff; }
 
-        .sidebar-box h3 {
-            font-size: 0.85rem;
-            color: var(--primary-color);
-            margin-bottom: 8px;
+        .container { max-width: 1350px; margin: 20px auto; padding: 0 15px; }
+
+        /* Branch Selector Tabs */
+        .branch-tabs-container {
             display: flex;
-            align-items: center;
-            gap: 5px;
-            border-bottom: 2px solid #ffe8d6;
-            padding-bottom: 4px;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
         }
-
-        .vertical-ticker-wrapper {
-            height: 140px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .vertical-scroll-content {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            animation: scrollUp 10s linear infinite;
-        }
-
-        .vertical-scroll-content:hover { animation-play-state: paused; }
-
-        .notice-card {
-            background: #fffaf5;
-            border-left: 3px solid var(--primary-color);
-            border-radius: 4px;
-            padding: 6px;
-            font-size: 0.72rem;
-            color: var(--text-dark);
-            line-height: 1.3;
-        }
-
-        @keyframes scrollUp {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-50%); }
-        }
-
-        .ad-banner-box img {
-            width: 100%;
-            height: 110px;
-            object-fit: contain;
-            border-radius: 6px;
-            display: block;
-        }
-
-        .standalone-gif-card {
-            background: linear-gradient(145deg, #ffffff, #fff5eb);
-            border: 2px solid #ff6600 !important;
-            border-radius: 10px;
-            padding: 35px !important;
-            position: relative;
-            box-shadow: 0 6px 16px rgba(255, 102, 0, 0.15) !important;
-            text-align: left;
-            width: 100% !important;
-        }
-
-        .gif-badge {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: #ea580c;
-            color: #ffffff;
-            font-size: 0.70rem;
+        .branch-tab {
+            padding: 10px 25px;
             font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 8px;
+            font-size: 0.85rem;
+            border-radius: 30px;
+            border: 2px solid var(--primary-color);
+            background: #fff;
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .branch-tab.active {
+            background: var(--primary-color);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+        }
+
+        .chart-heading-box {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
             text-align: center;
-            text-transform: uppercase;
-        }
-
-        .gif-wrapper {
-            margin-top: 8px;
+            padding: 8px 15px;
             border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #ffe0cc;
-            width: 100% !important;
-            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            max-width: 520px;
+            width: 100%;
+            margin: 0 auto 12px auto;
+            border-left: 4px solid var(--primary-color);
         }
-
-        .gif-wrapper img {
-            width: 100% !important;
-            height: auto !important;
-            max-height: 320px !important;
-            object-fit: contain;
-            display: block;
-            margin: 0 auto;
-        }
-
-        /* BOTTOM SECTION: BRANCHES & MAPS */
-        #bottom-branches {
-            background: #fffaf5;
-            border: 1px solid #ffe8d6;
-            border-radius: 10px;
-            padding: 12px;
-            margin-top: 10px;
-        }
-
-        #bottom-branches h2 {
-            color: #ea580c;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
+        .chart-heading-box h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            gap: 8px;
+        }
+        .chart-heading-box h2 i {
+            color: var(--primary-color);
+            font-size: 0.85rem;
         }
 
-        .branches-grid {
+        .legend-box {
+            display: flex; justify-content: center; gap: 25px;
+            background: #fff; padding: 12px 15px; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px;
+            flex-wrap: wrap; font-size: 0.82rem; font-weight: 600;
+            align-items: center;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-icon {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+            display: inline-block;
+        }
+
+        .halls-wrapper {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 20px;
+            align-items: start;
         }
 
-        .branch-item {
-            background: #ffffff;
-            border: 1px solid var(--card-border);
-            padding: 8px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .branch-section {
+            display: none;
+        }
+        .branch-section.active-branch {
+            display: block;
         }
 
-        .branch-info-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        @media (max-width: 950px) {
+            .halls-wrapper { grid-template-columns: 1fr; }
         }
 
-        .branch-info-header img { width: 35px; height: 35px; object-fit: cover; border-radius: 4px; }
-        .branch-info-header h3 { font-size: 0.8rem; color: var(--primary-color); font-weight: 600; margin: 0; }
-        .branch-info-header p { font-size: 0.65rem; color: var(--text-muted); margin: 0; line-height: 1.2; }
-
-        .map-box-small { height: 90px; width: 100%; }
-        .map-box-small iframe { width: 100%; height: 100%; border: 1px solid #e2e8f0; border-radius: 4px; }
-
-        .info-badge {
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            margin-top: 6px;
-            font-weight: 600;
-            display: inline-block;
-            border: 1px solid #bae6fd;
+        .hall-section {
+            background: #fff; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        .hall-title {
+            color: var(--primary-color); font-size: 0.95rem;
+            border-bottom: 2px solid #ffe0cc; padding-bottom: 6px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        .whatsapp-float, .call-float { 
-            position: fixed; 
-            right: 20px; 
-            color: white; 
-            border-radius: 50px; 
-            font-size: 13px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
-            z-index: 99; 
-            display: flex; 
-            align-items: center; 
-            padding: 8px 15px; 
-            gap: 6px; 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: all 0.3s ease; 
-        }
-        .whatsapp-float { bottom: 20px; background-color: #25d366; }
-        .call-float { bottom: 70px; background-color: #007bff; }
-
-        footer { text-align: center; padding: 15px; background: #0f172a; color: white; font-size: 0.8rem; margin-top: 20px; width: 100%; }
-
-        /* RESPONSIVE LAYOUT BREAKPOINTS */
-        @media (max-width: 1024px) {
-            .middle-content-grid { flex-direction: column !important; }
-            .col-updates, .col-reg-pay, .col-gif { width: 100% !important; }
-            .col-reg-pay { grid-template-columns: repeat(3, 1fr) !important; }
+        /* --- UPDATED SEAT SIZE & SPACING --- */
+        .seat {
+            aspect-ratio: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-weight: 700; font-size: 0.72rem;
+            cursor: pointer; transition: all 0.25s ease;
+            user-select: none; position: relative;
+            padding: 0;
+            background: transparent;
+            border: none;
+            width: 46px;
+            height: 46px;
         }
 
-        @media (max-width: 768px) {
-            .col-reg-pay { grid-template-columns: 1fr !important; }
-            .branches-grid { grid-template-columns: 1fr; }
-            .facilities-flexrow { grid-template-columns: repeat(3, 1fr); }
-            header { flex-direction: column; text-align: center; padding: 12px; gap: 10px; }
-            .main-logo-banner { margin: 0 auto; max-width: 200px; }
-            .nav-buttons { flex-wrap: wrap; justify-content: center; width: 100%; gap: 6px; }
+        /* Larger Seat Icon Size */
+        .seat img.seat-icon {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            margin-bottom: 2px;
+            transition: all 0.25s ease;
         }
 
-        @media (max-width: 480px) {
-            .facilities-flexrow { grid-template-columns: repeat(2, 1fr); }
+/* --- Naya Tooltip Style (Text Color Change ke liye) --- */
+
+/* 1. Pure tooltip box ki styling */
+.seat-tooltip {
+    visibility: hidden;
+    background-color: #1e293b; /* Dark background */
+    color: #ffffff;            /* Default text color (Seat Number ke liye) */
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: normal; /* Taaki seat number aur status alag line mein rahein */
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    pointer-events: none;
+    line-height: 1.3;
+}
+
+/* Tooltip ka arrow */
+.seat-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -4px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent; 
+}
+
+/* 2. Jab mouse seat par jaye toh tooltip dikhe */
+.seat:hover .seat-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 3. --- Yahan se status text ka color change hoga (CSS trick use karke) --- */
+
+/* Vacant Seat Status Text */
+.seat.vacant .seat-tooltip {
+    /* Hum sirf status wale hisse ka color target nahi kar sakte isliye hum sabka color set kar rahe hain */
+    /* Lekin humne jo color "Seat #X" ke liye set kiya hai, usse override ho jayega agar hum specific class use karein */
+}
+
+/* Wait! Chuki aapka status HTML ke andar ek hi div me hai, specific color change karne ke liye hume <span> ka use karna chahiye */
+
+/* --- REVISED SOLUTION (Zyaada precise) --- */
+
+/* 1. Sabse pehle tooltip ka default color white set karein */
+.seat-tooltip {
+    visibility: hidden;
+    background-color: #1e293b;
+    color: #ffffff; /* Seat Number ka default color white */
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 100%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    pointer-events: none;
+}
+
+/* 2. Status Text Color Change (Yeh specific colors hain jo aapne mange the) */
+
+/* Vacant Seat par Status Color #2EFF2E */
+.seat.vacant:hover .seat-tooltip {
+    color: #2EFF2E !important; /* Bright Green */
+}
+
+/* Waiting Seat par Status Color Blue */
+.seat.waiting:hover .seat-tooltip {
+    color: #3b82f6 !important; /* Blue */
+}
+
+/* Booked Seat par Status Color Red */
+.seat.booked:hover .seat-tooltip {
+    color: #ef4444 !important; /* Red */
+}
+
+        /* --- HOVER ZOOM & EFFECTS --- */
+        .seat.vacant span { color: #15803d; font-size: 0.68rem; }
+        .seat.vacant:hover img.seat-icon { 
+            transform: scale(1.15); 
+            filter: drop-shadow(0 2px 8px var(--color-vacant)); 
+        }
+
+        .seat.waiting span { color: #854d0e; font-size: 0.68rem; }
+        .seat.waiting:hover img.seat-icon { 
+            transform: scale(1.15); 
+            filter: drop-shadow(0 2px 8px var(--color-waiting)); 
+        }
+
+        .seat.booked span { color: #991b1b; font-size: 0.68rem; }
+        .seat.booked { cursor: not-allowed; opacity: 0.95; }
+        .seat.booked:hover img.seat-icon { 
+            transform: scale(1.2); 
+            filter: drop-shadow(0 3px 10px var(--color-booked)); 
+        }
+
+        /* CORE HALL 1 Grid with increased gap (46px size + 10px gap) */
+        .hall1-grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 46px);
+            grid-template-rows: repeat(14, 46px);
+            gap: 10px;
+            align-items: start;
+            justify-content: start;
+            min-width: 400px;
+        }
+
+        /* CORE HALL 2 Grid with increased gap */
+        .hall2-grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 46px);
+            grid-template-rows: repeat(6, 46px);
+            gap: 10px;
+            align-items: start;
+            justify-content: start;
+            min-width: 310px;
+        }
+
+        /* NEXUS BRANCH Grid with increased gap */
+        .nexus-grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 46px);
+            grid-template-rows: repeat(10, 46px);
+            gap: 10px;
+            align-items: start;
+            justify-content: start;
+            min-width: 400px;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: none; justify-content: center;
+            align-items: center; z-index: 1000; padding: 15px;
+        }
+        .modal-card {
+            background: #fff; width: 100%; max-width: 420px;
+            border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-title { color: var(--primary-color); margin-bottom: 12px; font-size: 1rem; }
+        
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1;
+            border-radius: 6px; font-size: 0.85rem; outline: none;
+        }
+
+        .btn-submit {
+            width: 100%; background: var(--primary-color); color: white;
+            padding: 9px; border: none; border-radius: 6px; font-weight: 700;
+            cursor: pointer; margin-top: 8px; font-size: 0.85rem;
+        }
+        .btn-submit:hover { background: var(--primary-hover); }
+
+        footer { 
+            text-align: center; padding: 12px; background: #0f172a; 
+            color: white; font-size: 0.8rem; width: 100%; position: fixed; 
+            bottom: 0; left: 0; z-index: 100; 
         }
     </style>
 </head>
@@ -452,215 +639,170 @@
             <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
         </div>
         <div class="nav-buttons">
-            <button type="button" onclick="toggleFullScreen()" class="cta-btn"><i class="fa-solid fa-expand"></i> Full Screen</button>
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="cta-btn"><i class="fa-solid fa-pen-to-square"></i> Book Seat</a>
-            
-            <!-- Pay_fee.html पर जाने के लिए अपडेटेड बटन -->
-            <a href="Pay_fee.html" class="cta-btn pay-nav-btn"><i class="fa-solid fa-credit-card"></i> Pay Fees</a>
-            
-            <a href="https://g.page/r/CQvR0hi2KgmfEAE/review" target="_blank" class="cta-btn google-fb-btn">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo"> Feedback
+            <a href="AAPA_DOSRA_PAGE.html" class="nav-btn btn-home-link">
+                <i class="fa-solid fa-house"></i> Home
             </a>
+            <button class="nav-btn btn-admin" onclick="openAdminModal()">
+                <i class="fa-solid fa-user-shield"></i> Admin Panel
+            </button>
         </div>
     </header>
 
-    <marquee class="custom-marquee" scrollamount="8" onmouseover="this.stop();" onmouseout="this.start();">
-        "Eminence Library में एक नए सदस्य का रेजिस्ट्रैशन कराएं और अपनी अगली मासिक फ़ीस पर 5% की छूट पाएं "
-    </marquee>
-
-    <div class="main-wrapper">
-        
-        <!-- TOP SECTION: PREMIUM FACILITIES -->
-        <section id="facilities">
-            <h2><i class="fa-solid fa-star"></i> Premium Facilities</h2>
-            <div class="facilities-flexrow">
-                <div class="facility-inline-card">
-                    <i class="fa-solid fa-wifi"></i>
-                    <h3>High-Speed Wi-Fi</h3>
-                    <p>Unlimited Internet</p>
-                </div>
-                <div class="facility-inline-card">
-                    <i class="fa-solid fa-snowflake"></i>
-                    <h3>Fully AC Zone</h3>
-                    <p>Airconditioned halls</p>
-                </div>
-                <div class="facility-inline-card">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    <h3>Smart Desks</h3>
-                    <p>Charging &amp; Lights</p>
-                </div>
-                <div class="facility-inline-card">
-                    <i class="fa-solid fa-shield-halved"></i>
-                    <h3>CCTV Security</h3>
-                    <p>24/7 Surveillance</p>
-                </div>
-                <div class="facility-inline-card">
-                    <i class="fa-solid fa-glass-water"></i>
-                    <h3>RO Water</h3>
-                    <p>HOT &amp; COLD Water</p>
-                </div>
-                <div class="facility-inline-card">
-                    <i class="fa-solid fa-book-open"></i>
-                    <h3>Book Zone</h3>
-                    <p>Magazines &amp; Books</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3-COLUMN MAIN LAYOUT -->
-        <div class="middle-content-grid">
-            
-            <!-- LEFT COLUMN: UPDATES & NOTICE BOARD -->
-            <div class="col-updates">
-                <div class="sidebar-box">
-                    <h3><i class="fa-solid fa-bullhorn"></i> Updates</h3>
-                    <div class="vertical-ticker-wrapper">
-                        <div class="vertical-scroll-content">
-                            <div class="notice-card"><i class="fa-solid fa-gift"></i> नए सदस्य पर 5% छूट!</div>
-                            <div class="notice-card"><i class="fa-solid fa-clock"></i> 24x7 AC हॉल उपलब्ध।</div>
-                            <div class="notice-card"><i class="fa-solid fa-wifi"></i> हाई-स्पीड Wi-Fi।</div>
-                            <div class="notice-card"><i class="fa-solid fa-shield"></i> CCTV सुरक्षा।</div>
-                            <div class="notice-card"><i class="fa-solid fa-gift"></i> नए सदस्य पर 5% छूट!</div>
-                            <div class="notice-card"><i class="fa-solid fa-clock"></i> 24x7 AC हॉल उपलब्ध।</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sidebar-box ad-banner-box">
-                    <h3><i class="fa-solid fa-image"></i> Notice Board</h3>
-                    <img src="banner1.png" alt="Notice Board" onerror="this.src='https://via.placeholder.com/250x110?text=Notice+Board'">
-                </div>
-            </div>
-
-            <!-- MIDDLE COLUMN: 3 CARDS IN GRID -->
-            <div class="col-reg-pay">
-                
-                <!-- CARD 1: REGISTRATION -->
-                <section id="registration">
-                    <div>
-                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-user-plus"></i> Registration
-                        </h3>
-                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
-                            अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।
-                        </p>
-                    </div>
-                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="equal-desk-btn">
-                        <i class="fa-solid fa-file-pen"></i> Register Now
-                    </a>
-                </section>
-
-                <!-- CARD 2: QUICK PAYMENT -->
-                <section id="quick-payment">
-                    <div>
-                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-calculator"></i> Quick Payment
-                        </h3>
-                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
-                            अपनी फ़ीस तुरंत ऑनलाइन जमा करें।
-                        </p>
-                    </div>
-                    <!-- Pay_fee.html पर जाने के लिए अपडेटेड लिंक -->
-                    <a href="Pay_fee.html" class="equal-desk-btn">
-                        <i class="fa-solid fa-credit-card"></i> Pay Fees Now
-                    </a>
-                </section>
-
-                <!-- CARD 3: VIEW LIVE SEATING LAYOUT -->
-                <section id="seating-card">
-                    <div>
-                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-chair"></i> Live Seat Availability
-                        </h3>
-                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
-                            लाइब्रेरी में लाइव खाली सीटें देखें।
-                        </p>
-                    </div>
-                    <a href="seat.html" target="_blank" class="equal-desk-btn">
-                        <i class="fa-solid fa-map-location-dot"></i> View Live Seating
-                    </a>
-                </section>
-
-            </div>
-
-            <!-- RIGHT COLUMN: SPECIAL OFFER GIF -->
-            <div class="col-gif">
-                <div class="standalone-gif-card">
-                    <div class="gif-badge">Eminence Library Wishes</div>
-                    <h3 style="font-size: 0.85rem; color: #ea580c; margin-bottom: 6px;"><i class="fa-solid fa-fire"></i> Upcoming Festival </h3>
-                    <div class="gif-wrapper">
-                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank">
-                            <img src="ID.gif" alt="Offer GIF" onerror="this.src='https://via.placeholder.com/340x320?text=Special+Offer+GIF'">
-                        </a>
-                    </div>
-                </div>
-            </div>
-
+    <div class="container">
+        <!-- Branch Selection Tabs -->
+        <div class="branch-tabs-container">
+            <button class="branch-tab active" id="tabCore" onclick="switchBranch('core')"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
+            <button class="branch-tab" id="tabNexus" onclick="switchBranch('nexus')"><i class="fa-solid fa-network-wired"></i> Nexus Branch (1-65)</button>
         </div>
 
-        <!-- BOTTOM SECTION: BRANCHES & MAPS -->
-        <section id="bottom-branches">
-            <h2><i class="fa-solid fa-building"></i> Our Branches</h2>
-            <div class="branches-grid">
-                
-                <!-- Core Branch -->
-                <div class="branch-item">
-                    <div class="branch-info-header">
-                        <img src="core.png" alt="Core Branch" onerror="this.src='https://via.placeholder.com/35'">
-                        <div>
-                            <h3>Core Branch</h3>
-                            <p>485-C, Devi Nagar, Jaipur | Mob. 9799995511</p>
-                        </div>
-                    </div>
-                    <div class="map-box-small">
-                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6440.533113403003!2d75.75897147489417!3d26.887292761183513!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db55821596135%3A0x9f092ab618d2d10b!2sEminence%20Library%20(Core%20Branch)!5e1!3m2!1sen!2sin!4v1785639518156!5m2!1sen!2sin" allowfullscreen="" loading="lazy"></iframe>
-                    </div>
-                </div>
+        <div class="chart-heading-box">
+            <h2 id="chartHeadingText"><i class="fa-solid fa-chart-pie"></i> Core Branch - Live Seat Availability</h2>
+        </div>
 
-                <!-- Nexus Branch -->
-                <div class="branch-item">
-                    <div class="branch-info-header">
-                        <img src="nexus.png" alt="Nexus Branch" onerror="this.src='https://via.placeholder.com/35'">
-                        <div>
-                            <h3>Nexus Branch</h3>
-                            <p>717, Devi Nagar, Jaipur | Mob. 9799995511</p>
-                        </div>
-                    </div>
-                    <div class="map-box-small">
-                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3220.2616293182073!2d75.75788427489412!3d26.887465661176055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db5b0768aac5b%3A0x5443d2d0d8e74df!2sEminence%20Library%20(Nexus%20Branch)!5e1!3m2!1sen!2sin!4v1785639652666!5m2!1sen!2sin" allowfullscreen="" loading="lazy"></iframe>
-                    </div>
-                </div>
-
+        <div class="legend-box">
+            <div class="legend-item">
+                <img src="Desk1.png" alt="Seat Available" class="legend-icon"> Seat Available
             </div>
-        </section>
+            <div class="legend-item">
+                <img src="Desk4.png" alt="In Queue" class="legend-icon"> In Queue
+            </div>
+            <div class="legend-item">
+                <img src="Desk2.png" alt="Booked" class="legend-icon"> Booked
+            </div>
+        </div>
 
+        <!-- CORE BRANCH SECTION -->
+        <div class="branch-section active-branch" id="coreBranchSection">
+            <div class="halls-wrapper">
+                <!-- HALL 1 -->
+                <div class="hall-section">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> HALL 1 (Seats 1-59)</span>
+                        <small style="font-size: 0.72rem; color: #64748b;">Ground Floor</small>
+                    </div>
+                    <div class="hall1-grid-container" id="hall1GridContainer"></div>
+                </div>
+
+                <!-- HALL 2 -->
+                <div class="hall-section">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> HALL 2 (Seats 61-83)</span>
+                        <small style="font-size: 0.72rem; color: #64748b;">First Floor</small>
+                    </div>
+                    <div class="hall2-grid-container" id="hall2GridContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEXUS BRANCH SECTION -->
+        <div class="branch-section" id="nexusBranchSection">
+            <div class="halls-wrapper" style="grid-template-columns: 1fr;">
+                <div class="hall-section" style="max-width: 650px; margin: 0 auto;">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> NEXUS HALL (Seats 1-65)</span>
+                        <small style="font-size: 0.72rem; color: #64748b;">Main Hall</small>
+                    </div>
+                    <div class="nexus-grid-container" id="nexusGridContainer"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <a href="https://wa.me/919799995511" class="whatsapp-float" target="_blank"><i class="fa-brands fa-whatsapp"></i> WhatsApp Us</a>
-    <a href="tel:+919799995511" class="call-float"><i class="fa-solid fa-phone"></i> Call Us</a>
+    <!-- STUDENT MODAL -->
+    <div class="modal-overlay" id="studentModal">
+        <div class="modal-card">
+            <h4 class="modal-title"><i class="fa-solid fa-chair"></i> Request Seat #<span id="selectedSeatNum"></span> (<span id="selectedBranchName">Core</span>)</h4>
+            <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 12px;">
+                Note: Aapka form submit hone ke baad seat Admin verification ke liye Waiting List me chali jayegi.
+            </p>
+            <form id="bookingForm" onsubmit="handleStudentSubmit(event)">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="sName" required placeholder="Enter Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number *</label>
+                    <input type="text" id="sMobile" maxlength="10" required placeholder="10 Digit Mobile No.">
+                </div>
+                <div class="form-group">
+                    <label>UID / Roll No. (Optional)</label>
+                    <input type="text" id="sUid" placeholder="Enter UID if registered">
+                </div>
+                <div class="form-group">
+                    <label>Fee Status</label>
+                    <select id="sFeeStatus">
+                        <option value="Paid (Pending Verification)">Paid (Paid via UPI/Cash)</option>
+                        <option value="Unpaid (Pending Verification)">Unpaid (Pay Later at Library)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit"><i class="fa-paper-plane"></i> Submit & Request Seat</button>
+                <button type="button" class="btn-submit" style="background:#64748b; margin-top:6px;" onclick="closeModal('studentModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-card">
+            <h4 class="modal-title"><i class="fa-solid fa-lock"></i> Admin Management</h4>
+            
+            <div id="adminLoginSec">
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="adminPass" placeholder="Enter Password (Default: admin123)">
+                </div>
+                <button class="btn-submit" onclick="loginAdmin()">Login</button>
+            </div>
+
+            <div id="adminControlSec" style="display: none;">
+                <div class="form-group">
+                    <label>Select Branch</label>
+                    <select id="adminBranchSelect">
+                        <option value="core">Core Branch</option>
+                        <option value="nexus">Nexus Branch</option>
+                    </select>
+                </div>
+
+                <div style="background: #fff0e6; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+                    <label style="font-weight:700; font-size:0.8rem; color:#ea580c;">Search Member Record</label>
+                    <input type="text" id="searchMemberInput" placeholder="Enter Mobile or UID" style="margin-top:4px;">
+                    <button class="btn-submit" style="padding:6px; font-size:0.8rem; margin-top:5px;" onclick="searchMember()">Search</button>
+                    <div id="adminSearchResult" style="font-size:0.75rem; margin-top:5px; font-weight:600;"></div>
+                </div>
+
+                <hr style="margin: 15px 0;">
+
+                <div class="form-group">
+                    <label>Manage Specific Seat Number</label>
+                    <input type="number" id="manageSeatNo" placeholder="Seat No">
+                </div>
+                <div class="form-group">
+                    <label>Action / Status</label>
+                    <select id="manageSeatStatus">
+                        <option value="booked">Mark as BOOKED (Confirm Allotment)</option>
+                        <option value="vacant">Mark as VACANT (Available)</option>
+                        <option value="waiting">Mark as WAITING</option>
+                    </select>
+                </div>
+
+                <button class="btn-submit" onclick="applySeatChange()">Update Seat Status</button>
+                <button class="btn-submit" id="btnNotifyStudent" style="background:#22c55e; display:none; margin-top:6px;" onclick="notifyStudentWhatsApp()">
+                    <i class="fa-brands fa-whatsapp"></i> Send Allotment Msg To Student
+                </button>
+
+                <hr style="margin: 15px 0;">
+                
+                <button class="btn-submit" style="background:#ef4444;" onclick="resetAllSeats()">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Reset Current Branch System
+                </button>
+            </div>
+
+            <button type="button" class="btn-submit" style="background:#64748b; margin-top:10px;" onclick="closeModal('adminModal')">Close</button>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
     </footer>
-
-    <script>
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
-                });
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
-        }
-
-        // Pay_fee.html पर Redirect करने के लिए फंक्शन
-        function scrollToQuickDesk(e) {
-            if(e) e.preventDefault();
-            window.location.href = "Pay_fee.html";
-        }
-    </script>
 </body>
 </html>
