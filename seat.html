@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eminence Library - Live Seat Booking</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        // ==========================================
+        // GOOGLE SHEETS APPS SCRIPT URLS
+        // ==========================================
+        const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcipVYb2RFh_nF6gdB3GjklbnvQDVI3I_Q2cqeVUjj7puo2dLeg7BsCxZWhzmCmPYa/exec";
+        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarHm6enNyPnaydyi0gKEdh06lYaN9nsI0O7jtV6qEAh3SWX0fhmXhYVJwEAqzPNDF/exec";
+
+        const ADMIN_PHONE = "919799995511";
+        let activeBranch = null; 
+        let currentSelectedSeat = null;
+        let allData = { core: {}, nexus: {} };
+        let existingMembersDB = {}; 
+
+        // 1. Purane Students ka Data Fetch karna
+        function fetchOldStudentsData() {
+            if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return;
+            fetch(OLD_STUDENTS_SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        existingMembersDB = data;
+                        console.log("Old students database loaded successfully!");
+                    }
+                })
+                .catch(err => console.log("Old students fetch error: ", err));
+        }
+
+        // 2. Live Seats Data Fetch karna
+        function fetchSheetData() {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
+            fetch(LIVE_BOOKING_SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        allData = data;
+                        if (activeBranch) {
+                            renderLayouts();
+                        }
+                    }
+                })
+                .catch(err => console.log("Live sheet fetch error: ", err));
+        }
+
+        function saveToSheet() {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
+            fetch(LIVE_BOOKING_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(allData)
+            })
+            .then(response => response.text())
+            .then(result => {
+                fetchSheetData(); 
+            })
+            .catch(err => console.log("Error saving data: " + err));
+        }
+
+        setInterval(() => {
+            if (activeBranch) {
+                fetchSheetData();
+            }
+        }, 4000);
+
+        window.onload = function() {
+            fetchOldStudentsData();
+            fetchSheetData();
+        };
+
+        window.selectBranch = function(branchKey) {
+            activeBranch = branchKey;
+            document.getElementById('branchGateOverlay').style.display = 'none';
+            document.getElementById('mainContentContainer').style.display = 'block';
+
+            document.getElementById('coreBranchSection').style.display = 'none';
+            document.getElementById('nexusBranchSection').style.display = 'none';
+
+            if (branchKey === 'core') {
+                document.getElementById('coreBranchSection').style.display = 'block';
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability';
+            } else {
+                document.getElementById('nexusBranchSection').style.display = 'block';
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Nexus Branch (1-65) - <span class="blink-live">Live</span> Seat Availability';
+            }
+            renderLayouts();
+        }
+
+        window.changeBranchPrompt = function() {
+            document.getElementById('mainContentContainer').style.display = 'none';
+            document.getElementById('branchGateOverlay').style.display = 'flex';
+        }
+
+        function createSeatNode(num, row, col) {
+            const seat = document.createElement("div");
+            const branchSeats = allData[activeBranch] || {};
+            const info = branchSeats[num] || { status: 'vacant' };
+            
+            let seatImage = "Desk1.png";
+            let statusLabel = "Available";
+
+            if (info.status === 'booked') {
+                seatImage = "Desk2.png";
+                statusLabel = "Booked";
+            } else if (info.status === 'waiting') {
+                seatImage = "Desk4.png";
+                statusLabel = "In Queue (Waiting)";
+            }
+
+            seat.className = `seat ${info.status}`;
+            seat.style.gridRow = row;
+            seat.style.gridColumn = col;
+            
+            seat.innerHTML = `
+                <img src="${seatImage}" alt="Seat" class="seat-icon">
+                <span>${num}</span>
+                <div class="seat-tooltip ${info.status}">
+                    Seat #${num}<br>
+                    <span class="tooltip-status-text">${statusLabel}</span>
+                </div>
+            `;
+            
+            seat.ondblclick = () => onSeatDoubleClick(num, info);
+            return seat;
+        }
+
+        function renderLayouts() {
+            if (!activeBranch) return;
+
+            if (activeBranch === 'core') {
+                const h1Container = document.getElementById("hall1GridContainer");
+                if(h1Container) {
+                    h1Container.innerHTML = "";
+                    for (let i = 12; i <= 18; i++) h1Container.appendChild(createSeatNode(i, 1, i - 11));
+                    for (let i = 11; i >= 1; i--) h1Container.appendChild(createSeatNode(i, 13 - i, 1));
+                    for (let i = 19; i <= 32; i++) h1Container.appendChild(createSeatNode(i, i - 18, 8));
+                    for (let i = 57, r = 3; i >= 49; i--, r++) h1Container.appendChild(createSeatNode(i, r, 3));
+
+                    [58, 41, 42, 43, 44, 45, 46, 47, 48].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 5)));
+                    [59, 40, 39, 38, 37, 36, 35, 34, 33].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 6)));
+                }
+
+                const h2Container = document.getElementById("hall2GridContainer");
+                if(h2Container) {
+                    h2Container.innerHTML = "";
+                    for (let i = 65; i <= 70; i++) h2Container.appendChild(createSeatNode(i, 1, i - 64));
+                    [64, 63, 62, 61].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 1)));
+                    [71, 72, 73, 74].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 6)));
+                    [80, 79, 78].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 3)));
+                    [77, 76, 75].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 4)));
+                    h2Container.appendChild(createSeatNode(81, 6, 3));
+                    h2Container.appendChild(createSeatNode(82, 6, 4));
+                    h2Container.appendChild(createSeatNode(83, 6, 6));
+                }
+            } else {
+                const nexusContainer = document.getElementById("nexusGridContainer");
+                if(nexusContainer) {
+                    nexusContainer.innerHTML = "";
+                    for (let i = 1; i <= 65; i++) {
+                        let r = Math.floor((i - 1) / 8) + 1;
+                        let c = ((i - 1) % 8) + 1;
+                        nexusContainer.appendChild(createSeatNode(i, r, c));
+                    }
+                }
+            }
+        }
+
+        function onSeatDoubleClick(seatNum, info) {
+            if (info.status === 'booked' || info.status === 'waiting') {
+                alert("Yeh seat pehle se booked ya waiting queue mein hai!");
+                return; 
+            }
+            currentSelectedSeat = seatNum;
+            document.getElementById("selectedSeatNum").innerText = seatNum;
+            document.getElementById("newBookingForm").reset();
+            document.getElementById("newName").readOnly = false;
+            document.getElementById("newMemberStatusMsg").style.display = "none";
+            
+            const existingSelect = document.getElementById("memberSelectDropdownGroup");
+            if (existingSelect) existingSelect.remove();
+
+            document.getElementById("newStudentModal").style.display = "flex";
+        }
+
+        window.checkExistingMemberNew = function() {
+            const inputVal = document.getElementById("newMobile").value.trim();
+            const nameField = document.getElementById("newName");
+            const uidField = document.getElementById("newUid");
+            const msgBox = document.getElementById("newMemberStatusMsg");
+            
+            const existingSelect = document.getElementById("memberSelectDropdownGroup");
+            if (existingSelect) existingSelect.remove();
+
+            const isMobileInput = /^\d+$/.test(inputVal);
+            const isValidLength = isMobileInput ? inputVal.length === 10 : inputVal.length >= 3;
+
+            if (isValidLength) {
+                let foundMembers = [];
+                let matchedMobile = "";
+
+                const cleanInputMobile = inputVal.slice(-10);
+                for (let dbMobile in existingMembersDB) {
+                    const cleanDbMobile = String(dbMobile).trim().slice(-10);
+                    if (cleanDbMobile === cleanInputMobile || String(dbMobile) === inputVal) {
+                        foundMembers = existingMembersDB[dbMobile];
+                        matchedMobile = dbMobile;
+                        break;
+                    }
+                }
+
+                if (foundMembers.length === 0) {
+                    for (let dbMobile in existingMembersDB) {
+                        const membersList = existingMembersDB[dbMobile];
+                        for (let mem of membersList) {
+                            if (mem.uid && mem.uid.trim().toLowerCase() === inputVal.toLowerCase()) {
+                                foundMembers = [mem];
+                                matchedMobile = dbMobile;
+                                break;
+                            }
+                        }
+                        if (foundMembers.length > 0) break;
+                    }
+                }
+
+                if (foundMembers && foundMembers.length > 0) {
+                    msgBox.style.color = "#15803d";
+                    msgBox.style.display = "block";
+
+                    if (foundMembers.length > 1 && isMobileInput) {
+                        msgBox.innerHTML = `<i class="fa-solid fa-users"></i> Is mobile number par 1 se zyada members hain. Apna naam select karein:`;
+                        
+                        const formGroupDiv = document.createElement("div");
+                        formGroupDiv.id = "memberSelectDropdownGroup";
+                        formGroupDiv.className = "form-group";
+                        
+                        let optionsHtml = `<label><i class="fa-solid fa-list"></i> Select Member:</label><select id="multiMemberSelect" class="form-control" onchange="selectMemberFromDropdown()"><option value="">-- Naam Chuniye --</option>`;
+                        
+                        foundMembers.forEach((m, idx) => {
+                            optionsHtml += `<option value="${idx}">${m.name} (UID: ${m.uid || 'N/A'})</option>`;
+                        });
+                        optionsHtml += `</select>`;
+                        
+                        formGroupDiv.innerHTML = optionsHtml;
+                        const mobileGroup = document.getElementById("newMobile").closest('.form-group');
+                        mobileGroup.parentNode.insertBefore(formGroupDiv, mobileGroup.nextSibling);
+
+                        nameField.value = "";
+                        uidField.value = "";
+                        nameField.readOnly = true;
+                    } else {
+                        let studentName = foundMembers[0].name || '';
+                        let studentUid = foundMembers[0].uid || '';
+                        
+                        nameField.value = studentName;
+                        uidField.value = studentUid;
+                        nameField.readOnly = true; 
+                        
+                        if (matchedMobile && !isMobileInput) {
+                            document.getElementById("newMobile").value = matchedMobile;
+                        }
+                        
+                        msgBox.innerHTML = `<i class="fa-solid fa-circle-check"></i> Welcome Back, ${studentName}!`;
+                    }
+                } else {
+                    nameField.value = "";
+                    uidField.value = "";
+                    nameField.readOnly = false;
+                    
+                    msgBox.style.color = "#d97706";
+                    msgBox.innerHTML = `<i class="fa-solid fa-user-plus"></i> New Student Registration`;
+                    msgBox.style.display = "block";
+                }
+            } else {
+                msgBox.style.display = "none";
+                nameField.value = "";
+                uidField.value = "";
+                nameField.readOnly = false;
+            }
+        }
+
+        window.selectMemberFromDropdown = function() {
+            const selectElem = document.getElementById("multiMemberSelect");
+            const selectedIdx = selectElem.value;
+            const mobileInput = document.getElementById("newMobile").value.trim().slice(-10);
+            const msgBox = document.getElementById("newMemberStatusMsg");
+            const nameField = document.getElementById("newName");
+            const uidField = document.getElementById("newUid");
+            
+            let foundMembers = [];
+            for (let dbMobile in existingMembersDB) {
+                if (String(dbMobile).trim().slice(-10) === mobileInput) {
+                    foundMembers = existingMembersDB[dbMobile];
+                    break;
+                }
+            }
+
+            if (selectedIdx !== "" && foundMembers[selectedIdx]) {
+                const chosen = foundMembers[selectedIdx];
+                nameField.value = chosen.name || '';
+                uidField.value = chosen.uid || '';
+                msgBox.style.display = "none";
+            } else {
+                nameField.value = '';
+                uidField.value = '';
+                nameField.readOnly = true;
+                msgBox.style.display = "block";
+                msgBox.style.color = "#15803d";
+                msgBox.innerHTML = `<i class="fa-solid fa-users"></i> Is mobile number par 1 se zyada members hain. Apna naam select karein:`;
+            }
+        }
+ 
+        window.handleNewStudentSubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById("newName").value.trim();
+            const mobile = document.getElementById("newMobile").value.trim();
+            const uid = document.getElementById("newUid").value.trim() || 'N/A';
+            const feeStatus = document.getElementById("newFeeStatus").value;
+            const chosenBranch = activeBranch;
+
+            if (!name) {
+                alert("Kripya apna naam select karein ya enter karein!");
+                return;
+            }
+
+            if (!allData[chosenBranch]) allData[chosenBranch] = {};
+
+            allData[chosenBranch][currentSelectedSeat] = {
+                status: 'waiting',
+                studentName: name,
+                mobile: mobile,
+                uid: uid,
+                feeStatus: feeStatus
+            };
+
+            saveToSheet();
+            closeModal('newStudentModal');
+
+            const msg = `*NEW SEAT REQUEST (${chosenBranch.toUpperCase()})*\n\nSeat No: ${currentSelectedSeat}\nName: ${name}\nMobile: ${mobile}\nUID: ${uid}\nFee Status: ${feeStatus}\n\nPlease verify and allot from Admin Panel.`;
+            const waLink = `https://wa.me/${ADMIN_PHONE}?text=${encodeURIComponent(msg)}`;
+            
+            window.open(waLink, '_blank');
+            document.getElementById("newBookingForm").reset();
+        }
+
+        window.openAdminModal = function() {
+            document.getElementById("adminModal").style.display = "flex";
+        }
+
+        window.loginAdmin = function() {
+            const pass = document.getElementById("adminPass").value;
+            if (pass === "admin123") {
+                document.getElementById("adminLoginSec").style.display = "none";
+                document.getElementById("adminControlSec").style.display = "block";
+            } else {
+                alert("Incorrect Password!");
+            }
+        }
+
+        window.updateAdminSeatDisplay = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const displayDiv = document.getElementById("adminSeatDetailsDisplay");
+            const notifyBtn = document.getElementById("btnNotifyStudent");
+
+            if (!seatNo || seatNo === "") {
+                displayDiv.innerHTML = "";
+                notifyBtn.style.display = "none";
+                return;
+            }
+
+            const seatInfo = allData[branch] ? allData[branch][seatNo] : null;
+
+            // Agar koi record nahi hai YA status vacant hai, tab light green color aayega
+            if (!seatInfo || seatInfo.status === 'vacant' || !seatInfo.status) {
+                displayDiv.innerHTML = `
+                    <div style="background-color: #90EE90; color: #0f172a; padding: 10px 12px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; border: 1px solid #228B22; font-size: 0.85rem;">
+                        <i class="fa-solid fa-circle-check"></i> Seat Status - Vacant
+                    </div>
+                `;
+                notifyBtn.style.display = "none";
+            } else {
+                const statusColor = seatInfo.status === 'booked' ? '#dc2626' : '#2563eb';
+                
+                displayDiv.innerHTML = `
+                    <div style="background:#f1f5f9; padding:12px; border-radius:8px; border-left:4px solid ${statusColor}; margin-bottom:12px; font-size:0.85rem;">
+                        <p style="margin-bottom:5px;"><b>Status:</b> <span style="color:${statusColor}; font-weight:bold; text-transform:uppercase;">${seatInfo.status}</span></p>
+                        <p style="margin-bottom:5px;"><b>Name:</b> ${seatInfo.studentName || 'N/A'}</p>
+                        <p style="margin-bottom:5px;"><b>Mobile:</b> ${seatInfo.mobile || 'N/A'}</p>
+                        <p style="margin-bottom:5px;"><b>UID:</b> ${seatInfo.uid || 'N/A'}</p>
+                        <p style="margin-bottom:0;"><b>Fee Status:</b> ${seatInfo.feeStatus || 'N/A'}</p>
+                    </div>
+                `;
+                
+                if (seatInfo.status === 'booked' || seatInfo.status === 'waiting') {
+                    notifyBtn.style.display = "block";
+                } else {
+                    notifyBtn.style.display = "none";
+                }
+            }
+        }
+
+        window.applySeatChange = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const newStatus = document.getElementById("manageSeatStatus").value;
+
+            let maxSeat = branch === 'core' ? 83 : 65;
+            if (!seatNo || seatNo < 1 || seatNo > maxSeat || (branch === 'core' && seatNo == 60)) {
+                alert("Invalid Seat Number!");
+                return;
+            }
+
+            if (!allData[branch]) allData[branch] = {};
+            if (!allData[branch][seatNo]) allData[branch][seatNo] = {};
+            allData[branch][seatNo].status = newStatus;
+
+            saveToSheet();
+            alert("Seat status updated successfully!");
+            updateAdminSeatDisplay();
+        }
+
+        window.notifyStudentWhatsApp = function() {
+            const branch = document.getElementById("adminBranchSelect").value;
+            const seatNo = document.getElementById("manageSeatNo").value;
+            const student = allData[branch] ? allData[branch][seatNo] : null;
+
+            if (student && student.mobile) {
+                const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nYour Seat #${seatNo} has been successfully verified and ALLOTTED to you.\n\nThank You!`;
+                window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            }
+        }
+
+        window.searchMember = function() {
+            const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
+            const res = document.getElementById("adminSearchResult");
+            
+            if (!query) {
+                res.style.color = "red";
+                res.innerHTML = "Please enter a Mobile Number or UID to search.";
+                return;
+            }
+
+            let foundResults = [];
+
+            for (let branch in allData) {
+                for (let seat in allData[branch]) {
+                    let s = allData[branch][seat];
+                    if ((s.mobile && s.mobile.toLowerCase().includes(query)) || (s.uid && s.uid.toLowerCase().includes(query))) {
+                        foundResults.push({
+                            info: `<b>Live Booking Found:</b><br><b>Branch:</b> ${branch.toUpperCase()} | <b>Seat #:</b> ${seat}<br><b>Name:</b> ${s.studentName}<br><b>Mobile:</b> ${s.mobile} | <b>UID:</b> ${s.uid || 'N/A'}<br><b>Status:</b> <span style="text-transform:uppercase; color:${s.status=='booked'?'red':'blue'}">${s.status}</span>`
+                        });
+                    }
+                }
+            }
+
+            for (let mob in existingMembersDB) {
+                let membersList = existingMembersDB[mob];
+                membersList.forEach(mem => {
+                    if (mob.includes(query) || (mem.uid && mem.uid.toLowerCase().includes(query))) {
+                        foundResults.push({
+                            info: `<b>Old Students Database Record:</b><br><b>Name:</b> ${mem.name}<br><b>Mobile:</b> ${mob} | <b>UID:</b> ${mem.uid || 'N/A'}`
+                        });
+                    }
+                });
+            }
+
+            if (foundResults.length > 0) {
+                res.style.color = "#0f172a";
+                let htmlOutput = "";
+                foundResults.forEach(item => {
+                    htmlOutput += `<div style="background:#f1f5f9; padding:8px; border-radius:6px; margin-top:6px; border-left:3px solid var(--primary-color);">${item.info}</div>`;
+                });
+                res.innerHTML = htmlOutput;
+            } else {
+                res.style.color = "#dc2626";
+                res.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> No record found matching this Mobile or UID.";
+            }
+        }
+
+        window.closeModal = function(id) {
+            document.getElementById(id).style.display = "none";
+        }
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #ff6600;
+            --primary-hover: #e65c00;
+            --bg-light: #f8fafc;
+            --color-vacant: #86efac;  
+            --color-waiting: #3b82f6; 
+            --color-booked: #ef4444;  
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--bg-light); 
+            color: #334155; 
+            padding-bottom: 80px; 
+        }
+
+        header { 
+            background-color: var(--primary-color); 
+            padding: 12px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .main-logo-banner { max-width: 200px; height: auto; display: block; }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn { 
+            padding: 8px 14px; 
+            font-weight: 700; 
+            border-radius: 20px; 
+            font-size: 0.78rem; 
+            text-transform: uppercase;
+            cursor: pointer; 
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .nav-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+
+        .btn-home-link { background: #1e293b; color: #ffffff; }
+        .btn-switch-branch { background: #334155; color: #ffffff; }
+        .btn-admin { background: #0f172a; color: #ffffff; }
+
+        .universal-back-btn {
+            background: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .universal-back-btn:hover { background: #e2e8f0; }
+
+        .branch-gate-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+        .branch-gate-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 16px;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            border-top: 5px solid var(--primary-color);
+        }
+        .branch-gate-card h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.25rem;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+        .branch-gate-card p {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+        .branch-select-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn-branch-choice {
+            padding: 14px 20px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border-radius: 10px;
+            border: 2px solid var(--primary-color);
+            background: #ffffff;
+            color: var(--primary-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .btn-branch-choice:hover {
+            background: var(--primary-color);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 102, 0, 0.25);
+        }
+        .btn-branch-choice.nexus {
+            border-color: #0f172a;
+            color: #0f172a;
+        }
+        .btn-branch-choice.nexus:hover {
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+        }
+
+        .container { max-width: 1350px; margin: 20px auto; padding: 0 15px; display: none; }
+
+        .chart-heading-box {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #ffffff;
+            text-align: center;
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            max-width: 520px;
+            width: 100%;
+            margin: 0 auto 12px auto;
+            border-left: 4px solid var(--primary-color);
+        }
+        .chart-heading-box h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .chart-heading-box h2 i {
+            color: var(--primary-color);
+            font-size: 0.85rem;
+        }
+
+        @keyframes blinker {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+
+        .blink-live {
+            animation: blinker 1s linear infinite;
+            color: #ef4444;
+        }
+
+        .legend-box {
+            display: flex; justify-content: center; gap: 25px;
+            background: #fff; padding: 12px 15px; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px;
+            flex-wrap: wrap; font-size: 0.82rem; font-weight: 600;
+            align-items: center;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-icon { width: 30px; height: 30px; object-fit: contain; display: inline-block; }
+
+        .halls-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .branch-section { display: none; }
+
+        @media (max-width: 950px) {
+            .halls-wrapper { grid-template-columns: 1fr; }
+        }
+
+        .hall-section {
+            background: #fff; padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        .hall-title {
+            color: var(--primary-color); font-size: 0.95rem;
+            border-bottom: 2px solid #ffe0cc; padding-bottom: 6px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .seat {
+            aspect-ratio: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-weight: 700; font-size: 0.72rem;
+            cursor: pointer; transition: all 0.25s ease;
+            user-select: none; position: relative;
+            padding: 0; background: transparent; border: none;
+            width: 46px; height: 46px;
+        }
+
+        .seat img.seat-icon {
+            width: 36px; height: 36px;
+            object-fit: contain; margin-bottom: 2px;
+            transition: all 0.25s ease;
+        }
+
+        .seat-tooltip {
+            visibility: hidden; background-color: #0f172a; color: #ffffff;
+            text-align: center; border-radius: 6px; padding: 8px 12px;
+            font-size: 0.75rem; position: absolute; z-index: 1000;
+            bottom: 125%; left: 50%; transform: translateX(-50%);
+            white-space: nowrap; font-weight: 600; opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); pointer-events: none;
+        }
+
+        .seat-tooltip.vacant { border-left: 4px solid var(--color-vacant); }
+        .seat-tooltip.waiting { border-left: 4px solid var(--color-waiting); }
+        .seat-tooltip.booked { border-left: 4px solid var(--color-booked); }
+
+        .seat-tooltip.vacant .tooltip-status-text { color: var(--color-vacant); font-weight: 700; }
+        .seat-tooltip.waiting .tooltip-status-text { color: var(--color-waiting); font-weight: 700; }
+        .seat-tooltip.booked .tooltip-status-text { color: var(--color-booked); font-weight: 700; }
+
+        .seat-tooltip::after {
+            content: ""; position: absolute; top: 100%; left: 50%;
+            margin-left: -4px; border-width: 6px; border-style: solid;
+            border-color: #0f172a transparent transparent transparent; 
+        }
+
+        .seat:hover .seat-tooltip { visibility: visible; opacity: 1; }
+
+        .seat.vacant span { color: #15803d; font-size: 0.7rem; }
+        .seat.vacant:hover img.seat-icon { transform: scale(1.15); filter: drop-shadow(0 2px 8px var(--color-vacant)); }
+
+        .seat.waiting span { color: #1d4ed8; font-size: 0.7rem; }
+        .seat.waiting:hover img.seat-icon { transform: scale(1.15); filter: drop-shadow(0 2px 8px var(--color-waiting)); }
+
+        .seat.booked span { color: #991b1b; font-size: 0.7rem; }
+        .seat.booked:hover img.seat-icon { transform: scale(1.15); filter: drop-shadow(0 3px 10px var(--color-booked)); }
+
+        .hall1-grid-container {
+            display: grid; grid-template-columns: repeat(8, 46px);
+            grid-template-rows: repeat(14, 46px); gap: 10px;
+            align-items: start; justify-content: start; min-width: 400px;
+        }
+
+        .hall2-grid-container {
+            display: grid; grid-template-columns: repeat(6, 46px);
+            grid-template-rows: repeat(6, 46px); gap: 10px;
+            align-items: start; justify-content: start; min-width: 310px;
+        }
+
+        .nexus-grid-container {
+            display: grid; grid-template-columns: repeat(8, 46px);
+            grid-template-rows: repeat(10, 46px); gap: 10px;
+            align-items: start; justify-content: start; min-width: 400px;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.75); display: none; justify-content: center;
+            align-items: center; z-index: 3000; padding: 15px; backdrop-filter: blur(4px);
+        }
+        .modal-card {
+            background: #ffffff; width: 100%; max-width: 460px;
+            border-radius: 16px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            position: relative; max-height: 90vh; overflow-y: auto;
+            border-top: 6px solid var(--primary-color);
+        }
+        .modal-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .modal-title { 
+            color: #0f172a; font-size: 1.1rem; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .modal-title span { color: var(--primary-color); }
+        
+        .modal-close-btn {
+            background: #f1f5f9; border: none; width: 32px; height: 32px;
+            border-radius: 50%; cursor: pointer; color: #64748b; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .modal-close-btn:hover { background: #fee2e2; color: #dc2626; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 5px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1;
+            border-radius: 8px; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+            background: #f8fafc; font-family: 'Poppins', sans-serif;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary-color); background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%; background: var(--primary-color); color: white;
+            padding: 12px; border: none; border-radius: 8px; font-weight: 700;
+            cursor: pointer; margin-top: 10px; font-size: 0.95rem;
+            transition: all 0.2s; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+        }
+        .btn-submit:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        footer { 
+            text-align: center; padding: 12px; background: #0f172a; 
+            color: white; font-size: 0.8rem; width: 100%; position: fixed; 
+            bottom: 0; left: 0; z-index: 100; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="branch-gate-overlay" id="branchGateOverlay">
+        <div class="branch-gate-card">
+            <h2>Eminence Library</h2>
+            <p>Please select your branch to view live seat availability and book your seat.</p>
+            <div class="branch-select-buttons">
+                <button class="btn-branch-choice" onclick="selectBranch('core')">
+                    <i class="fa-solid fa-building-columns"></i> Core Branch
+                </button>
+                <button class="btn-branch-choice nexus" onclick="selectBranch('nexus')">
+                    <i class="fa-solid fa-network-wired"></i> Nexus Branch (1-65)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo-box">
+            <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
+        </div>
+        <div class="nav-buttons">
+            <button class="universal-back-btn" onclick="changeBranchPrompt()">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <button class="nav-btn btn-switch-branch" onclick="changeBranchPrompt()">
+                <i class="fa-solid fa-right-left"></i> Change Branch
+            </button>
+            <a href="index.html" class="nav-btn btn-home-link">
+                <i class="fa-solid fa-house"></i> Home
+            </a>
+            <button class="nav-btn btn-admin" onclick="openAdminModal()">
+                <i class="fa-solid fa-user-shield"></i> Admin Panel
+            </button>
+        </div>
+    </header>
+
+    <div class="container" id="mainContentContainer">
+        <div class="chart-heading-box">
+            <h2 id="chartHeadingText"><i class="fa-solid fa-chart-pie"></i> <span class="blink-live">Live</span> Seat Availability</h2>
+        </div>
+
+        <div class="legend-box">
+            <div class="legend-item"><img src="Desk1.png" class="legend-icon"> Available</div>
+            <div class="legend-item"><img src="Desk4.png" class="legend-icon"> In Queue</div>
+            <div class="legend-item"><img src="Desk2.png" class="legend-icon"> Booked</div>
+        </div>
+
+        <div class="branch-section" id="coreBranchSection">
+            <div class="halls-wrapper">
+                <div class="hall-section">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> HALL 1 (Seats 1-59)</span>
+                        <button class="universal-back-btn" onclick="changeBranchPrompt()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                    </div>
+                    <div class="hall1-grid-container" id="hall1GridContainer"></div>
+                </div>
+                <div class="hall-section">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> HALL 2 (Seats 61-83)</span>
+                        <button class="universal-back-btn" onclick="changeBranchPrompt()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                    </div>
+                    <div class="hall2-grid-container" id="hall2GridContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="branch-section" id="nexusBranchSection">
+            <div class="halls-wrapper" style="grid-template-columns: 1fr;">
+                <div class="hall-section" style="max-width: 650px; margin: 0 auto;">
+                    <div class="hall-title">
+                        <span><i class="fa-solid fa-couch"></i> NEXUS HALL (Seats 1-65)</span>
+                        <button class="universal-back-btn" onclick="changeBranchPrompt()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                    </div>
+                    <div class="nexus-grid-container" id="nexusGridContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOKING FORM MODAL -->
+    <div class="modal-overlay" id="newStudentModal">
+        <div class="modal-card">
+            <div class="modal-header-flex">
+                <h4 class="modal-title"><i class="fa-solid fa-chair"></i> Book Seat #<span id="selectedSeatNum"></span></h4>
+                <button class="universal-back-btn" onclick="closeModal('newStudentModal')"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+            
+            <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 15px;">Poora 10-digit mobile number ya UID enter karke membership status check karein.</p>
+            
+            <form id="newBookingForm" onsubmit="handleNewStudentSubmit(event)">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-id-card"></i> Mobile Number or UID:</label>
+                    <input type="text" id="newMobile" placeholder="Enter mobile number or UID" oninput="checkExistingMemberNew()" required>
+                </div>
+                
+                <div id="newMemberStatusMsg" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 10px; padding: 6px 10px; border-radius: 6px; background: #f1f5f9; display: none;"></div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-user"></i> Student Name:</label>
+                    <input type="text" id="newName" placeholder="Enter student full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-id-badge"></i> UID / Student ID:</label>
+                    <input type="text" id="newUid" placeholder="Enter UID (optional)">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-wallet"></i> Fee Status:</label>
+                    <select id="newFeeStatus">
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit"><i class="fa-brands fa-whatsapp"></i> Submit & Request Seat</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-card">
+            <div class="modal-header-flex">
+                <h4 class="modal-title"><i class="fa-solid fa-user-shield"></i> Admin Panel</h4>
+                <button class="universal-back-btn" onclick="closeModal('adminModal')"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+            <div id="adminLoginSec">
+                <div class="form-group">
+                    <label>Admin Password:</label>
+                    <input type="password" id="adminPass" placeholder="Enter password">
+                </div>
+                <button type="button" class="btn-submit" onclick="loginAdmin()">Login</button>
+            </div>
+            <div id="adminControlSec" style="display:none;">
+                <div class="form-group">
+                    <label>Select Branch:</label>
+                    <select id="adminBranchSelect" onchange="updateAdminSeatDisplay()">
+                        <option value="core">Core Branch</option>
+                        <option value="nexus">Nexus Branch</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Seat Number:</label>
+                    <input type="number" id="manageSeatNo" placeholder="Seat number" oninput="updateAdminSeatDisplay()">
+                </div>
+                
+                <!-- Seat Details Auto Display Box (Shows Light Green Vacant Status when empty) -->
+                <div id="adminSeatDetailsDisplay"></div>
+
+                <div class="form-group">
+                    <label>New Status:</label>
+                    <select id="manageSeatStatus">
+                        <option value="vacant">Vacant (Available / Reset)</option>
+                        <option value="waiting">Waiting (Verification Pending)</option>
+                        <option value="booked">Booked (Allotted)</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-submit" onclick="applySeatChange()">Update Status</button>
+                
+                <!-- WhatsApp Notify Button (Sabse Neeche) -->
+                <button type="button" id="btnNotifyStudent" class="btn-submit" style="background:#16a34a; display:none; margin-top:10px;" onclick="notifyStudentWhatsApp()">
+                    <i class="fa-brands fa-whatsapp"></i> Notify Student on WhatsApp
+                </button>
+                
+                <hr style="margin: 15px 0;">
+                <div class="form-group">
+                    <label>Search Member (Mobile / UID):</label>
+                    <input type="text" id="searchMemberInput" placeholder="Enter mobile or UID">
+                </div>
+                <button type="button" class="btn-submit" style="background:#2563eb;" onclick="searchMember()">Search Record</button>
+                <div id="adminSearchResult" style="font-size:0.8rem; margin-top:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
+    </footer>
+
+</body>
+</html>
