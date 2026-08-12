@@ -90,7 +90,7 @@
                 document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability';
             } else {
                 document.getElementById('nexusBranchSection').style.display = 'block';
-                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Nexus Branch (1-65) - <span class="blink-live">Live</span> Seat Availability';
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Nexus Branch - <span class="blink-live">Live</span> Seat Availability';
             }
             renderLayouts();
         }
@@ -113,7 +113,7 @@
                 statusLabel = "Booked";
             } else if (info.status === 'waiting') {
                 seatImage = "Desk4.png";
-                statusLabel = "In Queue (Waiting)";
+                statusLabel = "On Hold (Waiting)";
             }
 
             seat.className = `seat ${info.status}`;
@@ -176,7 +176,7 @@
 
         function onSeatDoubleClick(seatNum, info) {
             if (info.status === 'booked' || info.status === 'waiting') {
-                alert("Yeh seat pehle se booked ya waiting queue mein hai!");
+                alert("This Seat is On Hold or Waiting...!");
                 return; 
             }
             currentSelectedSeat = seatNum;
@@ -236,7 +236,7 @@
                     msgBox.style.display = "block";
 
                     if (foundMembers.length > 1 && isMobileInput) {
-                        msgBox.innerHTML = `<i class="fa-solid fa-users"></i> Is mobile number par 1 se zyada members hain. Apna naam select karein:`;
+                        msgBox.innerHTML = `<i class="fa-solid fa-users"></i> इस मोबाईल नंबर से एक से ज्यादा सदस्य जुड़े हुए हैं कृपया अपना सही नाम का चुनाव करें:`;
                         
                         const formGroupDiv = document.createElement("div");
                         formGroupDiv.id = "memberSelectDropdownGroup";
@@ -314,7 +314,7 @@
                 nameField.readOnly = true;
                 msgBox.style.display = "block";
                 msgBox.style.color = "#15803d";
-                msgBox.innerHTML = `<i class="fa-solid fa-users"></i> Is mobile number par 1 se zyada members hain. Apna naam select karein:`;
+                msgBox.innerHTML = `<i class="fa-solid fa-users"></i> इस मोबाईल नंबर से एक से ज्यादा सदस्य जुड़े हुए हैं कृपया अपना सही नाम का चुनाव करें:`;
             }
         }
  
@@ -434,7 +434,7 @@
             const student = allData[branch] ? allData[branch][seatNo] : null;
 
             if (student && student.mobile) {
-                const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nYour Seat #${seatNo} has been successfully verified and ALLOTTED to you.\n\nThank You!`;
+                const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर #${seatNo} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
                 window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
             }
         }
@@ -445,7 +445,7 @@
             
             if (!query) {
                 res.style.color = "red";
-                res.innerHTML = "Please enter a Mobile Number or UID to search.";
+                res.innerHTML = "Please Enter Vaild Mobile No. or UID to search.";
                 return;
             }
 
@@ -482,7 +482,7 @@
                 res.innerHTML = htmlOutput;
             } else {
                 res.style.color = "#dc2626";
-                res.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> No record found matching this Mobile or UID.";
+                res.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> No record found for this Mobile No. or UID.";
             }
         }
 
