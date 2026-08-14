@@ -256,7 +256,13 @@
             margin-bottom: 10px;
         }
 
+        /* Mobile Screen ke liye Fix (Upar se align karne ke liye) */
         @media (max-width: 768px) {
+            body {
+                align-items: flex-start;
+                padding-top: 25px;
+                padding-bottom: 25px;
+            }
             .window3-layout {
                 flex-direction: column;
             }
@@ -305,7 +311,7 @@
             <div class="window3-layout">
                 <div class="w3-left-col">
                     <div class="form-group" style="margin-bottom: 10px;">
-                        <label class="section-title">MEMBER DETAILS :</label>
+                        <label class="section-title">मेंबर:</label>
                         <div id="selectedMemberInfo" class="summary-box"></div>
                     </div>
 
@@ -392,8 +398,7 @@
             let cacheTime = localStorage.getItem('libraryDataTime');
             let now = new Date().getTime();
 
-            // 5 minute cache check
-            if (cachedData && cacheTime && (now - cacheTime < 5 * 60 * 1000)) {
+            if (cachedData && cacheTime && (now - cacheTime < 30 * 60 * 1000)) {
                 libraryDataObject = JSON.parse(cachedData);
                 enableStartButton();
             } else {
@@ -487,8 +492,8 @@
                 resultsDiv.style.display = "block";
                 resultsDiv.innerHTML = matches.map(m => `
                     <div onclick="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')">
-                        👤 <b>${m.name}</b> | 📱<b> ${m.mobile} </b>|  🆔 <b>${m.uid}</b> 
-                        <span style="white-space: nowrap;">🏢 <b>Branch:</b> ${m.branch}
+                        👤 <b>${m.name}</b> | 📱<b> ${m.mobile} </b>| 🆔 <b>${m.uid}</b><br>
+                        <span style="white-space: nowrap;">🏢 <b>Branch:</b> ${m.branch}</span>
                     </div>
                 `).join("");
             } else {
@@ -509,8 +514,9 @@
             nextBtn.style.pointerEvents = "auto";
 
             document.getElementById("selectedMemberInfo").innerHTML = `
-                👤 <b>${selectedMember.name}</b> |  🆔 <b>UID:</b> ${selectedMember.uid} <br> 📱 <b>${selectedMember.mobile}</b><br>
-                🏢 <b>Branch:</b> ${selectedMember.branch}
+                👤 <b>${selectedMember.name}</b> |  🆔 <b>UID:</b> ${selectedMember.uid} <br>
+                📱 <b>${selectedMember.mobile}</b><br>
+                <span style="white-space: nowrap;">🏢 <b>Branch:</b> ${selectedMember.branch}</span>
             `;
         }
 
