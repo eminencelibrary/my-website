@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eminence Library - Fee Payment Flow</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -605,25 +604,27 @@
             document.getElementById("dynamicQR").src = qrUrl;
         }
 function downloadQRCode() {
-            let containerElement = document.getElementById("mainContainer");
+            let qrImageSrc = document.getElementById("dynamicQR").src;
             
-            // html2canvas की मदद से पूरे मुख्य बॉक्स का स्क्रीनशॉट लेना
-            html2canvas(containerElement, {
-                scale: 2, // इससे तस्वीर की क्वालिटी बहुत अच्छी (High Quality) आएगी
-                useCORS: true
-            }).then(canvas => {
-                let imageURL = canvas.toDataURL("image/png");
-                let a = document.createElement('a');
-                a.href = imageURL;
-                a.download = `Eminence_Library_Payment_${finalPayableAmount}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }).catch(err => {
-                console.error("Screenshot failed:", err);
-                alert("स्क्रीनशॉट लेने में असफलता। कृपया मैन्युअल स्क्रीनशॉट लें।");
-            });
-        }    </script>
+            // यह कोड इमेज को फेच करके यूजर के फोन/कंप्यूटर में डाउनलोड कर देगा
+            fetch(qrImageSrc)
+                .then(response => response.blob())
+                .then(blob => {
+                    let blobUrl = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = `Eminence_Library_QR_${finalPayableAmount}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(blobUrl);
+                })
+                .catch(err => {
+                    console.error("Download failed:", err);
+                    alert("स्क्रीनशॉट डाउनलोड करने में असफलता। आप चाहें तो इसका डायरेक्ट स्क्रीनशॉट ले सकते हैं।");
+                });
+        }
+    </script>
 
 </body>
 </html>
