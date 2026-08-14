@@ -30,8 +30,8 @@
             font-family: 'Poppins', sans-serif; 
             background-color: var(--bg-light); 
             color: #334155; 
-            padding-bottom: 80px;
-            font-size: 0.95rem;
+            padding-bottom: 60px;
+            font-size: 0.9rem;
             width: 100%;
             margin: 0;
         }
@@ -48,11 +48,10 @@
             -webkit-appearance: none;
             transition: all 0.3s ease;
             width: 100%;
-            padding: 9px 12px;
+            padding: 10px;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             margin-top: 4px;
-            background-color: #fff;
         }
 
         input[type="text"]:focus, input[type="number"]:focus, select:focus {
@@ -68,8 +67,6 @@
             align-items: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             width: 100%;
-            flex-wrap: wrap;
-            gap: 10px;
         }
         
         .logo-box { display: flex; align-items: center; }
@@ -79,19 +76,20 @@
             display: flex; 
             gap: 10px; 
             align-items: center;
+            flex-wrap: nowrap;
         }
         
-        .home-btn { 
+        .cta-btn { 
             background: #ffffff; 
             color: var(--primary-color); 
-            padding: 8px 14px; 
+            padding: 10px 16px; 
             font-weight: 700; 
             text-decoration: none; 
             border-radius: 20px; 
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); 
             transition: all 0.3s ease; 
             text-transform: uppercase;
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             letter-spacing: 0.5px;
             white-space: nowrap;
             display: inline-flex;
@@ -100,8 +98,10 @@
             cursor: pointer;
             border: none;
         }
-
-        .home-btn:hover { transform: translateY(-2px); opacity: 0.95; box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        
+        .cta-btn.google-fb-btn { color: #4285F4; border: 1px solid #4285F4; box-shadow: none; }
+        .cta-btn.google-fb-btn img { width: 14px; height: 14px; }
+        .cta-btn:hover { transform: translateY(-2px); opacity: 0.95; box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
 
         .custom-marquee {
             background-color: #fff0e6;
@@ -114,250 +114,293 @@
             width: 100%;
         }
 
-        /* MAIN WRAPPER - Initially Center aligned for Quick Payment */
         .main-wrapper {
-            width: 100%;
-            margin: 40px auto;
-            padding: 0 15px;
-            display: flex;
-            flex-direction: row;
-            justify-content: center; /* Initially Center */
-            align-items: flex-start;
-            gap: 20px;
-            transition: all 0.3s ease;
-        }
-
-        /* Dynamic Left Alignment class when steps are active */
-        .main-wrapper.align-left {
-            justify-content: flex-start;
-            margin-left: 20px;
-        }
-
-        .col-box {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 15px 0 !important;
+            padding: 0 15px !important;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 15px;
         }
-
-        /* QUICK PAYMENT CARD */
-        .col-quick {
-            width: 100%;
-            max-width: 400px;
-            flex-shrink: 0;
-        }
-
-        /* BANNER SECTION: Width 400px */
-        .col-banner {
-            width: 430px;
-            flex-shrink: 0;
-            display: none;
-        }
-
-        /* STEPS CONTAINER */
-        .steps-container {
-            display: flex;
-            flex-direction: row;
-            gap: 18px;
-            align-items: flex-start;
-            flex-wrap: nowrap;
-        }
-
-        .col-search { width: 390px; flex-shrink: 0; }
-        .col-shift { width: 320px; flex-shrink: 0; }
-        .col-qr { width: 260px; flex-shrink: 0; }
 
         section { 
             background: white; 
-            padding: 16px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
+            padding: 14px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02); 
             border: 1px solid #edf2f7;
             position: relative;
         }
 
-        /* Enhanced Quick Payment Card */
-        .compact-quick-card {
-            background: #fffaf5;
-            border: 2px solid #ffd8be;
-            text-align: center;
-            padding: 32px 24px !important;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(234, 88, 12, 0.08);
-        }
-
-        .compact-quick-card h3 {
-            color: #ea580c;
-            font-size: 1.4rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .compact-quick-card p {
-            font-size: 0.83rem;
-            color: #64748b;
-            margin-bottom: 22px;
-            line-height: 1.5;
-        }
-
-        .equal-desk-btn-sm {
-            display: inline-block;
-            background: #ea580c;
-            color: white;
-            padding: 10px 17px;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.83rem;
-            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
-            transition: all 0.2s ease;
-            text-align: center;
-            width: 70%;
-            cursor: pointer;
-            border: none;
-        }
-        .equal-desk-btn-sm:hover { 
-            background: #c2410c; 
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(234, 88, 12, 0.4);
-        }
-
-        .shift-grid-3col {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 6px;
-        }
-
-        .shift-card-btn {
-            background: #fff;
-            border: 1.5px solid #cbd5e1;
+        /* FACILITIES SECTION */
+        #facilities { 
+            padding: 10px 14px !important; 
+            background: #ffffff;
+            border: 1px solid #ffe8d6;
             border-radius: 8px;
-            padding: 8px 4px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        #facilities h2 { 
+            color: var(--primary-color); 
+            border-bottom: 2px solid #ff9136; 
+            padding-bottom: 4px !important; 
+            margin-bottom: 8px !important; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 0.95rem !important; 
+        }
+
+        .facilities-flexrow {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 8px !important; 
+        }
+
+        .facility-inline-card {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            user-select: none;
-        }
-
-        .shift-card-btn:hover {
-            border-color: var(--primary-color);
-            background-color: #fffaf5;
-        }
-
-        .shift-card-btn.active {
-            border-color: #ea580c;
-            background-color: #fff0e6;
-            box-shadow: 0 2px 6px rgba(234, 88, 12, 0.15);
-        }
-
-        .shift-card-btn .shift-title {
-            font-weight: 600;
-            font-size: 0.75rem;
-            color: #1e293b;
-        }
-
-        .shift-card-btn.active .shift-title { color: #ea580c; }
-
-        .shift-card-btn .shift-time {
-            font-size: 0.65rem;
-            color: #64748b;
-            margin: 2px 0;
-        }
-
-        .shift-card-btn .shift-price {
-            font-weight: 700;
-            font-size: 0.8rem;
-            color: #ff6600;
-        }
-        
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: #64748b;
-            color: white;
-            padding: 9px 12px;
+            text-align: center;
+            background: var(--card-bg);
+            padding: 6px 4px !important; 
             border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            transition: background 0.2s ease;
-            cursor: pointer;
-            border: none;
-            margin-top: 12px;
-            width: 100%;
-        }
-        .back-btn:hover { background: #475569; }
-
-        .payment-box { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            align-items: center; 
-            background: #fff; 
-            border: 1px solid #edf2f7; 
-            padding: 16px; 
-            border-radius: 12px; 
+            border: 1px solid var(--card-border);
+            justify-content: center;
+            transition: all 0.3s ease;
         }
 
-        .qr-code-box { 
-            text-align: center; 
-            background: #fff; 
-            padding: 8px; 
-            border: 1px solid #cbd5e1; 
-            border-radius: 8px; 
-            width: 100%; 
-            max-width: 170px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        .facility-inline-card i { font-size: 1rem !important; color: var(--primary-color); margin-bottom: 3px !important; }
+        .facility-inline-card h3 { font-size: 0.75rem !important; color: var(--text-dark); font-weight: 600; margin-bottom: 1px !important; }
+        .facility-inline-card p { font-size: 0.65rem !important; color: var(--text-muted); line-height: 1.1; }
+
+        /* 3-COLUMN FLEX LAYOUT */
+        .middle-content-grid {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            gap: 15px !important;
+            align-items: flex-start !important;
+            width: 100% !important;
         }
 
-        .info-badge {
-            display: block;
-            margin-top: 6px;
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: #00CC00;
-            background-color: #fff;
-            padding: 6px 10px;
-            border-radius: 6px;
-            border: 1px solid #ffd8cc;
-            line-height: 1.4;
+        /* LEFT COLUMN */
+        .col-updates {
+            width: 300px !important;
+            flex-shrink: 0 !important;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .offer-card {
-            background: linear-gradient(135deg, #fffaf5 0%, #fff0e6 100%);
-            border: 1px dashed #ea580c;
+        /* MIDDLE COLUMN HAS CARDS IN GRID */
+        .col-reg-pay {
+            flex: 1 !important;
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 12px !important;
+        }
+
+        /* RIGHT COLUMN */
+        .col-gif {
+            width: 340px !important;
+            flex-shrink: 0 !important;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #registration, #quick-payment, #seating-card {
+            background: #fffaf5;
+            border: 1px solid #ffe8d6;
             border-radius: 10px;
             padding: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            min-height: 140px;
         }
 
-        .offer-banner-img {
+        .equal-desk-btn {
+            display: inline-block;
+            background: #ea580c;
+            color: white;
+            padding: 8px 10px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            box-shadow: 0 2px 4px rgba(234, 88, 12, 0.2);
+            transition: background 0.2s ease, transform 0.2s ease;
+            text-align: center;
             width: 100%;
-            height: auto;
+        }
+        .equal-desk-btn:hover { background: #c2410c; transform: translateY(-1px); }
+        
+        .payment-box { display: flex; flex-direction: column; gap: 8px; align-items: center; background: #fff; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; }
+        .qr-code-box { text-align: center; background: #fff; padding: 6px; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 130px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .payment-details { width: 100%; }
+
+        .sidebar-box {
+            background: #ffffff;
+            border: 1px solid #ffe8d6;
             border-radius: 10px;
-            margin-bottom: 10px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .sidebar-box h3 {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-bottom: 2px solid #ffe8d6;
+            padding-bottom: 4px;
+        }
+
+        .vertical-ticker-wrapper {
+            height: 140px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .vertical-scroll-content {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            animation: scrollUp 10s linear infinite;
+        }
+
+        .vertical-scroll-content:hover { animation-play-state: paused; }
+
+        .notice-card {
+            background: #fffaf5;
+            border-left: 3px solid var(--primary-color);
+            border-radius: 4px;
+            padding: 6px;
+            font-size: 0.72rem;
+            color: var(--text-dark);
+            line-height: 1.3;
+        }
+
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .ad-banner-box img {
+            width: 100%;
+            height: 110px;
+            object-fit: contain;
+            border-radius: 6px;
             display: block;
         }
 
-        .offer-badge {
-            background: #ea580c;
-            color: #fff;
-            font-size: 0.65rem;
-            font-weight: 300;
-            padding: 2px 8px;
+        .standalone-gif-card {
+            background: linear-gradient(145deg, #ffffff, #fff5eb);
+            border: 2px solid #ff6600 !important;
             border-radius: 10px;
+            padding: 35px !important;
+            position: relative;
+            box-shadow: 0 6px 16px rgba(255, 102, 0, 0.15) !important;
+            text-align: left;
+            width: 100% !important;
+        }
+
+        .gif-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ea580c;
+            color: #ffffff;
+            font-size: 0.70rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 8px;
+            text-align: center;
             text-transform: uppercase;
+        }
+
+        .gif-wrapper {
+            margin-top: 8px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ffe0cc;
+            width: 100% !important;
+            background: #ffffff;
+        }
+
+        .gif-wrapper img {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 320px !important;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* BOTTOM SECTION: BRANCHES & MAPS */
+        #bottom-branches {
+            background: #fffaf5;
+            border: 1px solid #ffe8d6;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        #bottom-branches h2 {
+            color: #ea580c;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .branches-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .branch-item {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            padding: 8px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .branch-info-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .branch-info-header img { width: 35px; height: 35px; object-fit: cover; border-radius: 4px; }
+        .branch-info-header h3 { font-size: 0.8rem; color: var(--primary-color); font-weight: 600; margin: 0; }
+        .branch-info-header p { font-size: 0.65rem; color: var(--text-muted); margin: 0; line-height: 1.2; }
+
+        .map-box-small { height: 90px; width: 100%; }
+        .map-box-small iframe { width: 100%; height: 100%; border: 1px solid #e2e8f0; border-radius: 4px; }
+
+        .info-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            margin-top: 6px;
+            font-weight: 600;
             display: inline-block;
-            margin-bottom: 4px;
+            border: 1px solid #bae6fd;
         }
 
         .whatsapp-float, .call-float { 
@@ -374,42 +417,31 @@
             gap: 6px; 
             text-decoration: none; 
             font-weight: 600; 
+            transition: all 0.3s ease; 
         }
-        .whatsapp-float { bottom: 50px; background-color: #25d366; }
-        .call-float { bottom: 100px; background-color: #007bff; }
+        .whatsapp-float { bottom: 20px; background-color: #25d366; }
+        .call-float { bottom: 70px; background-color: #007bff; }
 
-        footer { 
-            text-align: center; 
-            padding: 12px; 
-            background: #0f172a; 
-            color: white; 
-            font-size: 0.8rem; 
-            width: 100%; 
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            z-index: 100;
-        }
+        footer { text-align: center; padding: 15px; background: #0f172a; color: white; font-size: 0.8rem; margin-top: 20px; width: 100%; }
 
-        /* Mobile Responsive */
+        /* RESPONSIVE LAYOUT BREAKPOINTS */
         @media (max-width: 1024px) {
-            .main-wrapper, .main-wrapper.align-left { 
-                margin: 20px 0;
-                flex-direction: column;
-                align-items: stretch;
-                padding: 0 10px;
-            }
-            .col-quick, .col-banner, .col-search, .col-shift, .col-qr {
-                width: 100% !important;
-                max-width: 100%;
-            }
-            .steps-container {
-                flex-direction: column;
-                width: 100%;
-            }
-            .shift-grid-3col {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            .middle-content-grid { flex-direction: column !important; }
+            .col-updates, .col-reg-pay, .col-gif { width: 100% !important; }
+            .col-reg-pay { grid-template-columns: repeat(3, 1fr) !important; }
+        }
+
+        @media (max-width: 768px) {
+            .col-reg-pay { grid-template-columns: 1fr !important; }
+            .branches-grid { grid-template-columns: 1fr; }
+            .facilities-flexrow { grid-template-columns: repeat(3, 1fr); }
+            header { flex-direction: column; text-align: center; padding: 12px; gap: 10px; }
+            .main-logo-banner { margin: 0 auto; max-width: 200px; }
+            .nav-buttons { flex-wrap: wrap; justify-content: center; width: 100%; gap: 6px; }
+        }
+
+        @media (max-width: 480px) {
+            .facilities-flexrow { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -420,8 +452,14 @@
             <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
         </div>
         <div class="nav-buttons">
-            <a href="index.html" class="home-btn">
-                <i class="fa-solid fa-house"></i> Home Page
+            <button type="button" onclick="toggleFullScreen()" class="cta-btn"><i class="fa-solid fa-expand"></i> Full Screen</button>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="cta-btn"><i class="fa-solid fa-pen-to-square"></i> Book Seat</a>
+            
+            <!-- Pay_fee.html पर जाने के लिए अपडेटेड बटन -->
+            <a href="Pay_fee.html" class="cta-btn pay-nav-btn"><i class="fa-solid fa-credit-card"></i> Pay Fees</a>
+            
+            <a href="https://g.page/r/CQvR0hi2KgmfEAE/review" target="_blank" class="cta-btn google-fb-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo"> Feedback
             </a>
         </div>
     </header>
@@ -430,429 +468,199 @@
         "Eminence Library में एक नए सदस्य का रेजिस्ट्रैशन कराएं और अपनी अगली मासिक फ़ीस पर 5% की छूट पाएं "
     </marquee>
 
-    <div id="mainWrapper" class="main-wrapper">
+    <div class="main-wrapper">
         
-        <!-- INITIAL CENTER COLUMN: Quick Payment Button -->
-        <div id="colQuickPayment" class="col-box col-quick" style="display: flex;">
-            <section class="compact-quick-card">
-                <h3>
-                    <i class="fa-solid fa-calculator"></i> Quick Payment
-                </h3>
-                <p>
-                    आप यहाँ अपनी Eminence Library फ़ीस आसानी से और तुरंत जमा करा सकते हैं।
-                </p>
-                <button onclick="startSearchStep(event)" class="equal-desk-btn-sm">
-                    <i class="fa-solid fa-credit-card"></i> Pay Fees Now
-                </button>
-            </section>
-        </div>
-
-        <!-- LEFT BANNER SECTION (400px Width) -->
-        <div id="colLeftBanner" class="col-box col-banner">
-            <div class="offer-card">
-                <img src="banner1.png" alt="Offer Banner" class="offer-banner-img">
-                <span class="offer-badge"><i class="fa-solid fa-gift"></i> Special Offer</span>
-                <h4 style="color: #ea580c; font-size: 0.80rem; margin-bottom: 2px; font-weight: 500;">
-                    Eminence Library में किसी नए सदस्य का रजिस्ट्रेशन करवाएं और लाइब्रेरी काउन्टर से <b>DISCOUNT COUPON CODE</b> प्राप्त करें और कोड का उपयोग करके अपनी अगली मासिक फ़ीस पर तुरंत<b> 5%*</b> का डिस्काउंट पाएं।
-                </h4>
-                <h5 style="color: #475569; font-size: 0.70rem; margin-bottom: 2px; font-weight: 300;">
-                    *नियम व शर्ते लागू ।
-                </h5>
+        <!-- TOP SECTION: PREMIUM FACILITIES -->
+        <section id="facilities">
+            <h2><i class="fa-solid fa-star"></i> Premium Facilities</h2>
+            <div class="facilities-flexrow">
+                <div class="facility-inline-card">
+                    <i class="fa-solid fa-wifi"></i>
+                    <h3>High-Speed Wi-Fi</h3>
+                    <p>Unlimited Internet</p>
+                </div>
+                <div class="facility-inline-card">
+                    <i class="fa-solid fa-snowflake"></i>
+                    <h3>Fully AC Zone</h3>
+                    <p>Airconditioned halls</p>
+                </div>
+                <div class="facility-inline-card">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <h3>Smart Desks</h3>
+                    <p>Charging &amp; Lights</p>
+                </div>
+                <div class="facility-inline-card">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <h3>CCTV Security</h3>
+                    <p>24/7 Surveillance</p>
+                </div>
+                <div class="facility-inline-card">
+                    <i class="fa-solid fa-glass-water"></i>
+                    <h3>RO Water</h3>
+                    <p>HOT &amp; COLD Water</p>
+                </div>
+                <div class="facility-inline-card">
+                    <i class="fa-solid fa-book-open"></i>
+                    <h3>Book Zone</h3>
+                    <p>Magazines &amp; Books</p>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <!-- STEPS CONTAINER -->
-        <div id="stepsContainer" class="steps-container" style="display: none;">
+        <!-- 3-COLUMN MAIN LAYOUT -->
+        <div class="middle-content-grid">
             
-            <!-- STEP 1: Student Search -->
-            <div id="colSearchStudent" class="col-box col-search">
-                <section style="background: white;">
-                    <h4 style="color:#ff6600; font-size: 0.95rem; margin-bottom: 10px; border-bottom: 1px solid #FF0000; padding-bottom: 6px;">
-                        <i class="fa-solid fa-magnifying-glass" style="color: #FF0000;"></i> Step 1: Member Record Search
-                    </h4>
-
-                    <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
-                        <label style="font-weight: 600; color: #4a5568; font-size: 0.85rem;">सर्च का तरीका चुनें: (Select a search method)</label>
-                        <div style="display: flex; gap: 12px;">
-                            <label style="font-size: 0.90rem; color: #334155; cursor: pointer;">
-                                <input type="radio" name="identifierType" value="mobile" checked onclick="toggleInputType()"> Mobile
-                            </label>
-                            <label style="font-size: 0.90rem; color: #334155; cursor: pointer;">
-                                <input type="radio" name="identifierType" value="uid" onclick="toggleInputType()"> UID
-                            </label>
+            <!-- LEFT COLUMN: UPDATES & NOTICE BOARD -->
+            <div class="col-updates">
+                <div class="sidebar-box">
+                    <h3><i class="fa-solid fa-bullhorn"></i> Updates</h3>
+                    <div class="vertical-ticker-wrapper">
+                        <div class="vertical-scroll-content">
+                            <div class="notice-card"><i class="fa-solid fa-gift"></i> नए सदस्य पर 5% छूट!</div>
+                            <div class="notice-card"><i class="fa-solid fa-clock"></i> 24x7 AC हॉल उपलब्ध।</div>
+                            <div class="notice-card"><i class="fa-solid fa-wifi"></i> हाई-स्पीड Wi-Fi।</div>
+                            <div class="notice-card"><i class="fa-solid fa-shield"></i> CCTV सुरक्षा।</div>
+                            <div class="notice-card"><i class="fa-solid fa-gift"></i> नए सदस्य पर 5% छूट!</div>
+                            <div class="notice-card"><i class="fa-solid fa-clock"></i> 24x7 AC हॉल उपलब्ध।</div>
                         </div>
                     </div>
+                </div>
 
-                    <div style="margin-bottom: 10px;">
-                        <label id="inputLabel" for="studentMobile" style="display: block; font-weight: 600; margin-bottom: 3px; color: #4a5568; font-size: 0.85rem;">मोबाइल नंबर: *</label>
-                        <input type="text" id="studentMobile" placeholder="Enter 10 Digit Mobile No." maxlength="10" oninput="checkDetails()">
-                    </div>
-
-                    <div id="multiStudentContainer" style="display: none; margin-bottom: 10px;">
-                        <label for="studentSelect" style="display: block; font-weight: 600; color: #ff6600; font-size: 0.85rem; margin-bottom: 3px;">
-                            नाम चुनें:*
-                        </label>
-                        <select id="studentSelect" onchange="onStudentSelectChange()"></select>
-                    </div>
-
-                    <div id="nameContainer" style="display: none; margin-bottom: 10px;">
-                        <label for="studentName" style="display: block; font-weight: 600; margin-bottom: 3px; color: #4a5568; font-size: 0.85rem;">पूरा नाम: *</label>
-                        <input type="text" id="studentName" placeholder="Search Result" readonly style="background-color: #f1f5f9; color: #000 !important;">
-                        <div id="extraInfoBadge" class="info-badge" style="display: none;"></div>
-                    </div>
-                </section>
+                <div class="sidebar-box ad-banner-box">
+                    <h3><i class="fa-solid fa-image"></i> Notice Board</h3>
+                    <img src="banner1.png" alt="Notice Board" onerror="this.src='https://via.placeholder.com/250x110?text=Notice+Board'">
+                </div>
             </div>
 
-            <!-- STEP 2: Choose Shift & Fee -->
-            <div id="colSelectShift" class="col-box col-shift" style="display: none;">
-                <section style="background: white;">
-                    <h4 style="color: #ff6600; font-size: 0.95rem; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
-                        <i class="fa-solid fa-receipt" style="color: #ea580c;"></i> Step 2: Choose Shift
-                    </h4>
-
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #4a5568; font-size: 0.78rem;">शिफ्ट चुनें: *</label>
-                        
-                        <div class="shift-grid-3col">
-                            <div class="shift-card-btn" onclick="selectShift(this, 700, false)">
-                                <span class="shift-title">Morning</span>
-                                <span class="shift-time">7AM - 2PM</span>
-                                <span class="shift-price">₹700</span>
-                            </div>
-                            <div class="shift-card-btn" onclick="selectShift(this, 700, false)">
-                                <span class="shift-title">Evening</span>
-                                <span class="shift-time">2PM - 11PM</span>
-                                <span class="shift-price">₹700</span>
-                            </div>
-                            <div class="shift-card-btn" onclick="selectShift(this, 500, false)">
-                                <span class="shift-title">Short Term</span>
-                                <span class="shift-time">Min 15 Days Deposit</span>
-                                <span class="shift-price">₹500</span>
-                            </div>
-                            <div class="shift-card-btn" onclick="selectShift(this, 1000, false)">
-                                <span class="shift-title">Full Day</span>
-                                <span class="shift-time">7AM - 11PM</span>
-                                <span class="shift-price">₹1000</span>
-                            </div>
-                            <div class="shift-card-btn" onclick="selectShift(this, 0, true)">
-                                <span class="shift-title">Custom</span>
-                                <span class="shift-time">Other Fee</span>
-                                <span class="shift-price">₹ Custom</span>
-                            </div>
-                        </div>
-
-                        <div id="customAmountContainer" style="margin-top: 8px; display: none;">
-                            <input type="number" id="customAmountInput" placeholder="Enter Payable Amount" oninput="updateCustomAmount()">
-                        </div>
+            <!-- MIDDLE COLUMN: 3 CARDS IN GRID -->
+            <div class="col-reg-pay">
+                
+                <!-- CARD 1: REGISTRATION -->
+                <section id="registration">
+                    <div>
+                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-user-plus"></i> Registration
+                        </h3>
+                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
+                            अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।
+                        </p>
                     </div>
-
-                    <div id="couponContainer" style="margin-bottom: 10px;">
-                        <label for="couponInput" style="display: block; font-weight: 600; margin-bottom: 3px; color: #4a5568; font-size: 0.78rem;">कूपन कोड:</label>
-                        <div style="display: flex; gap: 6px;">
-                            <input type="text" id="couponInput" oninput="handleCouponInput()" placeholder="Coupon Code" style="flex: 1; text-transform: uppercase;">
-                            <button type="button" onclick="applyCoupon(event)" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.75rem;">Apply</button>
-                        </div>
-                        <span id="couponMsg" style="display: block; font-size: 0.7rem; margin-top: 3px; font-weight: 600;"></span>
-                    </div>
-
-                    <button type="button" onclick="resetProcessFlow()" class="back-btn">
-                        <i class="fa-solid fa-arrow-left"></i> Reset / Cancel
-                    </button>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="equal-desk-btn">
+                        <i class="fa-solid fa-file-pen"></i> Register Now
+                    </a>
                 </section>
+
+                <!-- CARD 2: QUICK PAYMENT -->
+                <section id="quick-payment">
+                    <div>
+                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-calculator"></i> Quick Payment
+                        </h3>
+                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
+                            अपनी फ़ीस तुरंत ऑनलाइन जमा करें।
+                        </p>
+                    </div>
+                    <!-- Pay_fee.html पर जाने के लिए अपडेटेड लिंक -->
+                    <a href="Pay_fee.html" class="equal-desk-btn">
+                        <i class="fa-solid fa-credit-card"></i> Pay Fees Now
+                    </a>
+                </section>
+
+                <!-- CARD 3: VIEW LIVE SEATING LAYOUT -->
+                <section id="seating-card">
+                    <div>
+                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-chair"></i> Live Seat Availability
+                        </h3>
+                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
+                            लाइब्रेरी में लाइव खाली सीटें देखें।
+                        </p>
+                    </div>
+                    <a href="seat.html" target="_blank" class="equal-desk-btn">
+                        <i class="fa-solid fa-map-location-dot"></i> View Live Seat Availability 
+                    </a>
+                </section>
+
             </div>
 
-            <!-- STEP 3: PAYMENT QR CODE -->
-            <div id="colPaymentQR" class="col-box col-qr" style="display: none;">
-                <section class="payment-box">
-                    <h4 style="color: #ff6600; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; width: 100%; text-align: center;">
-                        <i class="fa-solid fa-qrcode" style="color: #ea580c;"></i> Step 3: Scan & Pay
-                    </h4>
-
-                    <div class="qr-code-box">
-                        <img id="dynamicQR" src="" alt="Payment QR" style="width: 100%; height: auto; display: block; border-radius: 4px; margin-bottom: 3px;">
-                        <span style="font-size: 0.65rem; font-weight: 700; color: #ff6600; display: block;">Auto Dynamic QR</span>
+            <!-- RIGHT COLUMN: SPECIAL OFFER GIF -->
+            <div class="col-gif">
+                <div class="standalone-gif-card">
+                    <div class="gif-badge">Eminence Library Wishes</div>
+                    <h3 style="font-size: 0.85rem; color: #ea580c; margin-bottom: 6px;"><i class="fa-solid fa-fire"></i> Upcoming Festival </h3>
+                    <div class="gif-wrapper">
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank">
+                            <img src="ID.gif" alt="Offer GIF" onerror="this.src='https://via.placeholder.com/340x320?text=Special+Offer+GIF'">
+                        </a>
                     </div>
-                    
-                    <div style="text-align: center; width: 100%;">
-                        <h4 style="margin: 0 0 4px 0; color: #1e293b; font-size: 0.85rem;">Total Amount: <br><span id="dynamicAmount" style="color: #ff6600; font-size: 1.15rem; font-weight: 700;">₹0/-</span></h4>
-                        <div style="background: #f8fafc; padding: 6px; border-radius: 6px; border: 1px dashed #cbd5e1; font-size: 0.72rem;">
-                            <b>UPI ID:</b> eminencelibrary@ybl
-                        </div>
-                        <div style="background: #f8fafc; padding: 6px; border-radius: 6px; border: 1px dashed #cbd5e1; font-size: 0.72rem; margin-top: 4px;">
-                            <b>Mobile No.:</b> 09799995511
-                        </div>
-                    </div>
-                </section>
+                </div>
             </div>
 
         </div>
+
+        <!-- BOTTOM SECTION: BRANCHES & MAPS -->
+        <section id="bottom-branches">
+            <h2><i class="fa-solid fa-building"></i> Our Branches</h2>
+            <div class="branches-grid">
+                
+                <!-- Core Branch -->
+                <div class="branch-item">
+                    <div class="branch-info-header">
+                        <img src="core.png" alt="Core Branch" onerror="this.src='https://via.placeholder.com/35'">
+                        <div>
+                            <h3>Core Branch</h3>
+                            <p>485-C, Devi Nagar, Jaipur | Mob. 9799995511</p>
+                        </div>
+                    </div>
+                    <div class="map-box-small">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6440.533113403003!2d75.75897147489417!3d26.887292761183513!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db55821596135%3A0x9f092ab618d2d10b!2sEminence%20Library%20(Core%20Branch)!5e1!3m2!1sen!2sin!4v1785639518156!5m2!1sen!2sin" allowfullscreen="" loading="lazy"></iframe>
+                    </div>
+                </div>
+
+                <!-- Nexus Branch -->
+                <div class="branch-item">
+                    <div class="branch-info-header">
+                        <img src="nexus.png" alt="Nexus Branch" onerror="this.src='https://via.placeholder.com/35'">
+                        <div>
+                            <h3>Nexus Branch</h3>
+                            <p>717, Devi Nagar, Jaipur | Mob. 9799995511</p>
+                        </div>
+                    </div>
+                    <div class="map-box-small">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3220.2616293182073!2d75.75788427489412!3d26.887465661176055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db5b0768aac5b%3A0x5443d2d0d8e74df!2sEminence%20Library%20(Nexus%20Branch)!5e1!3m2!1sen!2sin!4v1785639652666!5m2!1sen!2sin" allowfullscreen="" loading="lazy"></iframe>
+                    </div>
+                </div>
+
+            </div>
+        </section>
 
     </div>
 
     <a href="https://wa.me/919799995511" class="whatsapp-float" target="_blank"><i class="fa-brands fa-whatsapp"></i> WhatsApp Us</a>
-    <a href="tel:+919799995511" class="call-float"><i class="fa-solid fa-phone"></i> Call To Us</a>
+    <a href="tel:+919799995511" class="call-float"><i class="fa-solid fa-phone"></i> Call Us</a>
 
     <footer>
         <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
     </footer>
 
-    <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK9R0ilx9bVLGgyd9Af000B1pJMvIkWC0lIGguJChMpOQs4ea0Wjof1bQwSxUXhX06/exec"; 
+    
 
-        let isCouponApplied = false;
-        let currentBaseAmount = 0;
-        let isSearchTriggered = false;
-        let fetchedStudents = [];
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
 
-        function startSearchStep(e) {
+        // Pay_fee.html पर Redirect करने के लिए फंक्शन
+        function scrollToQuickDesk(e) {
             if(e) e.preventDefault();
-            
-            document.getElementById("colQuickPayment").style.display = "none";
-            document.getElementById("mainWrapper").classList.add("align-left");
-            document.getElementById("colLeftBanner").style.display = "block";
-            document.getElementById("stepsContainer").style.display = "flex";
-        }
-
-        function resetProcessFlow() {
-            document.getElementById("mainWrapper").classList.remove("align-left");
-
-            document.getElementById("colQuickPayment").style.display = "flex";
-            document.getElementById("colLeftBanner").style.display = "none";
-            document.getElementById("stepsContainer").style.display = "none";
-
-            document.getElementById("colSearchStudent").style.display = "block";
-            document.getElementById("colSelectShift").style.display = "none";
-            document.getElementById("colPaymentQR").style.display = "none";
-
-            document.getElementById("studentMobile").value = "";
-            document.getElementById("couponInput").value = "";
-            document.getElementById("couponMsg").innerText = "";
-            isCouponApplied = false;
-            isSearchTriggered = false;
-
-            document.querySelectorAll(".shift-card-btn").forEach(btn => btn.classList.remove("active"));
-            document.getElementById("customAmountContainer").style.display = "none";
-            currentBaseAmount = 0;
-
-            resetForm();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function toggleInputType() {
-            var selectedType = document.querySelector('input[name="identifierType"]:checked').value;
-            var label = document.getElementById("inputLabel");
-            var input = document.getElementById("studentMobile");
-            input.value = ""; 
-            isSearchTriggered = false;
-            resetForm();
-            
-            if (selectedType === "mobile") {
-                label.innerText = "मोबाइल नंबर: *";
-                input.placeholder = "Enter 10 Digit Mobile No.";
-                input.setAttribute("maxlength", "10"); 
-            } else {
-                label.innerText = "UID (MEMBERSHIP ID): *";
-                input.placeholder = "Enter 9 Digit UID";
-                input.setAttribute("maxlength", "9"); 
-            }
-        }
-
-        function checkDetails() {
-            var inputEl = document.getElementById("studentMobile");
-            var searchValue = inputEl.value.trim();
-            var selectedType = document.querySelector('input[name="identifierType"]:checked').value;
-
-            var isCorrectLength = (selectedType === "mobile" && searchValue.length === 10) || 
-                                 (selectedType === "uid" && searchValue.length === 9);
-
-            if (isCorrectLength) {
-                if (!isSearchTriggered) {
-                    isSearchTriggered = true;
-                    document.getElementById("nameContainer").style.display = "block";
-                    document.getElementById("studentName").value = "";
-                    document.getElementById("studentName").placeholder = "नाम खोजा जा रहा है (Record Searching...)";
-
-                    var fetchValue = selectedType === "uid" ? searchValue.toUpperCase() : searchValue;
-
-                    fetch(`${GOOGLE_SCRIPT_URL}?mobile=${encodeURIComponent(fetchValue)}&type=${selectedType}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.status === "success" && data.data && data.data.length > 0) {
-                                fetchedStudents = data.data;
-
-                                if (fetchedStudents.length === 1) {
-                                    document.getElementById("multiStudentContainer").style.display = "none";
-                                    displayStudentInfo(fetchedStudents[0], selectedType);
-                                } else {
-                                    populateStudentDropdown(fetchedStudents, selectedType);
-                                }
-                            } else {
-                                resetForm();
-                                document.getElementById("nameContainer").style.display = "block";
-                                document.getElementById("studentName").placeholder = "रिकॉर्ड नहीं मिला!";
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error fetching details:", error);
-                            resetForm();
-                        });
-                }
-            } else {
-                isSearchTriggered = false;
-                resetForm();
-            }
-        }
-
-        function populateStudentDropdown(students, searchType) {
-            var multiContainer = document.getElementById("multiStudentContainer");
-            var selectEl = document.getElementById("studentSelect");
-            
-            selectEl.innerHTML = '<option value="" selected disabled>-- नाम चुनें --</option>';
-            
-            students.forEach((student, index) => {
-                var branchVal = student.branch || student.Branch || student.BRANCH || '';
-                var branchDisplay = branchVal ? ` [${branchVal}]` : '';
-                
-                var uidVal = student.uid || student.UID || 'N/A';
-                var mobVal = student.mobile || student.Mobile || 'N/A';
-                var nameVal = student.name || student.Name || '';
-
-                var optionText = searchType === 'mobile' 
-                    ? `${nameVal} (UID: ${uidVal})${branchDisplay}` 
-                    : `${nameVal} (Mob: ${mobVal})${branchDisplay}`;
-                
-                var opt = document.createElement("option");
-                opt.value = index;
-                opt.innerText = optionText;
-                selectEl.appendChild(opt);
-            });
-
-            multiContainer.style.display = "block";
-            document.getElementById("nameContainer").style.display = "none";
-            document.getElementById("colSelectShift").style.display = "none";
-            document.getElementById("colPaymentQR").style.display = "none";
-        }
-
-        function onStudentSelectChange() {
-            var selectedIndex = document.getElementById("studentSelect").value;
-            var selectedType = document.querySelector('input[name="identifierType"]:checked').value;
-            if (selectedIndex !== "") {
-                displayStudentInfo(fetchedStudents[selectedIndex], selectedType);
-            }
-        }
-
-        function displayStudentInfo(student, searchType) {
-            document.getElementById("nameContainer").style.display = "block";
-            document.getElementById("studentName").value = student.name || student.Name || "";
-            
-            var badgeEl = document.getElementById("extraInfoBadge");
-            if (badgeEl) {
-                badgeEl.style.display = "block";
-                var branchVal = student.branch || student.Branch || student.BRANCH || "N/A";
-                var uidVal = student.uid || student.UID || "N/A";
-                var mobVal = student.mobile || student.Mobile || "N/A";
-                
-                if (searchType === "mobile") {
-                    badgeEl.innerHTML = "<b>UID:</b> " + uidVal + "<br><b>Branch:</b> " + branchVal;
-                } else {
-                    badgeEl.innerHTML = "<b>Member Mobile No.:</b> " + mobVal + "<br><b>Branch:</b> " + branchVal;
-                }
-            }
-
-            document.getElementById("colSelectShift").style.display = "block";
-        }
-
-        function resetForm() {
-            document.getElementById("nameContainer").style.display = "none";
-            document.getElementById("multiStudentContainer").style.display = "none";
-            document.getElementById("colSelectShift").style.display = "none";
-            document.getElementById("colPaymentQR").style.display = "none";
-            
-            var badgeEl = document.getElementById("extraInfoBadge");
-            if(badgeEl) badgeEl.style.display = "none";
-        }
-
-        function selectShift(element, amount, isCustom) {
-            document.querySelectorAll(".shift-card-btn").forEach(btn => btn.classList.remove("active"));
-            element.classList.add("active");
-
-            var customContainer = document.getElementById("customAmountContainer");
-            if (isCustom) {
-                customContainer.style.display = "block";
-                currentBaseAmount = parseFloat(document.getElementById("customAmountInput").value) || 0;
-            } else {
-                customContainer.style.display = "none";
-                currentBaseAmount = amount;
-            }
-
-            calculateAndUpdateFinalPayment();
-        }
-
-        function updateCustomAmount() {
-            currentBaseAmount = parseFloat(document.getElementById("customAmountInput").value) || 0;
-            calculateAndUpdateFinalPayment();
-        }
-
-        function handleCouponInput() {
-            if (isCouponApplied) {
-                isCouponApplied = false;
-                document.getElementById("couponMsg").innerText = "Coupon reset due to modifications.";
-                document.getElementById("couponMsg").style.color = "#dc3545";
-                calculateAndUpdateFinalPayment();
-            }
-        }
-
-        function applyCoupon(e) {
-            if (e) e.preventDefault();
-            var code = document.getElementById("couponInput").value.trim().toUpperCase();
-            var msgEl = document.getElementById("couponMsg");
-
-            if (!code) {
-                msgEl.innerText = "Please enter a coupon code.";
-                msgEl.style.color = "#dc3545";
-                return;
-            }
-
-            // Coupon validation check (Example rule: EMINENCE5 or 5% discount)
-            if (code === "EMINENCE5" || code === "DISCOUNT5" || code === "FRIEND5") {
-                isCouponApplied = true;
-                msgEl.innerText = "5% Discount Coupon Applied Successfully!";
-                msgEl.style.color = "#28a745";
-            } else {
-                isCouponApplied = false;
-                msgEl.innerText = "Invalid Coupon Code!";
-                msgEl.style.color = "#dc3545";
-            }
-
-            calculateAndUpdateFinalPayment();
-        }
-
-        function calculateAndUpdateFinalPayment() {
-            var finalAmount = currentBaseAmount;
-
-            if (isCouponApplied && finalAmount > 0) {
-                finalAmount = finalAmount * 0.95; // Apply 5% discount
-            }
-
-            finalAmount = Math.round(finalAmount);
-
-            if (finalAmount > 0) {
-                document.getElementById("colPaymentQR").style.display = "block";
-                document.getElementById("dynamicAmount").innerText = `₹${finalAmount}/-`;
-                generateUPIQRCode(finalAmount);
-            } else {
-                document.getElementById("colPaymentQR").style.display = "none";
-            }
-        }
-
-        function generateUPIQRCode(amount) {
-            var upiID = "eminencelibrary@ybl";
-            var name = "Eminence Library";
-            var upiUrl = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
-            
-            // Generate QR code via free QR Code API
-            var qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(upiUrl)}`;
-            document.getElementById("dynamicQR").src = qrApiUrl;
+            window.location.href = "Pay_fee.html";
         }
     </script>
 </body>
