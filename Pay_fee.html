@@ -29,9 +29,6 @@
             box-sizing: border-box;
             transition: max-width 0.3s ease;
         }
-        .container.wide-mode {
-            max-width: 820px;
-        }
         .logo {
             width: 80px;
             height: 80px;
@@ -161,26 +158,22 @@
             background: #e06d00;
             transform: translateY(-1px);
         }
-        
         .btn-loading {
             background: linear-gradient(270deg, #ff7a00, #ffa843, #ff7a00);
             background-size: 400% 400%;
             animation: gradientShimmer 2s ease infinite, pulseGlow 1.5s infinite;
             cursor: wait;
         }
-
         @keyframes gradientShimmer {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-
         @keyframes pulseGlow {
             0% { box-shadow: 0 0 0 0 rgba(255, 122, 0, 0.6); }
             70% { box-shadow: 0 0 0 12px rgba(255, 122, 0, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 122, 0, 0); }
         }
-
         .btn-back {
             background: #e2e8f0;
             color: #334155;
@@ -194,7 +187,6 @@
         .step-content.active {
             display: block;
         }
-        
         .spinner {
             width: 18px;
             height: 18px;
@@ -209,27 +201,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        .window3-layout {
-            display: flex;
-            gap: 25px;
-        }
-        .w3-left-col {
-            flex: 1.2;
-        }
-        .w3-right-col {
-            flex: 1;
-            background: #f8fafc;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
         .amount-display {
             font-size: 24px;
             font-weight: 700;
@@ -239,8 +210,8 @@
         .qr-code-img {
             display: block;
             margin: 0 auto;
-            width: 150px;
-            height: 150px;
+            width: 160px;
+            height: 160px;
             border: 1px solid #cbd5e1;
             border-radius: 10px;
             padding: 6px;
@@ -254,21 +225,6 @@
             font-size: 14px;
             color: #334155;
             margin-bottom: 10px;
-        }
-
-        /* Mobile Screen ke liye Fix (Upar se align karne ke liye) */
-        @media (max-width: 768px) {
-            body {
-                align-items: flex-start;
-                padding-top: 25px;
-                padding-bottom: 25px;
-            }
-            .window3-layout {
-                flex-direction: column;
-            }
-            .container.wide-mode {
-                max-width: 480px;
-            }
         }
     </style>
 </head>
@@ -306,77 +262,89 @@
 
         <!-- WINDOW 3 -->
         <div id="window3" class="step-content">
-            <div class="step-indicator">Step 2 of 2 - Shift & Payment</div>
+            <div class="step-indicator" id="w3Indicator">Step 2 of 2 - Shift Selection</div>
             
-            <div class="window3-layout">
-                <div class="w3-left-col">
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label class="section-title">मेंबर:</label>
-                        <div id="selectedMemberInfo" class="summary-box"></div>
+            <div id="shiftSelectionContent">
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label class="section-title">मेंबर:</label>
+                    <div id="selectedMemberInfo" class="summary-box"></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 10px;" id="shiftSelectionSection">
+                    <label class="section-title">अपनी शिफ्ट चुनें:</label>
+                    
+                    <div class="shift-card selected" onclick="selectShift(700, this)">
+                        <div>
+                            <div class="shift-info">Morning Shift</div>
+                            <div class="shift-time">07:00 AM To 02:00 PM</div>
+                        </div>
+                        <div class="shift-amount">₹700</div>
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label class="section-title">अपनी शिफ्ट चुनें:</label>
-                        
-                        <div class="shift-card selected" onclick="selectShift(700, this)">
-                            <div>
-                                <div class="shift-info">Morning Shift</div>
-                                <div class="shift-time">07:00 AM To 02:00 PM</div>
-                            </div>
-                            <div class="shift-amount">₹700</div>
+                    <div class="shift-card" onclick="selectShift(700, this)">
+                        <div>
+                            <div class="shift-info">Evening Shift</div>
+                            <div class="shift-time">02:00 PM To 11:00 PM</div>
                         </div>
-
-                        <div class="shift-card" onclick="selectShift(700, this)">
-                            <div>
-                                <div class="shift-info">Evening Shift</div>
-                                <div class="shift-time">02:00 PM To 11:00 PM</div>
-                            </div>
-                            <div class="shift-amount">₹700</div>
-                        </div>
-
-                        <div class="shift-card" onclick="selectShift(500, this)">
-                            <div>
-                                <div class="shift-info">Short Term Plan (For Min 15 Days)</div>
-                                <div class="shift-time">6 Hrs Plan</div>
-                            </div>
-                            <div class="shift-amount">₹500</div>
-                        </div>
-
-                        <div class="shift-card" onclick="selectShift(1000, this)">
-                            <div>
-                                <div class="shift-info">Full Day</div>
-                                <div class="shift-time">07:00 AM To 11:00 PM</div>
-                            </div>
-                            <div class="shift-amount">₹1000</div>
-                        </div>
+                        <div class="shift-amount">₹700</div>
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <input type="number" id="customAmountInput" placeholder="या Custom Amount दर्ज करें..." oninput="applyCustomAmount(this.value)" style="padding: 8px 12px; font-size: 13px;">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 5px;">
-                        <div style="display: flex; gap: 6px;">
-                            <input type="text" id="couponInput" placeholder="कूपन कोड..." style="padding: 8px 12px; font-size: 13px;">
-                            <button class="btn btn-next" style="flex: 0.6; padding: 8px; font-size: 12px;" onclick="applyCoupon()">Apply</button>
+                    <div class="shift-card" onclick="selectShift(500, this)">
+                        <div>
+                            <div class="shift-info">Short Term Plan (For Min 15 Days)</div>
+                            <div class="shift-time">6 Hrs Plan</div>
                         </div>
-                        <div id="couponMsg" style="font-size: 11px; margin-top: 3px;"></div>
+                        <div class="shift-amount">₹500</div>
                     </div>
 
-                    <div class="btn-container">
-                        <button class="btn btn-back" onclick="goToWindow('window2')">Back</button>
-                        <button class="btn btn-next" onclick="alert('Payment Submitted Successfully!')">Submit</button>
+                    <div class="shift-card" onclick="selectShift(1000, this)">
+                        <div>
+                            <div class="shift-info">Full Day</div>
+                            <div class="shift-time">07:00 AM To 11:00 PM</div>
+                        </div>
+                        <div class="shift-amount">₹1000</div>
                     </div>
                 </div>
 
-                <!-- Right Column: QR Code Window -->
-                <div class="w3-right-col" id="qrRightColumn" style="display: flex;">
-                    <div class="section-title" style="margin-bottom: 5px;">आपकी कुल भुगतान राशि हैं :</div>
-                    <div id="dynamicAmount" class="amount-display">₹700/-</div>
-                    <p style="font-size: 20px; color: #64748b; margin-top: 10px; margin-bottom: 0;"><b>SCAN & PAY</b></p>
-                    <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code">
-                    <p style="font-size: 15px; color: #64748b; margin-top: 10px; margin-bottom: 0;">UPI ID: <b>eminencelibrary@ybl</b></p>
-                    <p style="font-size: 15px; color: #64748b; margin-top: 10px; margin-bottom: 0;">Mobile Number: <b>9799995511</b></p>
+                <div class="form-group" style="margin-bottom: 10px;" id="customAmountSection">
+                    <input type="number" id="customAmountInput" placeholder="या Custom Amount दर्ज करें..." oninput="applyCustomAmount(this.value)" style="padding: 8px 12px; font-size: 13px;">
+                </div>
+
+                <!-- Coupon Section -->
+                <div class="form-group" style="margin-bottom: 5px;" id="couponSection">
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="couponInput" placeholder="कूपन कोड (यदि हो)..." style="padding: 8px 12px; font-size: 13px;">
+                        <button type="button" class="btn btn-next" style="flex: 0.5; padding: 10px; font-size: 13px;" onclick="applyCoupon()">Apply</button>
+                    </div>
+                    <div id="couponMsg" style="font-size: 11px; margin-top: 3px;"></div>
+                </div>
+
+                <div class="btn-container">
+                    <button class="btn btn-back" onclick="goToWindow('window2')">Back</button>
+                    <button class="btn btn-next" onclick="proceedToQRWindow()">Confirm & Pay</button>
+                </div>
+            </div>
+
+            <!-- Final QR Code Window -->
+            <div id="finalPaymentContent" style="display: none; text-align: center;">
+                <div class="section-title" style="margin-bottom: 5px;">आपकी कुल भुगतान राशि हैं :</div>
+                <div id="dynamicAmount" class="amount-display">₹700/-</div>
+                <p style="font-size: 18px; color: #64748b; margin-top: 10px; margin-bottom: 5px;"><b>SCAN & PAY</b></p>
+                <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code">
+                
+                <!-- UPI Direct Payment Button -->
+                <div style="margin-top: 12px;">
+                    <a id="upiPaymentBtn" href="#" class="btn btn-next" style="display: block; text-decoration: none; background: #6366f1; padding: 12px; font-size: 14px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">
+                        📱 Pay via UPI App (GPay/PhonePe)
+                    </a>
+                </div>
+
+                <p style="font-size: 14px; color: #64748b; margin-top: 10px; margin-bottom: 0;">UPI ID: <b>eminencelibrary@ybl</b></p>
+                <p style="font-size: 14px; color: #64748b; margin-top: 8px; margin-bottom: 0;">Mobile Number: <b>9799995511</b></p>
+
+                <div class="btn-container">
+                    <button class="btn btn-back" onclick="backToShiftSelection()">Back</button>
+                    <button class="btn btn-next" style="background: #10b981;" onclick="finishProcess()">Submit & Finish</button>
                 </div>
             </div>
         </div>
@@ -384,7 +352,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbykGGd3dlTqiCdWU3pLbkPOk-PDepXurTHhE6JEFIwAIGCxjFXPqaUSPaj8knkyLYXs/exec";
+        const WEB_APP_URL = "यहाँ_अपना_नया_वाला_Google_Apps_Script_URL_डालें";
         
         let libraryDataObject = {};
         let selectedMember = null;
@@ -448,13 +416,84 @@
             document.querySelectorAll(".step-content").forEach(el => el.classList.remove("active"));
             document.getElementById(windowId).classList.add("active");
 
-            let container = document.getElementById("mainContainer");
             if (windowId === 'window3') {
-                container.classList.add("wide-mode");
-                updateQRCodeDisplay();
-            } else {
-                container.classList.remove("wide-mode");
+                backToShiftSelection();
             }
+        }
+
+        async function applyCoupon() {
+            let userInput = document.getElementById("couponInput").value.trim().toUpperCase();
+            let msgDiv = document.getElementById("couponMsg");
+            let userIdentifier = selectedMember ? selectedMember.mobile : "";
+
+            if (!userInput) {
+                msgDiv.innerHTML = "<span style='color: #ef4444;'>कृपया कूपन कोड दर्ज करें।</span>";
+                return;
+            }
+            if (!userIdentifier) {
+                msgDiv.innerHTML = "<span style='color: #ef4444;'>कृपया पहले मेंबर चुनें!</span>";
+                return;
+            }
+
+            msgDiv.innerHTML = "<span style='color: #64748b;'>कूपन कोड की जाँच की जा रही है...</span>";
+
+            try {
+                let response = await fetch(`${WEB_APP_URL}?action=verifyCoupon&code=${encodeURIComponent(userInput)}&user=${encodeURIComponent(userIdentifier)}`);
+                let result = await response.json();
+
+                if (result && result.status === "success") {
+                    let percent = Number(result.discount) || 0;
+                    let discountAmount = Math.round(baseShiftAmount * (percent / 100));
+                    finalPayableAmount = Math.max(0, baseShiftAmount - discountAmount);
+                    
+                    msgDiv.innerHTML = `<span style='color: #10b981;'>✅ ${percent}% छूट लागू (₹${discountAmount})!</span>`;
+                } else {
+                    let errorMsg = (result && result.message) ? result.message : "अमान्य कूपन कोड";
+                    msgDiv.innerHTML = `<span style='color: #ef4444;'>${errorMsg}</span>`;
+                    finalPayableAmount = baseShiftAmount;
+                }
+                updateQRCodeDisplay();
+            } catch (err) {
+                msgDiv.innerHTML = "<span style='color: #ef4444;'>❌ सर्वर त्रुटि (Server Error)</span>";
+                finalPayableAmount = baseShiftAmount;
+                updateQRCodeDisplay();
+            }
+        }
+
+        function proceedToQRWindow() {
+            if (isNaN(finalPayableAmount) || finalPayableAmount <= 0) {
+                finalPayableAmount = baseShiftAmount;
+            }
+
+            document.getElementById("w3Indicator").innerText = "Final Step - Payment";
+            document.getElementById("shiftSelectionContent").style.display = "none";
+            document.getElementById("finalPaymentContent").style.display = "block";
+            updateQRCodeDisplay();
+        }
+
+        function backToShiftSelection() {
+            document.getElementById("w3Indicator").innerText = "Step 2 of 2 - Shift Selection";
+            document.getElementById("shiftSelectionContent").style.display = "block";
+            document.getElementById("finalPaymentContent").style.display = "none";
+        }
+
+        function finishProcess() {
+            let userInput = document.getElementById("couponInput").value.trim().toUpperCase();
+            let userIdentifier = selectedMember ? selectedMember.mobile : "";
+
+            if (userInput && userIdentifier) {
+                fetch(`${WEB_APP_URL}?action=saveUsedCoupon&code=${encodeURIComponent(userInput)}&user=${encodeURIComponent(userIdentifier)}`)
+                    .catch(err => console.error("Error saving coupon:", err));
+            }
+
+            alert("आपका भुगतान प्रोसेस पूरा हुआ, धन्यवाद!");
+            
+            document.getElementById("searchInput").value = "";
+            document.getElementById("couponInput").value = "";
+            document.getElementById("couponMsg").innerHTML = "";
+            document.getElementById("step1NextBtn").style.opacity = "0.5";
+            document.getElementById("step1NextBtn").style.pointerEvents = "none";
+            goToWindow('window1');
         }
 
         function searchLibraryData() {
@@ -546,47 +585,23 @@
             updateQRCodeDisplay();
         }
 
-        async function applyCoupon() {
-            let userInput = document.getElementById("couponInput").value.trim().toUpperCase();
-            let msgDiv = document.getElementById("couponMsg");
-            
-            if (!userInput) {
-                msgDiv.innerHTML = "<span style='color: #ef4444;'>कृपया कूपन कोड दर्ज करें।</span>";
-                return;
-            }
-
-            msgDiv.innerHTML = "<span style='color: #64748b;'>कूपन कोड की जाँच की जा रही है...</span>";
-
-            try {
-                let response = await fetch(WEB_APP_URL + "?action=getCoupons");
-                let coupons = await response.json();
-
-                let foundKey = Object.keys(coupons).find(k => k.trim().toUpperCase() === userInput);
-
-                if (foundKey) {
-                    let percent = Number(coupons[foundKey]);
-                    let discountAmount = Math.round(baseShiftAmount * (percent / 100));
-                    finalPayableAmount = Math.max(0, baseShiftAmount - discountAmount);
-                    
-                    msgDiv.innerHTML = `<span style='color: #10b981;'>✅ ${percent}% छूट लागू (₹${discountAmount})!</span>`;
-                } else {
-                    msgDiv.innerHTML = "<span style='color: #ef4444;'>❌ अमान्य कूपन कोड ।</span>";
-                    finalPayableAmount = baseShiftAmount;
-                }
-                updateQRCodeDisplay();
-            } catch (err) {
-                msgDiv.innerHTML = "<span style='color: #ef4444;'>❌ सर्वर त्रुटि (Sarvar Error)</span>";
-                finalPayableAmount = baseShiftAmount;
-                updateQRCodeDisplay();
-            }
-        }
-
         function updateQRCodeDisplay() {
+            if (isNaN(finalPayableAmount) || finalPayableAmount < 0) {
+                finalPayableAmount = baseShiftAmount;
+            }
             document.getElementById("dynamicAmount").innerText = `₹${finalPayableAmount}/-`;
+            
             let upiId = "eminencelibrary@ybl";
-            let upiString = `upi://pay?pa=${upiId}&pn=Eminence Library&am=${finalPayableAmount}&cu=INR`;
-            let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiString)}`;
+            let payeeName = "Eminence Library";
+            let upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${finalPayableAmount}&cu=INR`;
+            
+            let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
             document.getElementById("dynamicQR").src = qrUrl;
+
+            let upiBtn = document.getElementById("upiPaymentBtn");
+            if (upiBtn) {
+                upiBtn.href = upiString;
+            }
         }
     </script>
 </body>
