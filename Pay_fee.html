@@ -10,11 +10,11 @@
             font-family: 'Poppins', sans-serif;
             background-color: #1e293b;
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* मोबाइल के लिए थोड़ी कम पैडिंग */
+            min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            align-items: flex-start; /* 'center' की जगह 'flex-start' करें ताकि कंटेंट ऊपर रहे */
         }
         .container {
             background: #ffffff;
@@ -22,12 +22,11 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             max-width: 480px;
             width: 100%;
-            overflow: hidden;
-            position: relative;
-            border-top: 8px solid #ff7a00;
-            padding: 30px;
+            margin-top: 20px; /* ऊपर से थोड़ी जगह देने के लिए */
+            margin-bottom: 20px;
+            padding: 20px; /* मोबाइल पर बेहतर लुक के लिए */
             box-sizing: border-box;
-            transition: max-width 0.3s ease;
+            border-top: 8px solid #ff7a00;
         }
         .logo {
             width: 80px;
@@ -148,6 +147,9 @@
             text-align: center;
             border: none;
             transition: all 0.3s ease;
+        }
+        .btn:active {
+            transform: scale(0.98);
         }
         .btn-next {
             background: #ff7a00;
@@ -332,10 +334,15 @@
                 <p style="font-size: 18px; color: #64748b; margin-top: 10px; margin-bottom: 5px;"><b>SCAN & PAY</b></p>
                 <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code">
                 
-                <!-- UPI Direct Payment Button -->
+                <!-- UPI Direct Payment Button with Logos -->
                 <div style="margin-top: 12px;">
-                    <a id="upiPaymentBtn" href="#" class="btn btn-next" style="display: block; text-decoration: none; background: #6366f1; padding: 12px; font-size: 14px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">
-                        📱 Pay via UPI App (GPay/PhonePe)
+                    <a id="upiPaymentBtn" href="#" class="btn" style="display: block; text-decoration: none; background: #ffffff; border: 2px solid #6366f1; padding: 12px; font-size: 14px; color: #1e293b; border-radius: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Google_Pay_Logo.svg/100px-Google_Pay_Logo.svg.png" width="22" alt="GPay">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/PhonePe_Logo.svg/100px-PhonePe_Logo.svg.png" width="22" alt="PhonePe">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/100px-Paytm_Logo_%28standalone%29.svg.png" width="22" alt="Paytm">
+                            <span style="font-weight: 600; color: #4f46e5;">Pay via UPI Apps</span>
+                        </div>
                     </a>
                 </div>
 
@@ -352,7 +359,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxmanNC9odbi8O-nHDacTgNaCTpU-hIwvWe2q6keBs2dEqbrnIw8He4_HYx6mLb_-03/exec";
+        const WEB_APP_URL = "यहाँ_अपना_नया_वाला_Google_Apps_Script_URL_डालें";
         
         let libraryDataObject = {};
         let selectedMember = null;
@@ -593,7 +600,7 @@
             
             let upiId = "eminencelibrary@ybl";
             let payeeName = "Eminence Library";
-      	    let upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${finalPayableAmount}&cu=INR`;
+            let upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${finalPayableAmount}&cu=INR`;
             
             let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
             document.getElementById("dynamicQR").src = qrUrl;
