@@ -10,11 +10,11 @@
             font-family: 'Poppins', sans-serif;
             background-color: #1e293b;
             margin: 0;
-            padding: 10px; /* मोबाइल के लिए थोड़ी कम पैडिंग */
+            padding: 10px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* 'center' की जगह 'flex-start' करें ताकि कंटेंट ऊपर रहे */
+            align-items: flex-start;
         }
         .container {
             background: #ffffff;
@@ -22,9 +22,9 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             max-width: 480px;
             width: 100%;
-            margin-top: 20px; /* ऊपर से थोड़ी जगह देने के लिए */
+            margin-top: 20px;
             margin-bottom: 20px;
-            padding: 20px; /* मोबाइल पर बेहतर लुक के लिए */
+            padding: 25px;
             box-sizing: border-box;
             border-top: 8px solid #ff7a00;
         }
@@ -207,7 +207,7 @@
             font-size: 24px;
             font-weight: 700;
             color: #ff7a00;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         .qr-code-img {
             display: block;
@@ -331,20 +331,12 @@
             <div id="finalPaymentContent" style="display: none; text-align: center;">
                 <div class="section-title" style="margin-bottom: 5px;">आपकी कुल भुगतान राशि हैं :</div>
                 <div id="dynamicAmount" class="amount-display">₹700/-</div>
-                <p style="font-size: 18px; color: #64748b; margin-top: 10px; margin-bottom: 5px;"><b>SCAN & PAY</b></p>
-                <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code">
+                <p style="font-size: 16px; color: #64748b; margin-top: 5px; margin-bottom: 8px;"><b>SCAN & PAY VIA ANY UPI APP</b></p>
                 
-                <!-- UPI Direct Payment Button with Logos -->
-                <div style="margin-top: 12px;">
-                    <a id="upiPaymentBtn" href="#" class="btn" style="display: block; text-decoration: none; background: #ffffff; border: 2px solid #6366f1; padding: 12px; font-size: 18px; color: #1e293b; border-radius: 12px; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                           <span style="font-weight: 600; color: #FF7E00;">Pay via UPI Apps</span>
-                        </div>
-                    </a>
-                </div>
+                <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code">
 
-                <p style="font-size: 14px; color: #64748b; margin-top: 10px; margin-bottom: 0;">UPI ID: <b>eminencelibrary@ybl</b></p>
-                <p style="font-size: 14px; color: #64748b; margin-top: 8px; margin-bottom: 0;">Mobile Number: <b>9799995511</b></p>
+                <p style="font-size: 14px; color: #334155; margin-top: 12px; margin-bottom: 0;">UPI ID: <b>eminencelibrary@ybl</b></p>
+                <p style="font-size: 14px; color: #64748b; margin-top: 5px; margin-bottom: 0;">Mobile Number: <b>9799995511</b></p>
 
                 <div class="btn-container">
                     <button class="btn btn-back" onclick="backToShiftSelection()">Back</button>
@@ -601,11 +593,6 @@
             
             let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
             document.getElementById("dynamicQR").src = qrUrl;
-
-            let upiBtn = document.getElementById("upiPaymentBtn");
-            if (upiBtn) {
-                upiBtn.href = upiString;
-            }
         }
     </script>
 </body>
