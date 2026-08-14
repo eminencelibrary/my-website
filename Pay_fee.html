@@ -352,7 +352,7 @@
     </div>
 
     <script>
-        const WEB_APP_URL = "यहाँ_अपना_नया_वाला_Google_Apps_Script_URL_डालें";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxmanNC9odbi8O-nHDacTgNaCTpU-hIwvWe2q6keBs2dEqbrnIw8He4_HYx6mLb_-03/exec";
         
         let libraryDataObject = {};
         let selectedMember = null;
@@ -593,7 +593,7 @@
             
             let upiId = "eminencelibrary@ybl";
             let payeeName = "Eminence Library";
-            let upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${finalPayableAmount}&cu=INR`;
+      	    let upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${finalPayableAmount}&cu=INR`;
             
             let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
             document.getElementById("dynamicQR").src = qrUrl;
