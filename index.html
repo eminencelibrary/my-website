@@ -69,7 +69,7 @@
             width: 100%;
         }
         
-        .logo-box { display: flex; align-items: center; }
+        .logo-box-nav { display: flex; align-items: center; }
         .main-logo-banner { max-width: 260px; width: 100%; height: auto; display: block; }
         
         .nav-buttons { 
@@ -228,7 +228,7 @@
             border: 1px solid #e2e8f0;
             position: relative;
             padding-bottom: 15px;
-            cursor: pointer; /* Clickable indicator */
+            cursor: pointer;
             opacity: 0;
             transform: translateY(50px) scale(0.85);
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
@@ -391,7 +391,6 @@
         }
         .lightbox-close-btn:hover { background: #e2e8f0; }
 
-        /* Lightbox Arrow Controls */
         .lightbox-nav {
             position: absolute;
             top: 50%;
@@ -415,7 +414,6 @@
         .lightbox-prev { left: -60px; }
         .lightbox-next { right: -60px; }
 
-        /* Dynamic content injection styles inside modal */
         #lightboxBodyContent {
             display: flex;
             flex-direction: column;
@@ -590,6 +588,95 @@
 
         footer { text-align: center; padding: 15px; background: #0f172a; color: white; font-size: 0.8rem; margin-top: 20px; width: 100%; }
 
+        /* Splash Screen Intro Animation Styles */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: #f56200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.5s ease;
+        }
+
+        .splash-logo-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .splash-logo-img {
+            width: 280px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .splash-logo-box.move-to-top {
+            top: 30px;
+            transform: translate(-50%, 0);
+        }
+
+        .splash-logo-box.move-to-top .splash-logo-img {
+            width: 120px;
+        }
+
+        .splash-content-container {
+            position: absolute;
+            top: 170px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            text-align: center;
+        }
+
+        .welcome-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            opacity: 0;
+            transform: scale(0.3);
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 20px;
+        }
+
+        .welcome-text.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .banner-container-splash {
+            opacity: 0;
+            transform: scale(0.3);
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .banner-container-splash.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .banner-img-splash {
+            width: 80%;
+            max-width: 550px;
+            height: auto;
+            display: block;
+        }
+
         @media (max-width: 1024px) {
             .middle-content-grid { flex-direction: column !important; }
             .col-updates, .col-reg-pay, .col-gif { width: 100% !important; }
@@ -603,7 +690,6 @@
             header { flex-direction: column; text-align: center; padding: 12px; gap: 10px; }
             .main-logo-banner { margin: 0 auto; max-width: 200px; }
             .nav-buttons { flex-wrap: wrap; justify-content: center; width: 100%; gap: 6px; }
-            /* Adjust arrows for mobile screens inside viewport */
             .lightbox-nav { width: 36px; height: 36px; font-size: 1rem; }
             .lightbox-prev { left: 5px; }
             .lightbox-next { right: 5px; }
@@ -617,8 +703,21 @@
 </head>
 <body>
 
+    <!-- INTRO SPLASH SCREEN -->
+    <div id="splashScreen">
+        <div class="splash-logo-box" id="logoBox">
+            <img src="logo3.png" alt="Logo" class="splash-logo-img">
+        </div>
+        <div class="splash-content-container">
+            <div class="welcome-text" id="welcomeText">Welcome To</div>
+            <div class="banner-container-splash" id="bannerContainer">
+                <img src="final_banner.png" alt="Banner" class="banner-img-splash">
+            </div>
+        </div>
+    </div>
+
     <header>
-        <div class="logo-box">
+        <div class="logo-box-nav">
             <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
         </div>
         <div class="nav-buttons">
@@ -701,10 +800,9 @@
                 </div>
             </div>
 
-            <!-- MIDDLE COLUMN: 3 PORTAL CARDS (CLICKABLE TO OPEN ZOOM LIGHTBOX) -->
+            <!-- MIDDLE COLUMN: 3 PORTAL CARDS -->
             <div class="col-reg-pay" id="portalContainer">
                 
-                <!-- PORTAL WINDOW 1: REGISTRATION -->
                 <div class="portal-card" onclick="openLightbox(0)">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
@@ -721,7 +819,6 @@
                     </div>
                 </div>
 
-                <!-- PORTAL WINDOW 2: QUICK PAYMENT -->
                 <div class="portal-card" onclick="openLightbox(1)">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
@@ -738,7 +835,6 @@
                     </div>
                 </div>
 
-                <!-- PORTAL WINDOW 3: SEATING LAYOUT -->
                 <div class="portal-card" onclick="openLightbox(2)">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
@@ -749,7 +845,7 @@
                         <p class="portal-desc">लाइव सीटिंग अरेंजमेंट और खाली सीटें देखें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="seat.html" target="_blank" class="portal-btn" onclick="event.stopPropagation();">
+                        <a href="Seat.html" target="_blank" class="portal-btn" onclick="event.stopPropagation();">
                             View Live Seating
                         </a>
                     </div>
@@ -777,7 +873,6 @@
             <h2><i class="fa-solid fa-building"></i> Our Branches</h2>
             <div class="branches-grid">
                 
-                <!-- Core Branch -->
                 <div class="branch-item">
                     <div class="branch-info-header">
                         <img src="core.png" alt="Core Branch" onerror="this.src='https://via.placeholder.com/35'">
@@ -791,7 +886,6 @@
                     </div>
                 </div>
 
-                <!-- Nexus Branch -->
                 <div class="branch-item">
                     <div class="branch-info-header">
                         <img src="nexus.png" alt="Nexus Branch" onerror="this.src='https://via.placeholder.com/35'">
@@ -831,6 +925,27 @@
     </footer>
 
     <script>
+        // Intro Animation Timings Logic
+        setTimeout(() => {
+            document.getElementById('logoBox').classList.add('move-to-top');
+        }, 2000);
+
+        setTimeout(() => {
+            document.getElementById('welcomeText').classList.add('show');
+        }, 5000);
+
+        setTimeout(() => {
+            document.getElementById('bannerContainer').classList.add('show');
+        }, 8000);
+
+        setTimeout(() => {
+            const splash = document.getElementById('splashScreen');
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 500);
+        }, 12000);
+
         function toggleFullScreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
@@ -843,7 +958,7 @@
             }
         }
 
-        // Scroll Intersection Observer for initial page load animations
+        // Scroll Intersection Observer for page load animations
         document.addEventListener("DOMContentLoaded", function() {
             const cards = document.querySelectorAll('.portal-card');
             
@@ -861,47 +976,25 @@
             });
         });
 
-        // Lightbox Slider Logic for Zoom & Next/Previous sliding
-        const portalCardsData = [
-            {
-                icon: '<i class="fa-solid fa-user-plus"></i>',
-                title: 'Eminence Library',
-                subtitle: 'Registration Portal',
-                desc: 'अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।',
-                btnText: 'Register Now',
-                btnLink: 'https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform',
-                isExternal: true
-            },
-            {
-                icon: '<img src="Rs.png" alt="Payment Icon" onerror="this.src=\'https://via.placeholder.com/60?text=Rs\'">',
-                title: 'Eminence Library',
-                subtitle: 'Payment Portal',
-                desc: 'अपनी फ़ीस तुरंत ऑनलाइन जमा करें।',
-                btnText: 'Pay Fee Now',
-                btnLink: 'Pay_fee.html',
-                isExternal: false
-            },
-            {
-                icon: '<i class="fa-solid fa-chair"></i>',
-                title: 'Eminence Library',
-                subtitle: 'Seating Portal',
-                desc: 'लाइव सीटिंग अरेंजमेंट और खाली सीटें देखें।',
-                btnText: 'View Live Seating',
-                btnLink: 'Seat.html',
-                isExternal: true
-            }
+        // Lightbox feature logic (cards content view)
+        const lightboxCardsData = [
+            document.querySelector('.col-reg-pay .portal-card:nth-child(1)').outerHTML,
+            document.querySelector('.col-reg-pay .portal-card:nth-child(2)').outerHTML,
+            document.querySelector('.col-reg-pay .portal-card:nth-child(3)').outerHTML
         ];
 
-        let currentIndex = 0;
+        let currentLightboxIndex = 0;
 
         function openLightbox(index) {
-            currentIndex = index;
-            updateLightboxContent();
+            currentLightboxIndex = index;
+            renderLightboxContent();
             document.getElementById('lightboxModal').classList.add('active');
         }
 
         function closeLightbox(event) {
-            document.getElementById('lightboxModal').classList.remove('active');
+            if (event.target.id === 'lightboxModal') {
+                document.getElementById('lightboxModal').classList.remove('active');
+            }
         }
 
         function closeLightboxDirect() {
@@ -909,49 +1002,18 @@
         }
 
         function changeSlide(direction) {
-            currentIndex += direction;
-            if (currentIndex < 0) {
-                currentIndex = portalCardsData.length - 1; // Loop back to last
-            } else if (currentIndex >= portalCardsData.length) {
-                currentIndex = 0; // Loop back to first
+            currentLightboxIndex += direction;
+            if (currentLightboxIndex < 0) {
+                currentLightboxIndex = lightboxCardsData.length - 1;
+            } else if (currentLightboxIndex >= lightboxCardsData.length) {
+                currentLightboxIndex = 0;
             }
-            updateLightboxContent();
+            renderLightboxContent();
         }
 
-        function updateLightboxContent() {
-            const data = portalCardsData[currentIndex];
-            const container = document.getElementById('lightboxBodyContent');
-            
-            container.innerHTML = `
-                <div class="portal-card-body" style="padding: 10px 0; width: 100%;">
-                    <div class="portal-icon-wrapper" style="margin: 0 auto 12px auto;">
-                        ${data.icon}
-                    </div>
-                    <h3 style="font-size: 1.25rem; color: var(--text-dark); font-weight: 700; margin-bottom: 2px;">${data.title}</h3>
-                    <div class="portal-subtitle" style="font-size: 0.85rem;">${data.subtitle}</div>
-                    <p class="portal-desc" style="font-size: 0.8rem; margin-top: 8px;">${data.desc}</p>
-                </div>
-                <div class="portal-action-box" style="width: 100%; margin-top: 10px;">
-                    <a href="${data.btnLink}" ${data.isExternal ? 'target="_blank"' : ''} class="portal-btn" style="padding: 12px; font-size: 0.9rem;">
-                        ${data.btnText}
-                    </a>
-                </div>
-            `;
+        function renderLightboxContent() {
+            document.getElementById('lightboxBodyContent').innerHTML = lightboxCardsData[currentLightboxIndex];
         }
-
-        // Keyboard Support (Left/Right arrows and ESC key)
-        document.addEventListener('keydown', function(e) {
-            const modal = document.getElementById('lightboxModal');
-            if (modal.classList.contains('active')) {
-                if (e.key === 'ArrowLeft') {
-                    changeSlide(-1);
-                } else if (e.key === 'ArrowRight') {
-                    changeSlide(1);
-                } else if (e.key === 'Escape') {
-                    closeLightboxDirect();
-                }
-            }
-        });
     </script>
 </body>
 </html>
