@@ -195,12 +195,12 @@
             gap: 12px;
         }
 
-        /* MIDDLE COLUMN HAS CARDS IN GRID */
+        /* MIDDLE COLUMN: CUSTOM PORTAL CARDS GRID */
         .col-reg-pay {
             flex: 1 !important;
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
-            gap: 12px !important;
+            gap: 15px !important;
         }
 
         /* RIGHT COLUMN */
@@ -212,41 +212,104 @@
             gap: 12px;
         }
 
-        #registration, #quick-payment, #seating-card {
-            background: #fffaf5;
-            border: 1px solid #ffe8d6;
-            border-radius: 10px;
-            padding: 12px;
+        /* SCREENSHOT STYLE PORTAL CARDS */
+        .portal-card {
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            box-sizing: border-box;
-            min-height: 140px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth hover transition */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+            padding-bottom: 15px;
         }
 
-        /* MOUSE HOVER ZOOM EFFECT FOR SPECIFIC CARDS */
-        #registration:hover, #quick-payment:hover, #seating-card:hover {
-            transform: scale(1.03); /* Zoom-in effect on hover */
-            box-shadow: 0 8px 20px rgba(255, 102, 0, 0.15);
+        /* TOP ORANGE ACCENT STRIP (LIKE IN SCREENSHOT) */
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: var(--primary-color);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        /* MOUSE HOVER ZOOM EFFECT FOR CARDS */
+        .portal-card:hover {
+            transform: scale(1.04);
+            box-shadow: 0 12px 30px rgba(255, 102, 0, 0.2);
             z-index: 5;
         }
 
-        .equal-desk-btn {
-            display: inline-block;
-            background: #ea580c;
-            color: white;
-            padding: 8px 10px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.78rem;
-            box-shadow: 0 2px 4px rgba(234, 88, 12, 0.2);
-            transition: background 0.2s ease, transform 0.2s ease;
+        .portal-card-body {
+            padding: 20px 15px 10px 15px;
             text-align: center;
-            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .equal-desk-btn:hover { background: #c2410c; transform: translateY(-1px); }
+
+        .portal-icon-wrapper {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px auto 12px auto;
+            background: #fffaf5;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+        }
+
+        .portal-card-body h3 {
+            font-size: 1.05rem;
+            color: var(--text-dark);
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .portal-subtitle {
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .portal-desc {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .portal-action-box {
+            padding: 0 15px;
+        }
+
+        .portal-btn {
+            display: block;
+            background: var(--primary-color);
+            color: white;
+            padding: 10px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.25);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .portal-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
         
         .sidebar-box {
             background: #ffffff;
@@ -523,53 +586,59 @@
                 </div>
             </div>
 
-            <!-- MIDDLE COLUMN: 3 CARDS IN GRID (HOVER ZOOM APPLIED HERE) -->
+            <!-- MIDDLE COLUMN: 3 SCREENSHOT-STYLE PORTAL CARDS -->
             <div class="col-reg-pay">
                 
-                <!-- CARD 1: REGISTRATION -->
-                <section id="registration">
-                    <div>
-                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-user-plus"></i> Registration
-                        </h3>
-                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
-                            अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।
-                        </p>
+                <!-- PORTAL WINDOW 1: REGISTRATION -->
+                <div class="portal-card">
+                    <div class="portal-card-body">
+                        <div class="portal-icon-wrapper">
+                            <i class="fa-solid fa-user-plus"></i>
+                        </div>
+                        <h3>Eminence Library</h3>
+                        <div class="portal-subtitle">Registration Portal</div>
+                        <p class="portal-desc">अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।</p>
                     </div>
-                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="equal-desk-btn">
-                        <i class="fa-solid fa-file-pen"></i> Register Now
-                    </a>
-                </section>
+                    <div class="portal-action-box">
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="portal-btn">
+                            Register Now
+                        </a>
+                    </div>
+                </div>
 
-                <!-- CARD 2: QUICK PAYMENT -->
-                <section id="quick-payment">
-                    <div>
-                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-calculator"></i> Quick Payment
-                        </h3>
-                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
-                            अपनी फ़ीस तुरंत ऑनलाइन जमा करें।
-                        </p>
+                <!-- PORTAL WINDOW 2: QUICK PAYMENT -->
+                <div class="portal-card">
+                    <div class="portal-card-body">
+                        <div class="portal-icon-wrapper">
+                            <i class="fa-solid fa-credit-card"></i>
+                        </div>
+                        <h3>Eminence Library</h3>
+                        <div class="portal-subtitle">Payment Portal</div>
+                        <p class="portal-desc">अपनी फ़ीस तुरंत ऑनलाइन जमा करें।</p>
                     </div>
-                    <a href="Pay_fee.html" class="equal-desk-btn">
-                        <i class="fa-solid fa-credit-card"></i> Pay Fees Now
-                    </a>
-                </section>
+                    <div class="portal-action-box">
+                        <a href="Pay_fee.html" class="portal-btn">
+                            Pay Fee Now
+                        </a>
+                    </div>
+                </div>
 
-                <!-- CARD 3: VIEW LIVE SEATING LAYOUT -->
-                <section id="seating-card">
-                    <div>
-                        <h3 style="color: #ea580c; font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-chair"></i> Seating Layout
-                        </h3>
-                        <p style="font-size: 0.72rem; color: #555; margin-bottom: 10px; line-height: 1.3;">
-                            लाइव सीटिंग अरेंजमेंट और खाली सीटें देखें।
-                        </p>
+                <!-- PORTAL WINDOW 3: SEATING LAYOUT -->
+                <div class="portal-card">
+                    <div class="portal-card-body">
+                        <div class="portal-icon-wrapper">
+                            <i class="fa-solid fa-chair"></i>
+                        </div>
+                        <h3>Eminence Library</h3>
+                        <div class="portal-subtitle">Seating Portal</div>
+                        <p class="portal-desc">लाइव सीटिंग अरेंजमेंट और खाली सीटें देखें।</p>
                     </div>
-                    <a href="seating.html" target="_blank" class="equal-desk-btn">
-                        <i class="fa-solid fa-map-location-dot"></i> View Live Seating
-                    </a>
-                </section>
+                    <div class="portal-action-box">
+                        <a href="seating.html" target="_blank" class="portal-btn">
+                            View Live Seating
+                        </a>
+                    </div>
+                </div>
 
             </div>
 
