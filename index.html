@@ -195,7 +195,7 @@
             gap: 12px;
         }
 
-        /* MIDDLE COLUMN: CUSTOM PORTAL CARDS GRID */
+        /* MIDDLE COLUMN: PORTAL CARDS GRID */
         .col-reg-pay {
             flex: 1 !important;
             display: grid !important;
@@ -212,7 +212,18 @@
             gap: 12px;
         }
 
-        /* SCREENSHOT STYLE PORTAL CARDS */
+        /* STAGGERED SLIDE & ZOOM ANIMATION FOR PORTAL CARDS */
+        @keyframes slideInZoom {
+            0% {
+                opacity: 0;
+                transform: translateY(50px) scale(0.85);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         .portal-card {
             background: #ffffff;
             border-radius: 12px;
@@ -223,11 +234,25 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
             border: 1px solid #e2e8f0;
             position: relative;
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
             padding-bottom: 15px;
+            
+            /* Initial state for animation */
+            opacity: 0;
+            transform: translateY(50px) scale(0.85);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
         }
 
-        /* TOP ORANGE ACCENT STRIP (LIKE IN SCREENSHOT) */
+        /* Trigger class added via JS */
+        .portal-card.animate-slide {
+            animation: slideInZoom 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Stagger delays for each card sequentially */
+        .portal-card:nth-child(1) { animation-delay: 0.1s; }
+        .portal-card:nth-child(2) { animation-delay: 0.3s; }
+        .portal-card:nth-child(3) { animation-delay: 0.5s; }
+
+        /* TOP ORANGE ACCENT STRIP */
         .portal-card::before {
             content: '';
             position: absolute;
@@ -242,7 +267,7 @@
 
         /* MOUSE HOVER ZOOM EFFECT FOR CARDS */
         .portal-card:hover {
-            transform: scale(1.04);
+            transform: scale(1.04) translateY(-4px);
             box-shadow: 0 12px 30px rgba(255, 102, 0, 0.2);
             z-index: 5;
         }
@@ -267,6 +292,13 @@
             background: #fffaf5;
             color: var(--primary-color);
             font-size: 1.5rem;
+            overflow: hidden;
+        }
+
+        .portal-icon-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .portal-card-body h3 {
@@ -586,8 +618,8 @@
                 </div>
             </div>
 
-            <!-- MIDDLE COLUMN: 3 SCREENSHOT-STYLE PORTAL CARDS -->
-            <div class="col-reg-pay">
+            <!-- MIDDLE COLUMN: 3 PORTAL CARDS WITH SLIDE & ZOOM ANIMATION -->
+            <div class="col-reg-pay" id="portalContainer">
                 
                 <!-- PORTAL WINDOW 1: REGISTRATION -->
                 <div class="portal-card">
@@ -610,7 +642,7 @@
                 <div class="portal-card">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
-                            <i class="fa-solid fa-credit-card"></i>
+                            <img src="Rs.png" alt="Payment Icon" onerror="this.src='https://via.placeholder.com/60?text=Rs'">
                         </div>
                         <h3>Eminence Library</h3>
                         <div class="portal-subtitle">Payment Portal</div>
@@ -714,6 +746,24 @@
                 }
             }
         }
+
+        // Scroll Intersection Observer to trigger slide & zoom animation smoothly when in view
+        document.addEventListener("DOMContentLoaded", function() {
+            const cards = document.querySelectorAll('.portal-card');
+            
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-slide');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.2 });
+
+            cards.forEach(card => {
+                observer.observe(card);
+            });
+        });
     </script>
 </body>
 </html>
