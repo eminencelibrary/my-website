@@ -212,16 +212,9 @@
             gap: 12px;
         }
 
-        /* STAGGERED SLIDE & ZOOM ANIMATION FOR PORTAL CARDS */
         @keyframes slideInZoom {
-            0% {
-                opacity: 0;
-                transform: translateY(50px) scale(0.85);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            0% { opacity: 0; transform: translateY(50px) scale(0.85); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .portal-card {
@@ -235,24 +228,20 @@
             border: 1px solid #e2e8f0;
             position: relative;
             padding-bottom: 15px;
-            
-            /* Initial state for animation */
+            cursor: pointer; /* Clickable indicator */
             opacity: 0;
             transform: translateY(50px) scale(0.85);
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
         }
 
-        /* Trigger class added via JS */
         .portal-card.animate-slide {
             animation: slideInZoom 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Stagger delays for each card sequentially */
         .portal-card:nth-child(1) { animation-delay: 0.1s; }
         .portal-card:nth-child(2) { animation-delay: 0.3s; }
         .portal-card:nth-child(3) { animation-delay: 0.5s; }
 
-        /* TOP ORANGE ACCENT STRIP */
         .portal-card::before {
             content: '';
             position: absolute;
@@ -265,7 +254,6 @@
             border-top-right-radius: 12px;
         }
 
-        /* MOUSE HOVER ZOOM EFFECT FOR CARDS */
         .portal-card:hover {
             transform: scale(1.04) translateY(-4px);
             box-shadow: 0 12px 30px rgba(255, 102, 0, 0.2);
@@ -343,6 +331,98 @@
         }
         .portal-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
         
+        /* FULLSCREEN LIGHTBOX MODAL VIEWER STYLES */
+        #lightboxModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #lightboxModal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lightbox-content-container {
+            position: relative;
+            width: 90%;
+            max-width: 420px;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: scale(0.7);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 30px 20px 20px 20px;
+            text-align: center;
+        }
+
+        #lightboxModal.active .lightbox-content-container {
+            transform: scale(1);
+        }
+
+        .lightbox-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1rem;
+            color: var(--text-dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .lightbox-close-btn:hover { background: #e2e8f0; }
+
+        /* Lightbox Arrow Controls */
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 102, 0, 0.9);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: background 0.2s, transform 0.2s;
+            z-index: 10;
+        }
+        .lightbox-nav:hover { background: var(--primary-hover); transform: translateY(-50%) scale(1.1); }
+        .lightbox-prev { left: -60px; }
+        .lightbox-next { right: -60px; }
+
+        /* Dynamic content injection styles inside modal */
+        #lightboxBodyContent {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
         .sidebar-box {
             background: #ffffff;
             border: 1px solid #ffe8d6;
@@ -443,7 +523,6 @@
             margin: 0 auto;
         }
 
-        /* BOTTOM SECTION: BRANCHES & MAPS */
         #bottom-branches {
             background: #fffaf5;
             border: 1px solid #ffe8d6;
@@ -511,7 +590,6 @@
 
         footer { text-align: center; padding: 15px; background: #0f172a; color: white; font-size: 0.8rem; margin-top: 20px; width: 100%; }
 
-        /* RESPONSIVE LAYOUT BREAKPOINTS */
         @media (max-width: 1024px) {
             .middle-content-grid { flex-direction: column !important; }
             .col-updates, .col-reg-pay, .col-gif { width: 100% !important; }
@@ -525,6 +603,11 @@
             header { flex-direction: column; text-align: center; padding: 12px; gap: 10px; }
             .main-logo-banner { margin: 0 auto; max-width: 200px; }
             .nav-buttons { flex-wrap: wrap; justify-content: center; width: 100%; gap: 6px; }
+            /* Adjust arrows for mobile screens inside viewport */
+            .lightbox-nav { width: 36px; height: 36px; font-size: 1rem; }
+            .lightbox-prev { left: 5px; }
+            .lightbox-next { right: 5px; }
+            .lightbox-content-container { width: 82%; padding: 25px 10px 15px 10px; }
         }
 
         @media (max-width: 480px) {
@@ -618,11 +701,11 @@
                 </div>
             </div>
 
-            <!-- MIDDLE COLUMN: 3 PORTAL CARDS WITH SLIDE & ZOOM ANIMATION -->
+            <!-- MIDDLE COLUMN: 3 PORTAL CARDS (CLICKABLE TO OPEN ZOOM LIGHTBOX) -->
             <div class="col-reg-pay" id="portalContainer">
                 
                 <!-- PORTAL WINDOW 1: REGISTRATION -->
-                <div class="portal-card">
+                <div class="portal-card" onclick="openLightbox(0)">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
                             <i class="fa-solid fa-user-plus"></i>
@@ -632,14 +715,14 @@
                         <p class="portal-desc">अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="portal-btn">
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="portal-btn" onclick="event.stopPropagation();">
                             Register Now
                         </a>
                     </div>
                 </div>
 
                 <!-- PORTAL WINDOW 2: QUICK PAYMENT -->
-                <div class="portal-card">
+                <div class="portal-card" onclick="openLightbox(1)">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
                             <img src="Rs.png" alt="Payment Icon" onerror="this.src='https://via.placeholder.com/60?text=Rs'">
@@ -649,14 +732,14 @@
                         <p class="portal-desc">अपनी फ़ीस तुरंत ऑनलाइन जमा करें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="Pay_fee.html" class="portal-btn">
+                        <a href="Pay_fee.html" class="portal-btn" onclick="event.stopPropagation();">
                             Pay Fee Now
                         </a>
                     </div>
                 </div>
 
                 <!-- PORTAL WINDOW 3: SEATING LAYOUT -->
-                <div class="portal-card">
+                <div class="portal-card" onclick="openLightbox(2)">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
                             <i class="fa-solid fa-chair"></i>
@@ -666,7 +749,7 @@
                         <p class="portal-desc">लाइव सीटिंग अरेंजमेंट और खाली सीटें देखें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="seating.html" target="_blank" class="portal-btn">
+                        <a href="seating.html" target="_blank" class="portal-btn" onclick="event.stopPropagation();">
                             View Live Seating
                         </a>
                     </div>
@@ -727,6 +810,19 @@
 
     </div>
 
+    <!-- FULLSCREEN ZOOM LIGHTBOX MODAL STRUCTURE -->
+    <div id="lightboxModal" onclick="closeLightbox(event)">
+        <div class="lightbox-content-container" onclick="event.stopPropagation();">
+            <button class="lightbox-close-btn" onclick="closeLightboxDirect()"><i class="fa-solid fa-xmark"></i></button>
+            <button class="lightbox-nav lightbox-prev" onclick="changeSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="lightbox-nav lightbox-next" onclick="changeSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
+            
+            <div id="lightboxBodyContent">
+                <!-- Dynamic Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
     <a href="https://wa.me/919799995511" class="whatsapp-float" target="_blank"><i class="fa-brands fa-whatsapp"></i> WhatsApp Us</a>
     <a href="tel:+919799995511" class="call-float"><i class="fa-solid fa-phone"></i> Call Us</a>
 
@@ -747,7 +843,7 @@
             }
         }
 
-        // Scroll Intersection Observer to trigger slide & zoom animation smoothly when in view
+        // Scroll Intersection Observer for initial page load animations
         document.addEventListener("DOMContentLoaded", function() {
             const cards = document.querySelectorAll('.portal-card');
             
@@ -763,6 +859,98 @@
             cards.forEach(card => {
                 observer.observe(card);
             });
+        });
+
+        // Lightbox Slider Logic for Zoom & Next/Previous sliding
+        const portalCardsData = [
+            {
+                icon: '<i class="fa-solid fa-user-plus"></i>',
+                title: 'Eminence Library',
+                subtitle: 'Registration Portal',
+                desc: 'अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।',
+                btnText: 'Register Now',
+                btnLink: 'https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform',
+                isExternal: true
+            },
+            {
+                icon: '<img src="Rs.png" alt="Payment Icon" onerror="this.src=\'https://via.placeholder.com/60?text=Rs\'">',
+                title: 'Eminence Library',
+                subtitle: 'Payment Portal',
+                desc: 'अपनी फ़ीस तुरंत ऑनलाइन जमा करें।',
+                btnText: 'Pay Fee Now',
+                btnLink: 'Pay_fee.html',
+                isExternal: false
+            },
+            {
+                icon: '<i class="fa-solid fa-chair"></i>',
+                title: 'Eminence Library',
+                subtitle: 'Seating Portal',
+                desc: 'लाइव सीटिंग अरेंजमेंट और खाली सीटें देखें।',
+                btnText: 'View Live Seating',
+                btnLink: 'seating.html',
+                isExternal: true
+            }
+        ];
+
+        let currentIndex = 0;
+
+        function openLightbox(index) {
+            currentIndex = index;
+            updateLightboxContent();
+            document.getElementById('lightboxModal').classList.add('active');
+        }
+
+        function closeLightbox(event) {
+            document.getElementById('lightboxModal').classList.remove('active');
+        }
+
+        function closeLightboxDirect() {
+            document.getElementById('lightboxModal').classList.remove('active');
+        }
+
+        function changeSlide(direction) {
+            currentIndex += direction;
+            if (currentIndex < 0) {
+                currentIndex = portalCardsData.length - 1; // Loop back to last
+            } else if (currentIndex >= portalCardsData.length) {
+                currentIndex = 0; // Loop back to first
+            }
+            updateLightboxContent();
+        }
+
+        function updateLightboxContent() {
+            const data = portalCardsData[currentIndex];
+            const container = document.getElementById('lightboxBodyContent');
+            
+            container.innerHTML = `
+                <div class="portal-card-body" style="padding: 10px 0; width: 100%;">
+                    <div class="portal-icon-wrapper" style="margin: 0 auto 12px auto;">
+                        ${data.icon}
+                    </div>
+                    <h3 style="font-size: 1.25rem; color: var(--text-dark); font-weight: 700; margin-bottom: 2px;">${data.title}</h3>
+                    <div class="portal-subtitle" style="font-size: 0.85rem;">${data.subtitle}</div>
+                    <p class="portal-desc" style="font-size: 0.8rem; margin-top: 8px;">${data.desc}</p>
+                </div>
+                <div class="portal-action-box" style="width: 100%; margin-top: 10px;">
+                    <a href="${data.btnLink}" ${data.isExternal ? 'target="_blank"' : ''} class="portal-btn" style="padding: 12px; font-size: 0.9rem;">
+                        ${data.btnText}
+                    </a>
+                </div>
+            `;
+        }
+
+        // Keyboard Support (Left/Right arrows and ESC key)
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('lightboxModal');
+            if (modal.classList.contains('active')) {
+                if (e.key === 'ArrowLeft') {
+                    changeSlide(-1);
+                } else if (e.key === 'ArrowRight') {
+                    changeSlide(1);
+                } else if (e.key === 'Escape') {
+                    closeLightboxDirect();
+                }
+            }
         });
     </script>
 </body>
