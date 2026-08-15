@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - Eminence Library</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: #f56200;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            position: relative;
+        }
+
+        /* Logo - Shuru mein center mein bada rahega */
+        .logo-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .logo-img {
+            width: 280px;
+            height: auto;
+            image-rendering: -webkit-optimize-contrast;
+            display: block;
+            margin: 0 auto;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Jab logo 2 second rukne ke baad upar top par jayega */
+        .logo-box.move-to-top {
+            top: 30px;
+            transform: translate(-50%, 0);
+        }
+
+        .logo-box.move-to-top .logo-img {
+            width: 120px;
+        }
+
+        /* Content container jo logo ke niche aayega */
+        .content-container {
+            position: absolute;
+            top: 170px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Welcome Text - Andar se bahar (Zoom-in / Pop) animation */
+        .welcome-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0.3);
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 20px;
+        }
+
+        .welcome-text.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Banner Container - Andar se bahar (Zoom-in / Pop) animation */
+        .banner-container {
+            opacity: 0;
+            transform: scale(0.3);
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .banner-container.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .banner-img {
+            width: 80%;
+            max-width: 550px;
+            height: auto;
+            image-rendering: -webkit-optimize-contrast;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Logo -->
+    <div class="logo-box" id="logoBox">
+        <img src="logo3.png" alt="Logo" class="logo-img">
+    </div>
+
+    <!-- Welcome Text & Banner Container -->
+    <div class="content-container">
+        <div class="welcome-text" id="welcomeText">Welcome To</div>
+        <div class="banner-container" id="bannerContainer">
+            <img src="final_banner.png" alt="Banner" class="banner-img">
+        </div>
+    </div>
+
+    <script>
+        // 1. Logo 2 seconds tak center mein ruka rahega, uske baad upar jayega
+        setTimeout(() => {
+            document.getElementById('logoBox').classList.add('move-to-top');
+        }, 2000);
+
+        // 2. Uske 3 seconds baad (Total 5 seconds par) 'Welcome Text' andar se bahar aayega
+        setTimeout(() => {
+            document.getElementById('welcomeText').classList.add('show');
+        }, 3000);
+
+        // 3. Uske 3 seconds baad (Total 8 seconds par) 'Banner' andar se bahar aayega
+        setTimeout(() => {
+            document.getElementById('bannerContainer').classList.add('show');
+        }, 3000);
+
+        // 4. Uske 4 seconds baad (Total 12 seconds par) index.html load ho jayega
+        setTimeout(() => {
+            window.location.href = "index.html"; 
+        }, 9000);
+    </script>
+</body>
+</html>
