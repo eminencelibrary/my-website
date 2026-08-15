@@ -623,22 +623,25 @@
         }
 
         .splash-logo-box.move-to-top {
-            top: 30px;
+            top: 25px;
             transform: translate(-50%, 0);
         }
 
         .splash-logo-box.move-to-top .splash-logo-img {
-            width: 120px;
+            width: 110px;
         }
 
         .splash-content-container {
             position: absolute;
-            top: 170px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -40%);
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 100%;
             text-align: center;
+            padding: 0 15px;
         }
 
         .welcome-text {
@@ -677,6 +680,7 @@
             display: block;
         }
 
+        /* RESPONSIVE LAYOUT ADJUSTMENTS */
         @media (max-width: 1024px) {
             .middle-content-grid { flex-direction: column !important; }
             .col-updates, .col-reg-pay, .col-gif { width: 100% !important; }
@@ -684,6 +688,22 @@
         }
 
         @media (max-width: 768px) {
+            /* Splash Screen Mobile Optimizations */
+            .splash-logo-img { width: 200px; }
+            .splash-logo-box.move-to-top { top: 15px; }
+            .splash-logo-box.move-to-top .splash-logo-img { width: 85px; }
+            
+            /* Perfectly centered content container for mobile screens */
+            .splash-content-container { 
+                top: 50%; 
+                left: 50%; 
+                transform: translate(-50%, -42%); 
+                padding: 0 15px; 
+            }
+            
+            .welcome-text { font-size: 1.6rem; margin-bottom: 12px; }
+            .banner-img-splash { width: 95%; max-width: 100%; }
+
             .col-reg-pay { grid-template-columns: 1fr !important; }
             .branches-grid { grid-template-columns: 1fr; }
             .facilities-flexrow { grid-template-columns: repeat(3, 1fr); }
