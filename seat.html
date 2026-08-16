@@ -23,6 +23,10 @@
         let allData = { core: {}, nexus: {} };
         let existingMembersDB = {}; 
 
+        // Admin Quick Management Variables
+        let isAdminLoggedIn = false;
+        let quickSelectedSeatNum = null;
+
         // 1. Purane Students ka Data Fetch karna
         function fetchOldStudentsData() {
             if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return;
@@ -129,7 +133,20 @@
                 </div>
             `;
             
-            seat.ondblclick = () => onSeatDoubleClick(num, info);
+            seat.onclick = () => {
+    if (isAdminLoggedIn) {
+        openAdminQuickModal(num, info);
+    } else {
+        if (info.status === 'booked') {
+            alert("This Seat is Already Booked...!");
+        } else if (info.status === 'waiting') {
+            alert("This Seat is On Hold or on Waiting...!");
+        } else {
+            onSeatDoubleClick(num, info);
+        }
+    }
+};
+
             return seat;
         }
 
@@ -175,16 +192,15 @@
         }
 
         function onSeatDoubleClick(seatNum, info) {
-            if (info.status === 'booked' || info.status === 'waiting') {
-                alert("This Seat is On Hold or Waiting...!");
-                return; 
-            }
             currentSelectedSeat = seatNum;
             document.getElementById("selectedSeatNum").innerText = seatNum;
             document.getElementById("newBookingForm").reset();
             document.getElementById("newName").readOnly = false;
             document.getElementById("newMemberStatusMsg").style.display = "none";
             
+            const submitBtn = document.querySelector("#newBookingForm button[type='submit']");
+            if(submitBtn) submitBtn.style.display = "block";
+
             const existingSelect = document.getElementById("memberSelectDropdownGroup");
             if (existingSelect) existingSelect.remove();
 
@@ -196,6 +212,7 @@
             const nameField = document.getElementById("newName");
             const uidField = document.getElementById("newUid");
             const msgBox = document.getElementById("newMemberStatusMsg");
+            const submitBtn = document.querySelector("#newBookingForm button[type='submit']");
             
             const existingSelect = document.getElementById("memberSelectDropdownGroup");
             if (existingSelect) existingSelect.remove();
@@ -204,10 +221,35 @@
             const isValidLength = isMobileInput ? inputVal.length === 10 : inputVal.length >= 3;
 
             if (isValidLength) {
+                const cleanInputMobile = inputVal.slice(-10);
+                
+                // 1. Check karein ki kya yeh mobile ya UID pehle se kisi active seat par booked/waiting hai
+                for (let branch in allData) {
+                    for (let seat in allData[branch]) {
+                        let seatInfo = allData[branch][seat];
+                        if (seatInfo && (seatInfo.status === 'booked' || seatInfo.status === 'waiting')) {
+                            let seatMobile = seatInfo.mobile ? String(seatInfo.mobile).trim().slice(-10) : "";
+                            let seatUid = seatInfo.uid ? String(seatInfo.uid).trim().toLowerCase() : "";
+                            
+                            if (seatMobile === cleanInputMobile || (inputVal.length >= 3 && seatUid === inputVal.toLowerCase())) {
+                                msgBox.style.display = "block";
+                                msgBox.style.color = "#dc2626";
+                                msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>आपकी पहले से ही (${branch.toUpperCase()}) Branch में  सीट नंबर  ${seat} पर बुकिंग  Active हैं ! अभी आप दूसरी सीट बुक नहीं कर सकते.`;
+                                nameField.value = seatInfo.studentName || "";
+                                uidField.value = seatInfo.uid || "";
+                                nameField.readOnly = true;
+                                if(submitBtn) submitBtn.style.display = "none";
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                if(submitBtn) submitBtn.style.display = "block";
+
                 let foundMembers = [];
                 let matchedMobile = "";
 
-                const cleanInputMobile = inputVal.slice(-10);
                 for (let dbMobile in existingMembersDB) {
                     const cleanDbMobile = String(dbMobile).trim().slice(-10);
                     if (cleanDbMobile === cleanInputMobile || String(dbMobile) === inputVal) {
@@ -236,13 +278,13 @@
                     msgBox.style.display = "block";
 
                     if (foundMembers.length > 1 && isMobileInput) {
-                        msgBox.innerHTML = `<i class="fa-solid fa-users"></i> इस मोबाईल नंबर से एक से ज्यादा सदस्य जुड़े हुए हैं कृपया अपना सही नाम का चुनाव करें:`;
+                        msgBox.innerHTML = `<i class="fa-solid fa-users"></i> इस मोबाईल नंबर से एक से ज्यादा सदस्य जुड़े हुए हैं कृपया अपना सही नाम का चुनाव करें:`;
                         
                         const formGroupDiv = document.createElement("div");
                         formGroupDiv.id = "memberSelectDropdownGroup";
                         formGroupDiv.className = "form-group";
                         
-                        let optionsHtml = `<label><i class="fa-solid fa-list"></i> Select Member:</label><select id="multiMemberSelect" class="form-control" onchange="selectMemberFromDropdown()"><option value="">-- Naam Chuniye --</option>`;
+                        let optionsHtml = `<label><i class="fa-solid fa-list"></i> Select Member:</label><select id="multiMemberSelect" class="form-control" onchange="selectMemberFromDropdown()"><option value="">-- अपना उचित नाम चुनें   --</option>`;
                         
                         foundMembers.forEach((m, idx) => {
                             optionsHtml += `<option value="${idx}">${m.name} (UID: ${m.uid || 'N/A'})</option>`;
@@ -284,6 +326,7 @@
                 nameField.value = "";
                 uidField.value = "";
                 nameField.readOnly = false;
+                if(submitBtn) submitBtn.style.display = "block";
             }
         }
 
@@ -314,7 +357,7 @@
                 nameField.readOnly = true;
                 msgBox.style.display = "block";
                 msgBox.style.color = "#15803d";
-                msgBox.innerHTML = `<i class="fa-solid fa-users"></i> इस मोबाईल नंबर से एक से ज्यादा सदस्य जुड़े हुए हैं कृपया अपना सही नाम का चुनाव करें:`;
+                msgBox.innerHTML = `<i class="fa-solid fa-users"></i> इस मोबाईल नंबर से एक से ज्यादा सदस्य जुड़े हुए हैं कृपया अपना सही नाम का चुनाव करें:`;
             }
         }
  
@@ -358,6 +401,7 @@
         window.loginAdmin = function() {
             const pass = document.getElementById("adminPass").value;
             if (pass === "admin123") {
+                isAdminLoggedIn = true;
                 document.getElementById("adminLoginSec").style.display = "none";
                 document.getElementById("adminControlSec").style.display = "block";
             } else {
@@ -379,7 +423,6 @@
 
             const seatInfo = allData[branch] ? allData[branch][seatNo] : null;
 
-            // Agar koi record nahi hai YA status vacant hai, tab light green color aayega
             if (!seatInfo || seatInfo.status === 'vacant' || !seatInfo.status) {
                 displayDiv.innerHTML = `
                     <div style="background-color: #90EE90; color: #0f172a; padding: 10px 12px; border-radius: 8px; font-weight: bold; margin-bottom: 12px; border: 1px solid #228B22; font-size: 0.85rem;">
@@ -435,6 +478,62 @@
 
             if (student && student.mobile) {
                 const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर #${seatNo} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
+                window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            }
+        }
+
+        function openAdminQuickModal(seatNum, seatInfo) {
+            quickSelectedSeatNum = seatNum;
+            document.getElementById("quickModalSeatNo").innerText = seatNum;
+            document.getElementById("quickModalNewStatus").value = seatInfo.status || 'vacant';
+            
+            const detailsDiv = document.getElementById("quickModalSeatDetails");
+            const notifyBtn = document.getElementById("quickBtnNotify");
+
+            if (!seatInfo.status || seatInfo.status === 'vacant') {
+                detailsDiv.innerHTML = `
+                    <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                        <i class="fa-solid fa-circle-check"></i> This seat is currently Vacant.
+                    </div>
+                `;
+                notifyBtn.style.display = "none";
+            } else {
+                const statusColor = seatInfo.status === 'booked' ? '#dc2626' : '#2563eb';
+                detailsDiv.innerHTML = `
+                    <div style="background:#f1f5f9; padding:10px; border-radius:6px; border-left:4px solid ${statusColor}; font-size:0.85rem;">
+                        <p style="margin-bottom:4px;"><b>Status:</b> <span style="color:${statusColor}; text-transform:uppercase;">${seatInfo.status}</span></p>
+                        <p style="margin-bottom:4px;"><b>Name:</b> ${seatInfo.studentName || 'N/A'}</p>
+                        <p style="margin-bottom:4px;"><b>Mobile:</b> ${seatInfo.mobile || 'N/A'}</p>
+                        <p style="margin-bottom:4px;"><b>UID:</b> ${seatInfo.uid || 'N/A'}</p>
+                        <p style="margin-bottom:0;"><b>Fee Status:</b> ${seatInfo.feeStatus || 'N/A'}</p>
+                    </div>
+                `;
+                notifyBtn.style.display = "block";
+            }
+
+            document.getElementById("adminQuickModal").style.display = "flex";
+        }
+
+        window.applyQuickSeatChange = function() {
+            const newStatus = document.getElementById("quickModalNewStatus").value;
+
+            if (!allData[activeBranch]) allData[activeBranch] = {};
+            if (!allData[activeBranch][quickSelectedSeatNum]) {
+                allData[activeBranch][quickSelectedSeatNum] = {};
+            }
+            
+            allData[activeBranch][quickSelectedSeatNum].status = newStatus;
+
+            saveToSheet();
+            closeModal('adminQuickModal');
+            renderLayouts();
+            alert("Seat status updated successfully!");
+        }
+
+        window.notifyQuickStudentWhatsApp = function() {
+            const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
+            if (student && student.mobile) {
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर #${quickSelectedSeatNum} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
                 window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
             }
         }
@@ -548,22 +647,6 @@
         .btn-switch-branch { background: #334155; color: #ffffff; }
         .btn-admin { background: #0f172a; color: #ffffff; }
 
-        .universal-back-btn {
-            background: #f1f5f9;
-            color: #0f172a;
-            border: 1px solid #cbd5e1;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-        }
-        .universal-back-btn:hover { background: #e2e8f0; }
-
         .branch-gate-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -574,7 +657,7 @@
             z-index: 4000;
             padding: 20px;
         }
- .logo {
+        .logo {
             width: 80px;
             height: 80px;
             display: block;
@@ -689,7 +772,7 @@
             align-items: center;
         }
         .legend-item { display: flex; align-items: center; gap: 8px; }
-        .legend-icon { width: 30px; height: 30px; object-fit: contain; display: inline-block; }
+        .legend-icon { width: 40px; height: 40px; object-fit: contain; display: inline-block; }
 
         .halls-wrapper {
             display: grid;
@@ -723,12 +806,12 @@
             cursor: pointer; transition: all 0.25s ease;
             user-select: none; position: relative;
             padding: 0; background: transparent; border: none;
-            width: 46px; height: 46px;
+            width: 70px; height: 70px;
         }
 
         .seat img.seat-icon {
-            width: 45px; height: 45px;
-            object-fit: contain; margin-bottom: 2px;
+            width: 55px; height: 55px;
+            object-fit: contain; margin-bottom: 0.50px;
             transition: all 0.25s ease;
         }
 
@@ -739,293 +822,210 @@
             bottom: 125%; left: 50%; transform: translateX(-50%);
             white-space: nowrap; font-weight: 600; opacity: 0;
             transition: opacity 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-
-        .seat-tooltip.vacant { border-left: 4px solid var(--color-vacant); }
-        .seat-tooltip.waiting { border-left: 4px solid var(--color-waiting); }
-        .seat-tooltip.booked { border-left: 4px solid var(--color-booked); }
-
-        .seat-tooltip.vacant .tooltip-status-text { color: var(--color-vacant); font-weight: 700; }
-        .seat-tooltip.waiting .tooltip-status-text { color: var(--color-waiting); font-weight: 700; }
-        .seat-tooltip.booked .tooltip-status-text { color: var(--color-booked); font-weight: 700; }
-
-        .seat-tooltip::after {
-            content: ""; position: absolute; top: 100%; left: 50%;
-            margin-left: -4px; border-width: 6px; border-style: solid;
-            border-color: #0f172a transparent transparent transparent; 
-        }
-
         .seat:hover .seat-tooltip { visibility: visible; opacity: 1; }
 
-        .seat.vacant span { color: #15803d; font-size: 0.7rem; }
-        .seat.vacant:hover img.seat-icon { transform: scale(1.15); filter: drop-shadow(0 2px 8px var(--color-vacant)); }
-
-        .seat.waiting span { color: #1d4ed8; font-size: 0.7rem; }
-        .seat.waiting:hover img.seat-icon { transform: scale(1.15); filter: drop-shadow(0 2px 8px var(--color-waiting)); }
-
-        .seat.booked span { color: #991b1b; font-size: 0.7rem; }
-        .seat.booked:hover img.seat-icon { transform: scale(1.15); filter: drop-shadow(0 3px 10px var(--color-booked)); }
-
-        .hall1-grid-container {
-            display: grid; grid-template-columns: repeat(8, 46px);
-            grid-template-rows: repeat(14, 46px); gap: 10px;
-            align-items: start; justify-content: start; min-width: 400px;
-        }
-
-        .hall2-grid-container {
-            display: grid; grid-template-columns: repeat(6, 46px);
-            grid-template-rows: repeat(6, 46px); gap: 10px;
-            align-items: start; justify-content: start; min-width: 310px;
-        }
-
-        .nexus-grid-container {
-            display: grid; grid-template-columns: repeat(8, 46px);
-            grid-template-rows: repeat(10, 46px); gap: 10px;
-            align-items: start; justify-content: start; min-width: 400px;
-        }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.75); display: none; justify-content: center;
-            align-items: center; z-index: 3000; padding: 15px; backdrop-filter: blur(4px);
-        }
-        .modal-card {
-            background: #ffffff; width: 100%; max-width: 460px;
-            border-radius: 16px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-            position: relative; max-height: 90vh; overflow-y: auto;
-            border-top: 6px solid var(--primary-color);
-        }
-        .modal-header-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 10px;
-        }
-        .modal-title { 
-            color: #0f172a; font-size: 1.1rem; font-weight: 700;
-            display: flex; align-items: center; gap: 8px;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .modal-title span { color: var(--primary-color); }
-        
-        .modal-close-btn {
-            background: #f1f5f9; border: none; width: 32px; height: 32px;
-            border-radius: 50%; cursor: pointer; color: #64748b; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-        }
-        .modal-close-btn:hover { background: #fee2e2; color: #dc2626; }
-
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 5px; }
-        .form-group input, .form-group select {
-            width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1;
-            border-radius: 8px; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
-            background: #f8fafc; font-family: 'Poppins', sans-serif;
-        }
-        .form-group input:focus, .form-group select:focus {
-            border-color: var(--primary-color); background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
-        }
-
-        .btn-submit {
-            width: 100%; background: var(--primary-color); color: white;
-            padding: 12px; border: none; border-radius: 8px; font-weight: 700;
-            cursor: pointer; margin-top: 10px; font-size: 0.95rem;
-            transition: all 0.2s; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
-        }
-        .btn-submit:hover { background: var(--primary-hover); transform: translateY(-1px); }
-
-        footer { 
-            text-align: center; padding: 12px; background: #0f172a; 
-            color: white; font-size: 0.8rem; width: 100%; position: fixed; 
-            bottom: 0; left: 0; z-index: 100; 
-        }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #334155; }
+        .form-control { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-family: 'Poppins', sans-serif; }
     </style>
 </head>
 <body>
 
-    <div class="branch-gate-overlay" id="branchGateOverlay">
+    <!-- Branch Gate Modal -->
+    <div id="branchGateOverlay" class="branch-gate-overlay">
         <div class="branch-gate-card">
- <img src="logo2.png" alt="Library Logo" class="logo" id="appLogo">
+            <img src="logo2.png" alt="Eminence Logo" class="logo">
             <h2>Eminence Library</h2>
-            <p>Please select your branch to view live seat availability and book your seat.</p>
+            <p>Please select your branch to view live seat availability</p>
             <div class="branch-select-buttons">
                 <button class="btn-branch-choice" onclick="selectBranch('core')">
                     <i class="fa-solid fa-building-columns"></i> Core Branch
                 </button>
                 <button class="btn-branch-choice nexus" onclick="selectBranch('nexus')">
-                    <i class="fa-solid fa-building-columns"></i> Nexus Branch
+                    <i class="fa-solid fa-graduation-cap"></i> Nexus Branch
                 </button>
             </div>
         </div>
     </div>
 
-    <header>
-        <div class="logo-box">
-            <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
-        </div>
-        <div class="nav-buttons">
-            <button class="universal-back-btn" onclick="changeBranchPrompt()">
-                <i class="fa-solid fa-arrow-left"></i> Back
-            </button>
-            <button class="nav-btn btn-switch-branch" onclick="changeBranchPrompt()">
-                <i class="fa-solid fa-right-left"></i> Change Branch
-            </button>
-            <a href="index.html" class="nav-btn btn-home-link">
-                <i class="fa-solid fa-house"></i> Home
-            </a>
-            <button class="nav-btn btn-admin" onclick="openAdminModal()">
-                <i class="fa-solid fa-user-shield"></i> Admin Panel
-            </button>
-        </div>
-    </header>
-
-    <div class="container" id="mainContentContainer">
-        <div class="chart-heading-box">
-            <h2 id="chartHeadingText"><i class="fa-solid fa-chart-pie"></i> <span class="blink-live">Live</span> Seat Availability</h2>
-        </div>
-
-        <div class="legend-box">
-            <div class="legend-item"><img src="Desk1.png" class="legend-icon"> Available</div>
-            <div class="legend-item"><img src="Desk4.png" class="legend-icon"> In Queue</div>
-            <div class="legend-item"><img src="Desk2.png" class="legend-icon"> Booked</div>
-        </div>
-
-        <div class="branch-section" id="coreBranchSection">
-            <div class="halls-wrapper">
-                <div class="hall-section">
-                    <div class="hall-title">
-                        <span><i class="fa-solid fa-couch"></i> HALL 1 (Seats 1-59)</span>
-                        <button class="universal-back-btn" onclick="changeBranchPrompt()"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                    </div>
-                    <div class="hall1-grid-container" id="hall1GridContainer"></div>
-                </div>
-                <div class="hall-section">
-                    <div class="hall-title">
-                        <span><i class="fa-solid fa-couch"></i> HALL 2 (Seats 61-83)</span>
-                        <button class="universal-back-btn" onclick="changeBranchPrompt()"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                    </div>
-                    <div class="hall2-grid-container" id="hall2GridContainer"></div>
-                </div>
+    <!-- Student Booking Modal Form -->
+    <div id="newStudentModal" class="branch-gate-overlay" style="display: none;">
+        <div class="branch-gate-card" style="max-width: 420px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+                <h3 style="font-size: 1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-chair"></i> Book Seat #<span id="selectedSeatNum"></span></h3>
+                <button onclick="closeModal('newStudentModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-        </div>
-
-        <div class="branch-section" id="nexusBranchSection">
-            <div class="halls-wrapper" style="grid-template-columns: 1fr;">
-                <div class="hall-section" style="max-width: 650px; margin: 0 auto;">
-                    <div class="hall-title">
-                        <span><i class="fa-solid fa-couch"></i> NEXUS HALL (Seats 1-65)</span>
-                        <button class="universal-back-btn" onclick="changeBranchPrompt()"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                    </div>
-                    <div class="nexus-grid-container" id="nexusGridContainer"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- BOOKING FORM MODAL -->
-    <div class="modal-overlay" id="newStudentModal">
-        <div class="modal-card">
-            <div class="modal-header-flex">
-                <h4 class="modal-title"><i class="fa-solid fa-chair"></i> Book Seat #<span id="selectedSeatNum"></span></h4>
-                <button class="universal-back-btn" onclick="closeModal('newStudentModal')"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            </div>
-            
-            <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 15px;">Poora 10-digit mobile number ya UID enter karke membership status check karein.</p>
             
             <form id="newBookingForm" onsubmit="handleNewStudentSubmit(event)">
                 <div class="form-group">
-                    <label><i class="fa-solid fa-id-card"></i> Mobile Number or UID:</label>
-                    <input type="text" id="newMobile" placeholder="Enter mobile number or UID" oninput="checkExistingMemberNew()" required>
+                    <label>Mobile Number / UID:</label>
+                    <input type="text" id="newMobile" class="form-control" placeholder="Enter Mobile No or UID" oninput="checkExistingMemberNew()" required>
+                    <small id="newMemberStatusMsg" style="display:none; font-size:0.75rem; margin-top:4px; font-weight:600;"></small>
                 </div>
-                
-                <div id="newMemberStatusMsg" style="font-size: 0.78rem; font-weight: 600; margin-bottom: 10px; padding: 6px 10px; border-radius: 6px; background: #f1f5f9; display: none;"></div>
-
                 <div class="form-group">
-                    <label><i class="fa-solid fa-user"></i> Student Name:</label>
-                    <input type="text" id="newName" placeholder="Enter student full name" required>
+                    <label>Full Name:</label>
+                    <input type="text" id="newName" class="form-control" placeholder="Enter your full name" required>
                 </div>
-
                 <div class="form-group">
-                    <label><i class="fa-solid fa-id-badge"></i> UID / Student ID:</label>
-                    <input type="text" id="newUid" placeholder="Enter UID (optional)">
+                    <label>UID (Optional):</label>
+                    <input type="text" id="newUid" class="form-control" placeholder="Enter UID if available">
                 </div>
-
                 <div class="form-group">
-                    <label><i class="fa-solid fa-wallet"></i> Fee Status:</label>
-                    <select id="newFeeStatus">
+                    <label>Fee Status:</label>
+                    <select id="newFeeStatus" class="form-control">
                         <option value="Paid">Paid</option>
-                        <option value="Pending">Pending</option>
+                        <option value="Pending">Unpaid/Demo</option>
                     </select>
                 </div>
-
-                <button type="submit" class="btn-submit"><i class="fa-brands fa-whatsapp"></i> Submit & Request Seat</button>
+                <button type="submit" class="btn-branch-choice" style="width: 100%; padding: 12px; background: var(--primary-color); color: #fff; border: none; font-size: 0.9rem;">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Request
+                </button>
             </form>
         </div>
     </div>
 
-    <!-- Admin Modal -->
-    <div class="modal-overlay" id="adminModal">
-        <div class="modal-card">
-            <div class="modal-header-flex">
-                <h4 class="modal-title"><i class="fa-solid fa-user-shield"></i> Admin Panel</h4>
-                <button class="universal-back-btn" onclick="closeModal('adminModal')"><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <!-- Admin Quick Action Modal -->
+    <div id="adminQuickModal" class="branch-gate-overlay" style="display: none;">
+        <div class="branch-gate-card" style="max-width: 420px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+                <h3 style="font-size: 1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-chair"></i> Seat #<span id="quickModalSeatNo"></span> Management</h3>
+                <button onclick="closeModal('adminQuickModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="adminLoginSec">
-                <div class="form-group">
-                    <label>Admin Password:</label>
-                    <input type="password" id="adminPass" placeholder="Enter password">
-                </div>
-                <button type="button" class="btn-submit" onclick="loginAdmin()">Login</button>
-            </div>
-            <div id="adminControlSec" style="display:none;">
-                <div class="form-group">
-                    <label>Select Branch:</label>
-                    <select id="adminBranchSelect" onchange="updateAdminSeatDisplay()">
-                        <option value="core">Core Branch</option>
-                        <option value="nexus">Nexus Branch</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Seat Number:</label>
-                    <input type="number" id="manageSeatNo" placeholder="Seat number" oninput="updateAdminSeatDisplay()">
-                </div>
-                
-                <!-- Seat Details Auto Display Box (Shows Light Green Vacant Status when empty) -->
-                <div id="adminSeatDetailsDisplay"></div>
+            
+            <div id="quickModalSeatDetails" style="margin-bottom: 15px;"></div>
 
-                <div class="form-group">
-                    <label>New Status:</label>
-                    <select id="manageSeatStatus">
-                        <option value="vacant">Vacant (Available / Reset)</option>
-                        <option value="waiting">Waiting (Verification Pending)</option>
-                        <option value="booked">Booked (Allotted)</option>
-                    </select>
-                </div>
-                <button type="button" class="btn-submit" onclick="applySeatChange()">Update Status</button>
-                
-                <!-- WhatsApp Notify Button (Sabse Neeche) -->
-                <button type="button" id="btnNotifyStudent" class="btn-submit" style="background:#16a34a; display:none; margin-top:10px;" onclick="notifyStudentWhatsApp()">
-                    <i class="fa-brands fa-whatsapp"></i> Notify Student on WhatsApp
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 5px;">Change Status:</label>
+                <select id="quickModalNewStatus" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                    <option value="vacant">Vacant (Khali)</option>
+                    <option value="waiting">On Hold / Waiting</option>
+                    <option value="booked">Booked</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="applyQuickSeatChange()" class="btn-branch-choice" style="flex: 1; padding: 10px; font-size: 0.85rem; background: var(--primary-color); color: #fff; border: none;">
+                    <i class="fa-solid fa-floppy-disk"></i> Update Status
                 </button>
-                
-                <hr style="margin: 15px 0;">
-                <div class="form-group">
-                    <label>Search Member (Mobile / UID):</label>
-                    <input type="text" id="searchMemberInput" placeholder="Enter mobile or UID">
-                </div>
-                <button type="button" class="btn-submit" style="background:#2563eb;" onclick="searchMember()">Search Record</button>
-                <div id="adminSearchResult" style="font-size:0.8rem; margin-top:10px;"></div>
+                <button id="quickBtnNotify" onclick="notifyQuickStudentWhatsApp()" class="btn-branch-choice" style="flex: 1; padding: 10px; font-size: 0.85rem; background: #25d366; color: #fff; border: none; display: none;">
+                    <i class="fa-brands fa-whatsapp"></i> Notify
+                </button>
             </div>
         </div>
     </div>
 
-    <footer>
-        <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
-    </footer>
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="branch-gate-overlay" style="display: none;">
+        <div class="branch-gate-card" style="max-width: 450px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+                <h3 style="font-size: 1.1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-user-shield"></i> Admin Panel</h3>
+                <button onclick="closeModal('adminModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <!-- Admin Login Section -->
+            <div id="adminLoginSec">
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Enter admin password to access controls:</p>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <input type="password" id="adminPass" class="form-control" placeholder="Enter Password" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                </div>
+                <button onclick="loginAdmin()" class="btn-branch-choice" style="width: 100%; padding: 10px; background: var(--primary-color); color: #fff; border: none;">Login</button>
+            </div>
+
+            <!-- Admin Control Section -->
+            <div id="adminControlSec" style="display: none;">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Select Branch:</label>
+                    <select id="adminBranchSelect" onchange="updateAdminSeatDisplay()" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <option value="core">Core Branch</option>
+                        <option value="nexus">Nexus Branch</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Seat Number:</label>
+                    <input type="number" id="manageSeatNo" oninput="updateAdminSeatDisplay()" class="form-control" placeholder="Enter seat number" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                </div>
+
+                <div id="adminSeatDetailsDisplay"></div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Update Status:</label>
+                    <select id="manageSeatStatus" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <option value="vacant">Vacant</option>
+                        <option value="waiting">On Hold (Waiting)</option>
+                        <option value="booked">Booked</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="applySeatChange()" class="btn-branch-choice" style="flex: 1; padding: 10px; background: var(--primary-color); color: #fff; border: none; font-size: 0.85rem;">Update Seat</button>
+                    <button id="btnNotifyStudent" onclick="notifyStudentWhatsApp()" class="btn-branch-choice" style="flex: 1; padding: 10px; background: #25d366; color: #fff; border: none; font-size: 0.85rem; display: none;"><i class="fa-brands fa-whatsapp"></i> Notify</button>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+
+                <div class="form-group" style="margin-bottom: 8px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Search Member (Mobile / UID):</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="searchMemberInput" class="form-control" placeholder="Enter Mobile or UID" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <button onclick="searchMember()" class="btn-branch-choice" style="padding: 8px 15px; background: #0f172a; color: #fff; border: none; font-size: 0.85rem;">Search</button>
+                    </div>
+                </div>
+                <div id="adminSearchResult" style="font-size: 0.8rem; margin-top: 8px; max-height: 120px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="mainContentContainer" class="container">
+        <header>
+            <img src="logo.png" alt="Eminence Logo" class="main-logo-banner">
+            <div class="nav-buttons">
+                <button class="nav-btn btn-switch-branch" onclick="changeBranchPrompt()">
+                    <i class="fa-solid fa-right-left"></i> Switch Branch
+                </button>
+                <button class="nav-btn btn-admin" onclick="openAdminModal()">
+                    <i class="fa-solid fa-user-shield"></i> Admin Panel
+                </button>
+            </div>
+        </header>
+
+        <main style="margin-top: 20px;">
+            <div class="chart-heading-box">
+                <h2 id="chartHeadingText"></h2>
+            </div>
+
+            <div class="legend-box">
+                <div class="legend-item"><img src="Desk1.png" class="legend-icon"> Available</div>
+                <div class="legend-item"><img src="Desk4.png" class="legend-icon"> On Hold (Waiting)</div>
+                <div class="legend-item"><img src="Desk2.png" class="legend-icon"> Booked</div>
+            </div>
+
+            <!-- Core Branch Layout -->
+            <div id="coreBranchSection" class="branch-section">
+                <div class="halls-wrapper">
+                    <div class="hall-section">
+                        <div class="hall-title"><span>Hall 1</span></div>
+                        <div id="hall1GridContainer" style="display: grid; grid-template-columns: repeat(8, 46px); gap: 6px;"></div>
+                    </div>
+                    <div class="hall-section">
+                        <div class="hall-title"><span>Hall 2</span></div>
+                        <div id="hall2GridContainer" style="display: grid; grid-template-columns: repeat(6, 46px); gap: 6px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nexus Branch Layout -->
+            <div id="nexusBranchSection" class="branch-section">
+                <div class="hall-section">
+                    <div class="hall-title"><span>Nexus Branch Hall</span></div>
+                    <div id="nexusGridContainer" style="display: grid; grid-template-columns: repeat(8, 46px); gap: 6px;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
 
 </body>
 </html>
