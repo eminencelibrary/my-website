@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+   <head>
+    <!-- यह स्क्रिप्ट पेज लोड होने से तुरंत पहले चेक करेगी -->
+    <script>
+        if (localStorage.getItem('skipSplash') === 'true') {
+            document.documentElement.classList.add('skip-splash');
+            localStorage.removeItem('skipSplash'); // ताकि अगली बार फ्रेश विजिट पर वेलकम फिर से दिखे
+        }
+    </script>
+    <style>
+        /* यदि skip-splash क्लास है, तो वेलकम स्क्रीन तुरंत छिप जाएगी */
+        .skip-splash #welcome-screen {
+            display: none !important;
+        }
+    </style>
+ 
+</head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Eminence Library - A Co-Study Space</title>
