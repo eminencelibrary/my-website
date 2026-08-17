@@ -116,25 +116,21 @@
     </div>
 
     <script>
-        // 1. Logo 2 seconds tak center mein ruka rahega, uske baad upar jayega
-        setTimeout(() => {
+       setTimeout(() => {
             document.getElementById('logoBox').classList.add('move-to-top');
         }, 2000);
 
-        // 2. Uske 3 seconds baad (Total 5 seconds par) 'Welcome Text' andar se bahar aayega
         setTimeout(() => {
             document.getElementById('welcomeText').classList.add('show');
-        }, 3000);
+        }, 4000);
 
-        // 3. Uske 3 seconds baad (Total 8 seconds par) 'Banner' andar se bahar aayega
         setTimeout(() => {
             document.getElementById('bannerContainer').classList.add('show');
-        }, 3500);
+        }, 5000);
 
-        // 4. Uske 4 seconds baad (Total 12 seconds par) index.html load ho jayega
-        setTimeout(() => {
+       setTimeout(() => {
             window.location.href = "index.html"; 
-        }, 8500);
+        }, 11000);
     </script>
 </body>
 </html>
