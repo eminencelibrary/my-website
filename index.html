@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <head>
-    <!-- यह स्क्रिप्ट पेज लोड होने से तुरंत पहले चेक करेगी -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eminence Library - A Co-Study Space</title>
+    
+    <!-- यह स्क्रिप्ट पेज लोड होने से तुरंत पहले चेक करेगी और स्प्लैश स्क्रीन हटा देगी -->
     <script>
         if (localStorage.getItem('skipSplash') === 'true') {
             document.documentElement.classList.add('skip-splash');
@@ -11,15 +14,10 @@
     </script>
     <style>
         /* यदि skip-splash क्लास है, तो वेलकम स्क्रीन तुरंत छिप जाएगी */
-        .skip-splash #welcome-screen {
+        .skip-splash #splashScreen {
             display: none !important;
         }
     </style>
- 
-</head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eminence Library - A Co-Study Space</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -347,96 +345,6 @@
         }
         .portal-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
         
-        /* FULLSCREEN LIGHTBOX MODAL VIEWER STYLES */
-        #lightboxModal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        #lightboxModal.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .lightbox-content-container {
-            position: relative;
-            width: 90%;
-            max-width: 420px;
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transform: scale(0.7);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            padding: 30px 20px 20px 20px;
-            text-align: center;
-        }
-
-        #lightboxModal.active .lightbox-content-container {
-            transform: scale(1);
-        }
-
-        .lightbox-close-btn {
-            position: absolute;
-            top: 10px;
-            right: 12px;
-            background: #f1f5f9;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 1rem;
-            color: var(--text-dark);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
-        .lightbox-close-btn:hover { background: #e2e8f0; }
-
-        .lightbox-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 102, 0, 0.9);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            transition: background 0.2s, transform 0.2s;
-            z-index: 10;
-        }
-        .lightbox-nav:hover { background: var(--primary-hover); transform: translateY(-50%) scale(1.1); }
-        .lightbox-prev { left: -60px; }
-        .lightbox-next { right: -60px; }
-
-        #lightboxBodyContent {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
         .sidebar-box {
             background: #ffffff;
             border: 1px solid #ffe8d6;
@@ -583,25 +491,6 @@
         .map-box-small { height: 90px; width: 100%; }
         .map-box-small iframe { width: 100%; height: 100%; border: 1px solid #e2e8f0; border-radius: 4px; }
 
-        .whatsapp-float, .call-float { 
-            position: fixed; 
-            right: 20px; 
-            color: white; 
-            border-radius: 50px; 
-            font-size: 13px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
-            z-index: 99; 
-            display: flex; 
-            align-items: center; 
-            padding: 8px 15px; 
-            gap: 6px; 
-            text-decoration: none; 
-            font-weight: 600; 
-            transition: all 0.3s ease; 
-        }
-        .whatsapp-float { bottom: 20px; background-color: #25d366; }
-        .call-float { bottom: 70px; background-color: #007bff; }
-
         footer { text-align: center; padding: 15px; background: #0f172a; color: white; font-size: 0.8rem; margin-top: 20px; width: 100%; }
 
         /* Splash Screen Intro Animation Styles */
@@ -702,7 +591,6 @@
         }
 
         @media (max-width: 768px) {
-            /* Splash Screen Mobile Optimizations */
             .splash-logo-img { width: 200px; }
             .splash-logo-box.move-to-top { top: 20px; }
             .splash-logo-box.move-to-top .splash-logo-img { width: 90px; }
@@ -716,10 +604,6 @@
             header { flex-direction: column; text-align: center; padding: 12px; gap: 10px; }
             .main-logo-banner { margin: 0 auto; max-width: 200px; }
             .nav-buttons { flex-wrap: wrap; justify-content: center; width: 100%; gap: 6px; }
-            .lightbox-nav { width: 36px; height: 36px; font-size: 1rem; }
-            .lightbox-prev { left: 5px; }
-            .lightbox-next { right: 5px; }
-            .lightbox-content-container { width: 82%; padding: 25px 10px 15px 10px; }
         }
 
         @media (max-width: 480px) {
@@ -747,7 +631,6 @@
             <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
         </div>
         <div class="nav-buttons">
-            <button type="button" onclick="toggleFullScreen()" class="cta-btn"><i class="fa-solid fa-expand"></i> Full Screen</button>
             <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="cta-btn"><i class="fa-solid fa-pen-to-square"></i> Book Seat</a>
             
             <a href="Pay_fee.html" class="cta-btn pay-nav-btn"><i class="fa-solid fa-credit-card"></i> Pay Fees</a>
@@ -829,7 +712,7 @@
             <!-- MIDDLE COLUMN: 3 PORTAL CARDS -->
             <div class="col-reg-pay" id="portalContainer">
                 
-                <div class="portal-card" onclick="openLightbox(0)">
+                <div class="portal-card">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
                             <i class="fa-solid fa-user-plus"></i>
@@ -839,13 +722,13 @@
                         <p class="portal-desc">अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="portal-btn" onclick="event.stopPropagation();">
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="portal-btn">
                             Register Now
                         </a>
                     </div>
                 </div>
 
-                <div class="portal-card" onclick="openLightbox(1)">
+                <div class="portal-card">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
                             <img src="Rs.png" alt="Payment Icon" onerror="this.src='https://via.placeholder.com/60?text=Rs'">
@@ -855,13 +738,13 @@
                         <p class="portal-desc">अपनी फ़ीस तुरंत ऑनलाइन जमा करें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="Pay_fee.html" class="portal-btn" onclick="event.stopPropagation();">
+                        <a href="Pay_fee.html" class="portal-btn">
                             Pay Fee Now
                         </a>
                     </div>
                 </div>
 
-                <div class="portal-card" onclick="openLightbox(2)">
+                <div class="portal-card">
                     <div class="portal-card-body">
                         <div class="portal-icon-wrapper">
                             <i class="fa-solid fa-chair"></i>
@@ -871,7 +754,7 @@
                         <p class="portal-desc"> लाइब्रेरी सीटिंग अरेंजमेंट और LIVE खाली सीटें देखें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="seat.html" target="_blank" class="portal-btn" onclick="event.stopPropagation();">
+                        <a href="seat.html" target="_blank" class="portal-btn">
                             View Live Seat Availability
                         </a>
                     </div>
@@ -908,20 +791,20 @@
                         </div>
                     </div>
                     <div class="map-box-small">
-                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6440.533113403003!2d75.75897147489417!3d26.887292761183513!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db55821596135%3A0x9f092ab618d2d10b!2sEminence%20Library%20(Core%20Branch)!5e1!3m2!1sen!2sin!4v1785639518156!5m2!1sen!2sin" allowfullscreen="" loading="lazy"></iframe>
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3558.0!2d75.7!3d26.8!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                     </div>
                 </div>
 
                 <div class="branch-item">
                     <div class="branch-info-header">
-                        <img src="nexus.png" alt="Nexus Branch" onerror="this.src='https://via.placeholder.com/35'">
+                        <img src="core.png" alt="Branch 2" onerror="this.src='https://via.placeholder.com/35'">
                         <div>
-                            <h3>Nexus Branch</h3>
-                            <p>717, Devi Nagar, Jaipur | Mob. 9799995511</p>
+                            <h3>Branch 2</h3>
+                            <p>Jaipur Location | Mob. 9799995511</p>
                         </div>
                     </div>
                     <div class="map-box-small">
-                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3220.2616293182073!2d75.75788427489412!3d26.887465661176055!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396db5b0768aac5b%3A0x5443d2d0d8e74df!2sEminence%20Library%20(Nexus%20Branch)!5e1!3m2!1sen!2sin!4v1785639652666!5m2!1sen!2sin" allowfullscreen="" loading="lazy"></iframe>
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3558.0!2d75.7!3d26.8!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                     </div>
                 </div>
 
@@ -930,128 +813,23 @@
 
     </div>
 
-    <!-- FULLSCREEN ZOOM LIGHTBOX MODAL STRUCTURE -->
-    <div id="lightboxModal" onclick="closeLightbox(event)">
-        <div class="lightbox-content-container" onclick="event.stopPropagation();">
-            <button class="lightbox-close-btn" onclick="closeLightboxDirect()"><i class="fa-solid fa-xmark"></i></button>
-            <button class="lightbox-nav lightbox-prev" onclick="changeSlide(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="lightbox-nav lightbox-next" onclick="changeSlide(1)"><i class="fa-solid fa-chevron-right"></i></button>
-            
-            <div id="lightboxBodyContent">
-                <!-- Dynamic Content injected by JS -->
-            </div>
-        </div>
-    </div>
-
-    <a href="https://wa.me/919799995511" class="whatsapp-float" target="_blank"><i class="fa-brands fa-whatsapp"></i> WhatsApp Us</a>
-    <a href="tel:+919799995511" class="call-float"><i class="fa-solid fa-phone"></i> Call Us</a>
-
     <footer>
         <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
     </footer>
 
+    <!-- JavaScript for Splash Animation -->
     <script>
-        // Intro Animation Timings Logic
-        setTimeout(() => {
-            document.getElementById('logoBox').classList.add('move-to-top');
-        }, 2000);
-
-        setTimeout(() => {
-            document.getElementById('welcomeText').classList.add('show');
-        }, 2000);
-
-        setTimeout(() => {
-            document.getElementById('bannerContainer').classList.add('show');
-        }, 5000);
-
-        setTimeout(() => {
-            const splash = document.getElementById('splashScreen');
-            splash.style.opacity = '0';
-            setTimeout(() => {
-                splash.style.display = 'none';
-            }, 500);
-        }, 12000);
-
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
-                });
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const splash = document.getElementById('splashScreen');
+                if(splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(function() {
+                        splash.style.display = 'none';
+                    }, 500);
                 }
-            }
-        }
-
-        // Scroll Intersection Observer for page load animations
-        document.addEventListener("DOMContentLoaded", function() {
-            const cards = document.querySelectorAll('.portal-card');
-            
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('animate-slide');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.2 });
-
-            cards.forEach(card => {
-                observer.observe(card);
-            });
+            }, 1500);
         });
-
-        // Lightbox feature logic (cards content view)
-        const lightboxCardsData = [
-            document.querySelector('.col-reg-pay .portal-card:nth-child(1)').outerHTML,
-            document.querySelector('.col-reg-pay .portal-card:nth-child(2)').outerHTML,
-            document.querySelector('.col-reg-pay .portal-card:nth-child(3)').outerHTML
-        ];
-
-        let currentLightboxIndex = 0;
-
-        function openLightbox(index) {
-            currentLightboxIndex = index;
-            renderLightboxContent();
-            document.getElementById('lightboxModal').classList.add('active');
-        }
-
-        function closeLightbox(event) {
-            if (event.target.id === 'lightboxModal') {
-                document.getElementById('lightboxModal').classList.remove('active');
-            }
-        }
-
-        function closeLightboxDirect() {
-            document.getElementById('lightboxModal').classList.remove('active');
-        }
-
-        function changeSlide(direction) {
-            currentLightboxIndex += direction;
-            if (currentLightboxIndex < 0) {
-                currentLightboxIndex = lightboxCardsData.length - 1;
-            } else if (currentLightboxIndex >= lightboxCardsData.length) {
-                currentLightboxIndex = 0;
-            }
-            renderLightboxContent();
-        }
-
-        function renderLightboxContent() {
-            document.getElementById('lightboxBodyContent').innerHTML = lightboxCardsData[currentLightboxIndex];
-        }
-   window.addEventListener('DOMContentLoaded', (event) => {
-    // चेक करें कि क्या पेमेंट के बाद आए हैं
-    if (localStorage.getItem('skipSplash') === 'true') {
-        let welcomeScreen = document.getElementById('welcome page.html'); // यहाँ अपने welcome page या splash screen की सही ID लिखें
-        if (welcomeScreen) {
-            welcomeScreen.style.display = 'none'; // Welcome page को छुपा दें
-        }
-        
-        // यदि आप चाहते हैं कि यह सिर्फ एक बार हो, तो इसे हटा भी सकते हैं
-        localStorage.removeItem('skipSplash');
-    }
-});
     </script>
 </body>
 </html>
