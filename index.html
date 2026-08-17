@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eminence Library</title>
+    <title>Eminence Library - A Co-Study Space</title>
     
     <!-- यह स्क्रिप्ट पेज लोड होने से तुरंत पहले चेक करेगी और स्प्लैश स्क्रीन हटा देगी -->
     <script>
@@ -817,19 +817,44 @@
         <p>&copy; 2026 Eminence Library. All Rights Reserved.</p>
     </footer>
 
-    <!-- JavaScript for Splash Animation -->
+    <!-- JavaScript for Splash Animation & Dynamic Entrance -->
     <script>
         window.addEventListener('load', function() {
-            setTimeout(function() {
+            // Check if splash needs to be skipped
+            if (localStorage.getItem('skipSplash') === 'true') {
                 const splash = document.getElementById('splashScreen');
-                if(splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(function() {
-                        splash.style.display = 'none';
-                    }, 500);
-                }
-            }, 1500);
+                if(splash) splash.style.display = 'none';
+                localStorage.removeItem('skipSplash');
+                triggerPortalAnimations();
+                return;
+            }
+
+            const logoBox = document.getElementById('logoBox');
+            const welcomeText = document.getElementById('welcomeText');
+            const bannerContainer = document.getElementById('bannerContainer');
+            const splashScreen = document.getElementById('splashScreen');
+
+            setTimeout(() => {
+                logoBox.classList.add('move-to-top');
+                welcomeText.classList.add('show');
+                bannerContainer.classList.add('show');
+            }, 300);
+
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    triggerPortalAnimations();
+                }, 500);
+            }, 2500);
         });
+
+        function triggerPortalAnimations() {
+            const cards = document.querySelectorAll('.portal-card');
+            cards.forEach(card => {
+                card.classList.add('animate-slide');
+            });
+        }
     </script>
 </body>
 </html>
