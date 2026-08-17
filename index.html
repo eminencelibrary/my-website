@@ -1024,6 +1024,18 @@
         function renderLightboxContent() {
             document.getElementById('lightboxBodyContent').innerHTML = lightboxCardsData[currentLightboxIndex];
         }
+   window.addEventListener('DOMContentLoaded', (event) => {
+    // चेक करें कि क्या पेमेंट के बाद आए हैं
+    if (localStorage.getItem('skipSplash') === 'true') {
+        let welcomeScreen = document.getElementById('welcome-screen'); // यहाँ अपने welcome page या splash screen की सही ID लिखें
+        if (welcomeScreen) {
+            welcomeScreen.style.display = 'none'; // Welcome page को छुपा दें
+        }
+        
+        // यदि आप चाहते हैं कि यह सिर्फ एक बार हो, तो इसे हटा भी सकते हैं
+        localStorage.removeItem('skipSplash');
+    }
+});
     </script>
 </body>
 </html>
