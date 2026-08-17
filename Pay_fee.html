@@ -498,7 +498,9 @@
             document.getElementById("couponMsg").innerHTML = "";
             document.getElementById("step1NextBtn").style.opacity = "0.5";
             document.getElementById("step1NextBtn").style.pointerEvents = "none";
-            goToWindow('window1');
+            localStorage.setItem('skipSplash', 'true');
+            // Yahan #main-header ki jagah apne header/section ki id likhein
+            window.location.href = "index.html#main-header";
         }
 
         function searchLibraryData() {
@@ -603,10 +605,10 @@
             let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
             document.getElementById("dynamicQR").src = qrUrl;
         }
-function downloadQRCode() {
+
+        function downloadQRCode() {
             let qrImageSrc = document.getElementById("dynamicQR").src;
             
-            // यह कोड इमेज को फेच करके यूजर के फोन/कंप्यूटर में डाउनलोड कर देगा
             fetch(qrImageSrc)
                 .then(response => response.blob())
                 .then(blob => {
