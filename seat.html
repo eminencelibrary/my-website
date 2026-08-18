@@ -24,8 +24,7 @@
         let existingMembersDB = {}; 
 
         // Admin Quick Management Variables
-        let isAdminLoggedIn = false;
-        let quickSelectedSeatNum = null;
+        
 
         // 1. Purane Students ka Data Fetch karna
         function fetchOldStudentsData() {
@@ -128,22 +127,18 @@
                 <img src="${seatImage}" alt="Seat" class="seat-icon">
                 <span>${num}</span>
                 <div class="seat-tooltip ${info.status}">
-                    Seat #${num}<br>
+                    Seat :${num}<br>
                     <span class="tooltip-status-text">${statusLabel}</span>
                 </div>
             `;
             
-            seat.onclick = () => {
-    if (isAdminLoggedIn) {
-        openAdminQuickModal(num, info);
+         seat.onclick = () => {
+    if (info.status === 'booked') {
+        alert("This Seat is Already Booked...!");
+    } else if (info.status === 'waiting') {
+        alert("This Seat is On Hold or on Waiting List...!");
     } else {
-        if (info.status === 'booked') {
-            alert("This Seat is Already Booked...!");
-        } else if (info.status === 'waiting') {
-            alert("This Seat is On Hold or on Waiting...!");
-        } else {
-            onSeatDoubleClick(num, info);
-        }
+        onSeatDoubleClick(num, info);
     }
 };
 
@@ -477,7 +472,7 @@
             const student = allData[branch] ? allData[branch][seatNo] : null;
 
             if (student && student.mobile) {
-                const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर #${seatNo} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
+                const msg = `*Eminence Library (${branch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर :${seatNo} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
                 window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
             }
         }
@@ -533,7 +528,7 @@
         window.notifyQuickStudentWhatsApp = function() {
             const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
             if (student && student.mobile) {
-                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर #${quickSelectedSeatNum} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर ${quickSelectedSeatNum} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
                 window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
             }
         }
@@ -555,7 +550,7 @@
                     let s = allData[branch][seat];
                     if ((s.mobile && s.mobile.toLowerCase().includes(query)) || (s.uid && s.uid.toLowerCase().includes(query))) {
                         foundResults.push({
-                            info: `<b>Live Booking Found:</b><br><b>Branch:</b> ${branch.toUpperCase()} | <b>Seat #:</b> ${seat}<br><b>Name:</b> ${s.studentName}<br><b>Mobile:</b> ${s.mobile} | <b>UID:</b> ${s.uid || 'N/A'}<br><b>Status:</b> <span style="text-transform:uppercase; color:${s.status=='booked'?'red':'blue'}">${s.status}</span>`
+                            info: `<b>Live Booking Found:</b><br><b>Branch:</b> ${branch.toUpperCase()} | <b>Seat :</b> ${seat}<br><b>Name:</b> ${s.studentName}<br><b>Mobile:</b> ${s.mobile} | <b>UID:</b> ${s.uid || 'N/A'}<br><b>Status:</b> <span style="text-transform:uppercase; color:${s.status=='booked'?'red':'blue'}">${s.status}</span>`
                         });
                     }
                 }
@@ -588,6 +583,7 @@
         window.closeModal = function(id) {
             document.getElementById(id).style.display = "none";
         }
+
     </script>
     
     <style>
@@ -627,23 +623,32 @@
         }
 
         .nav-btn { 
-            padding: 8px 14px; 
-            font-weight: 700; 
-            border-radius: 20px; 
-            font-size: 0.78rem; 
-            text-transform: uppercase;
-            cursor: pointer; 
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            text-decoration: none;
+            background: #ffffff !important; 
+            color: #ff6600 !important; 
+            padding: 10px 16px !important; 
+            font-weight: 700 !important; 
+            text-decoration: none !important; 
+            border-radius: 20px !important; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important; 
+            transition: all 0.3s ease !important; 
+            text-transform: uppercase !important;
+            font-size: 0.8rem !important;
+            letter-spacing: 0.5px !important;
+            white-space: nowrap !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            cursor: pointer !important;
+            border: none !important;
         }
-        .nav-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+        
+        .nav-btn:hover { 
+            transform: translateY(-2px); 
+            opacity: 0.95; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1); 
+        }
 
-        .btn-home-link { background: #1e293b; color: #ffffff; }
+        .btn-home-link { background: #ffffff; color: #ff6600; }
         .btn-switch-branch { background: #334155; color: #ffffff; }
         .btn-admin { background: #0f172a; color: #ffffff; }
 
@@ -772,7 +777,7 @@
             align-items: center;
         }
         .legend-item { display: flex; align-items: center; gap: 8px; }
-        .legend-icon { width: 40px; height: 40px; object-fit: contain; display: inline-block; }
+        .legend-icon { width: 55px; height: 55px; object-fit: contain; display: inline-block; }
 
         .halls-wrapper {
             display: grid;
@@ -829,7 +834,10 @@
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #334155; }
         .form-control { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-family: 'Poppins', sans-serif; }
-    </style>
+html {
+  scroll-behavior: smooth;
+}   
+ </style>
 </head>
 <body>
 
@@ -854,7 +862,7 @@
     <div id="newStudentModal" class="branch-gate-overlay" style="display: none;">
         <div class="branch-gate-card" style="max-width: 420px; text-align: left;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
-                <h3 style="font-size: 1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-chair"></i> Book Seat #<span id="selectedSeatNum"></span></h3>
+                <h3 style="font-size: 1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-chair"></i> Book Seat :<span id="selectedSeatNum"></span></h3>
                 <button onclick="closeModal('newStudentModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
@@ -890,7 +898,7 @@
     <div id="adminQuickModal" class="branch-gate-overlay" style="display: none;">
         <div class="branch-gate-card" style="max-width: 420px; text-align: left;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
-                <h3 style="font-size: 1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-chair"></i> Seat #<span id="quickModalSeatNo"></span> Management</h3>
+                <h3 style="font-size: 1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-chair"></i> Seat :<span id="quickModalSeatNo"></span> Management</h3>
                 <button onclick="closeModal('adminQuickModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
@@ -980,17 +988,20 @@
 
     <!-- Main App Container -->
     <div id="mainContentContainer" class="container">
-        <header>
-            <img src="logo.png" alt="Eminence Logo" class="main-logo-banner">
-            <div class="nav-buttons">
-                <button class="nav-btn btn-switch-branch" onclick="changeBranchPrompt()">
-                    <i class="fa-solid fa-right-left"></i> Switch Branch
-                </button>
-                <button class="nav-btn btn-admin" onclick="openAdminModal()">
-                    <i class="fa-solid fa-user-shield"></i> Admin Panel
-                </button>
-            </div>
-        </header>
+       <header id="main-header">
+    <img src="logo.png" alt="Banner" class="main-logo-banner">
+    <div class="nav-buttons">
+        <!-- Home Page Button -->
+        <a href="index.html#main-header" class="nav-btn btn-admin" onclick="localStorage.setItem('skipSplash', 'true');">
+    <i class="fa-solid fa-house"></i> Home Page
+</a>
+        <!-- Admin Button -->
+        <a href="Admin.html" class="nav-btn btn-admin"><i class="fa-solid fa-user-shield"></i> Admin</a>
+        
+        <!-- Switch Branch Button -->
+        <button class="nav-btn btn-switch-branch" onclick="changeBranchPrompt()"><i class="fa-solid fa-building"></i> Switch</button>
+    </div>
+</header>
 
         <main style="margin-top: 20px;">
             <div class="chart-heading-box">
