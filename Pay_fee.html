@@ -492,7 +492,7 @@
             goToWindow('window1');
         }
 
-        function searchLibraryData() {
+           function searchLibraryData() {
             let query = document.getElementById("searchInput").value.trim().toLowerCase();
             let resultsDiv = document.getElementById("searchResults");
             let nextBtn = document.getElementById("step1NextBtn");
@@ -502,6 +502,13 @@
                 resultsDiv.innerHTML = "";
                 nextBtn.style.opacity = "0.5";
                 nextBtn.style.pointerEvents = "none";
+                return;
+            }
+
+            // Check if library data is loaded yet (especially important for mobile slow networks)
+            if (!libraryDataObject || Object.keys(libraryDataObject).length === 0) {
+                resultsDiv.style.display = "block";
+                resultsDiv.innerHTML = "<span style='color: #f59e0b; font-size: 12px;'>⏳ डेटा लोड हो रहा है, कृपया 2 सेकण्ड प्रतीक्षा करें...</span>";
                 return;
             }
 
@@ -516,7 +523,7 @@
                         let uidStr = m.uid ? String(m.uid).toLowerCase() : "";
                         let branch = m.branch ? m.branch : "N/A";
 
-                        if (mobStr === query || uidStr === query) {
+                        if (mobStr.includes(query) || uidStr.includes(query)) {
                             matches.push({ mobile: mobile, name: m.name, uid: m.uid, branch: branch });
                         }
                     });
@@ -526,7 +533,7 @@
             if (matches.length > 0) {
                 resultsDiv.style.display = "block";
                 resultsDiv.innerHTML = matches.map(m => `
-                    <div onclick="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')">
+                    <div ontouchend="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')" onclick="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')">
                         👤 <b>${m.name}</b> | 📱<b> ${m.mobile} </b>| 🆔 <b>${m.uid}</b><br>
                         <span style="white-space: nowrap;">🏢 <b>Branch:</b> ${m.branch}</span>
                     </div>
