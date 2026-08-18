@@ -10,11 +10,11 @@
             font-family: 'Poppins', sans-serif;
             background-color: #1e293b;
             margin: 0;
-            padding: 10px; /* मोबाइल के लिए थोड़ी कम पैडिंग */
+            padding: 10px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* 'center' की जगह 'flex-start' करें ताकि कंटेंट ऊपर रहे */
+            align-items: flex-start;
         }
         .container {
             background: #ffffff;
@@ -22,9 +22,9 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             max-width: 480px;
             width: 100%;
-            margin-top: 20px; /* ऊपर से थोड़ी जगह देने के लिए */
+            margin-top: 20px;
             margin-bottom: 20px;
-            padding: 20px; /* मोबाइल पर बेहतर लुक के लिए */
+            padding: 20px;
             box-sizing: border-box;
             border-top: 8px solid #ff7a00;
         }
@@ -334,7 +334,8 @@
                 <p style="font-size: 18px; color: #64748b; margin-top: 10px; margin-bottom: 5px;"><b>SCAN & PAY</b></p>
                 <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code">
                 
-               
+                
+
                 <p style="font-size: 14px; color: #64748b; margin-top: 10px; margin-bottom: 0;">UPI ID: <b>eminencelibrary@ybl</b></p>
                 <p style="font-size: 14px; color: #64748b; margin-top: 8px; margin-bottom: 0;">Mobile Number: <b>9799995511</b></p>
 
@@ -484,15 +485,12 @@
 
             alert("आपका भुगतान प्रोसेस पूरा हुआ, धन्यवाद!");
             
-            document.getElementById("searchInput").value = "";
-            document.getElementById("couponInput").value = "";
-            document.getElementById("couponMsg").innerHTML = "";
-            document.getElementById("step1NextBtn").style.opacity = "0.5";
-            document.getElementById("step1NextBtn").style.pointerEvents = "none";
-            goToWindow('window1');
+            // Redirects to index.html at #main-header section
+	    localStorage.setItem('skipSplash', 'true');
+            window.location.href = "index.html#main-header";
         }
 
-           function searchLibraryData() {
+        function searchLibraryData() {
             let query = document.getElementById("searchInput").value.trim().toLowerCase();
             let resultsDiv = document.getElementById("searchResults");
             let nextBtn = document.getElementById("step1NextBtn");
@@ -502,13 +500,6 @@
                 resultsDiv.innerHTML = "";
                 nextBtn.style.opacity = "0.5";
                 nextBtn.style.pointerEvents = "none";
-                return;
-            }
-
-            // Check if library data is loaded yet (especially important for mobile slow networks)
-            if (!libraryDataObject || Object.keys(libraryDataObject).length === 0) {
-                resultsDiv.style.display = "block";
-                resultsDiv.innerHTML = "<span style='color: #f59e0b; font-size: 12px;'>⏳ डेटा लोड हो रहा है, कृपया 2 सेकण्ड प्रतीक्षा करें...</span>";
                 return;
             }
 
@@ -523,7 +514,7 @@
                         let uidStr = m.uid ? String(m.uid).toLowerCase() : "";
                         let branch = m.branch ? m.branch : "N/A";
 
-                        if (mobStr.includes(query) || uidStr.includes(query)) {
+                        if (mobStr === query || uidStr === query) {
                             matches.push({ mobile: mobile, name: m.name, uid: m.uid, branch: branch });
                         }
                     });
@@ -533,7 +524,7 @@
             if (matches.length > 0) {
                 resultsDiv.style.display = "block";
                 resultsDiv.innerHTML = matches.map(m => `
-                    <div ontouchend="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')" onclick="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')">
+                    <div onclick="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')">
                         👤 <b>${m.name}</b> | 📱<b> ${m.mobile} </b>| 🆔 <b>${m.uid}</b><br>
                         <span style="white-space: nowrap;">🏢 <b>Branch:</b> ${m.branch}</span>
                     </div>
