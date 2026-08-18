@@ -10,11 +10,11 @@
             font-family: 'Poppins', sans-serif;
             background-color: #1e293b;
             margin: 0;
-            padding: 10px;
+            padding: 10px; /* मोबाइल के लिए थोड़ी कम पैडिंग */
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: flex-start; /* 'center' की जगह 'flex-start' करें ताकि कंटेंट ऊपर रहे */
         }
         .container {
             background: #ffffff;
@@ -22,9 +22,9 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             max-width: 480px;
             width: 100%;
-            margin-top: 20px;
+            margin-top: 20px; /* ऊपर से थोड़ी जगह देने के लिए */
             margin-bottom: 20px;
-            padding: 25px;
+            padding: 20px; /* मोबाइल पर बेहतर लुक के लिए */
             box-sizing: border-box;
             border-top: 8px solid #ff7a00;
         }
@@ -117,17 +117,17 @@
             background: #fff7ed;
         }
         .shift-info {
-            font-size: 15px;
+            font-size: 13px;
             color: #334155;
             font-weight: 600;
         }
         .shift-time {
-            font-size: 13px;
+            font-size: 11px;
             color: #64748b;
             margin-top: 2px;
         }
         .shift-amount {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             color: #ff7a00;
         }
@@ -207,7 +207,7 @@
             font-size: 24px;
             font-weight: 700;
             color: #ff7a00;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
         .qr-code-img {
             display: block;
@@ -268,7 +268,7 @@
             
             <div id="shiftSelectionContent">
                 <div class="form-group" style="margin-bottom: 10px;">
-                    <label class="section-title">MEMBER RECORD </label>
+                    <label class="section-title">मेंबर:</label>
                     <div id="selectedMemberInfo" class="summary-box"></div>
                 </div>
 
@@ -318,7 +318,7 @@
                         <input type="text" id="couponInput" placeholder="कूपन कोड (यदि हो)..." style="padding: 8px 12px; font-size: 13px;">
                         <button type="button" class="btn btn-next" style="flex: 0.5; padding: 10px; font-size: 13px;" onclick="applyCoupon()">Apply</button>
                     </div>
-                    <div id="couponMsg" style="font-size: 14px; margin-top: 5px;font-weight: 500;"></div>
+                    <div id="couponMsg" style="font-size: 11px; margin-top: 3px;"></div>
                 </div>
 
                 <div class="btn-container">
@@ -331,21 +331,12 @@
             <div id="finalPaymentContent" style="display: none; text-align: center;">
                 <div class="section-title" style="margin-bottom: 5px;">आपकी कुल भुगतान राशि हैं :</div>
                 <div id="dynamicAmount" class="amount-display">₹700/-</div>
-                <p style="font-size: 16px; color: #64748b; margin-top: 5px; margin-bottom: 8px;"><b>SCAN & PAY</b></p>
+                <p style="font-size: 18px; color: #64748b; margin-top: 10px; margin-bottom: 5px;"><b>SCAN & PAY</b></p>
+                <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code">
                 
-                <!-- QR Code & Button Wrapper to match exact width -->
-                <div style="display: inline-block; text-align: center;">
-                    <!-- QR Code Image -->
-                    <img id="dynamicQR" class="qr-code-img" src="" alt="UPI QR Code" style="margin: 0 auto; display: block;">
-
-                    <!-- Exact Matched Width Button -->
-                    <button type="button" class="btn" onclick="downloadQRCode()" style="background: #ff7a00; color: white; width: 174px; margin-top: 8px; padding: 8px 6px; font-size: 12px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 3px 8px rgba(79, 70, 229, 0.3);">
-                        📥 Save QR Code
-                    </button>
-                </div>
-
-                <p style="font-size: 14px; color: #334155; margin-top: 10px; margin-bottom: 0;">UPI ID: <b>eminencelibrary@ybl</b></p>
-                <p style="font-size: 14px; color: #64748b; margin-top: 4px; margin-bottom: 0;">Mobile Number: <b>9799995511</b></p>
+               
+                <p style="font-size: 14px; color: #64748b; margin-top: 10px; margin-bottom: 0;">UPI ID: <b>eminencelibrary@ybl</b></p>
+                <p style="font-size: 14px; color: #64748b; margin-top: 8px; margin-bottom: 0;">Mobile Number: <b>9799995511</b></p>
 
                 <div class="btn-container">
                     <button class="btn btn-back" onclick="backToShiftSelection()">Back</button>
@@ -498,12 +489,8 @@
             document.getElementById("couponMsg").innerHTML = "";
             document.getElementById("step1NextBtn").style.opacity = "0.5";
             document.getElementById("step1NextBtn").style.pointerEvents = "none";
-            localStorage.setItem('skipSplash', 'true');
-		setTimeout(function() {
-            // Yahan #main-header ki jagah apne header/section ki id likhein
-            window.location.href = "index.html#main-header";
-		}, 300);
-}
+            goToWindow('window1');
+        }
 
         function searchLibraryData() {
             let query = document.getElementById("searchInput").value.trim().toLowerCase();
@@ -606,29 +593,12 @@
             
             let qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
             document.getElementById("dynamicQR").src = qrUrl;
-        }
 
-        function downloadQRCode() {
-            let qrImageSrc = document.getElementById("dynamicQR").src;
-            
-            fetch(qrImageSrc)
-                .then(response => response.blob())
-                .then(blob => {
-                    let blobUrl = window.URL.createObjectURL(blob);
-                    let a = document.createElement('a');
-                    a.href = blobUrl;
-                    a.download = `Eminence_Library_QR_${finalPayableAmount}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(blobUrl);
-                })
-                .catch(err => {
-                    console.error("Download failed:", err);
-                    alert("स्क्रीनशॉट डाउनलोड करने में असफलता। आप चाहें तो इसका डायरेक्ट स्क्रीनशॉट ले सकते हैं।");
-                });
+            let upiBtn = document.getElementById("upiPaymentBtn");
+            if (upiBtn) {
+                upiBtn.href = upiString;
+            }
         }
     </script>
-
 </body>
 </html>
