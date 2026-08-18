@@ -632,11 +632,12 @@
         <div class="nav-buttons">
             <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="cta-btn"><i class="fa-solid fa-pen-to-square"></i> Book Seat</a>
             
-            <a href="Pay_fee.html" class="cta-btn pay-nav-btn"><i class="fa-solid fa-credit-card"></i> Pay Fees</a>
+            <a href="#portalContainer" class="cta-btn pay-nav-btn"><i class="fa-solid fa-credit-card"></i> Pay Fees</a>
             
-            <a href="https://g.page/r/CQvR0hi2KgmfEAE/review" target="_blank" class="cta-btn google-fb-btn">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo"> Feedback
-            </a>
+
+	<a href="#" onclick="openFeedbackModal(); return false;" class="cta-btn google-fb-btn">
+    	<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo"> Feedback
+	</a>
         </div>
     </header>
 
@@ -858,6 +859,35 @@
                 card.classList.add('animate-slide');
             });
         }
+function openFeedbackModal() {
+    document.getElementById('feedbackModal').style.display = 'flex';
+}
+
+function closeFeedbackModal() {
+    document.getElementById('feedbackModal').style.display = 'none';
+}
     </script>
+<!-- Branch Selection Feedback Modal -->
+<div id="feedbackModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
+        <h3 style="color: #ff6600; margin-bottom: 10px; font-family: 'Montserrat', sans-serif;">Select Branch for Feedback</h3>
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">Kripya chunein aap kis branch ka feedback dena chahte hain:</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Core Branch Feedback Link -->
+            <a href="https://g.page/r/CQvR0hi2KgmfEAE/review" target="_blank" onclick="closeFeedbackModal()" style="background: #ff6600; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.2s;">
+                <i class="fa-solid fa-building"></i> Core Branch Feedback
+            </a>
+            
+            <!-- Nexus Branch Feedback Link (Agar iska alag link hai toh yahan badal sakte hain) -->
+            <a href="https://g.page/r/Cd90jg0tPUQFEAE/review" style="background: #33415D; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.2s;">
+                <i class="fa-solid fa-building"></i> Nexus Branch Feedback
+            </a>
+        </div>
+        
+        <!-- Close Button -->
+        <button onclick="closeFeedbackModal()" style="margin-top: 15px; background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Cancel</button>
+    </div>
+</div>
 </body>
 </html>
