@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eminence Library - Admin Master Portal & Fee Management</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcipVYb2RFh_nF6gdB3GjklbnvQDVI3I_Q2cqeVUjj7puo2dLeg7BsCxZWhzmCmPYa/exec";
+        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarHm6enNyPnaydyi0gKEdh06lYaN9nsI0O7jtV6qEAh3SWX0fhmXhYVJwEAqzPNDF/exec";
+
+        let activeBranch = 'core'; 
+        let allData = { core: {}, nexus: {} };
+        let existingMembersDB = {}; 
+        let isAdminLoggedIn = false;
+        let quickSelectedSeatNum = null;
+        let lastSavedFeeDetails = null;
+
+        function fetchOldStudentsData() {
+            if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return;
+            fetch(OLD_STUDENTS_SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => { if (data && typeof data === 'object') existingMembersDB = data; })
+                .catch(err => console.log("Old students fetch error: ", err));
+        }
+
+        function fetchSheetData() {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
+            fetch(LIVE_BOOKING_SCRIPT_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        allData = data;
+                        if (isAdminLoggedIn) renderLayouts();
+                    }
+                })
+                .catch(err => console.log("Live sheet fetch error: ", err));
+        }
+
+        function saveToSheet() {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
+            fetch(LIVE_BOOKING_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(allData)
+            })
+            .then(response => response.text())
+            .then(result => { fetchSheetData(); })
+            .catch(err => console.log("Error saving data: " + err));
+        }
+
+        setInterval(() => { if (isAdminLoggedIn) fetchSheetData(); }, 3000);
+
+        window.onload = function() {
+            fetchOldStudentsData();
+            fetchSheetData();
+        };
+
+        window.loginMasterAdmin = function() {
+            const pass = document.getElementById("masterAdminPass").value;
+            if (pass === "admin123") {
+                isAdminLoggedIn = true;
+                document.getElementById('adminGateOverlay').style.display = 'none';
+                document.getElementById('mainDashboardPortal').style.display = 'flex';
+            } else {
+                alert("Incorrect Admin Password! Please try again.");
+            }
+        }
+
+        window.openSeatManagement = function() {
+            document.getElementById('mainDashboardPortal').style.display = 'none';
+            document.getElementById('liveSeatManagementContainer').style.display = 'block';
+            switchBranch('core');
+        }
+
+        window.backToDashboard = function() {
+            document.getElementById('liveSeatManagementContainer').style.display = 'none';
+            document.getElementById('mainDashboardPortal').style.display = 'flex';
+        }
+
+        window.openFeeManagementModal = function() {
+            document.getElementById('feeManagementModal').style.display = 'flex';
+            const today = new Date().toISOString().split('T')[0];
+            const payDateEl = document.getElementById("feeModalPaymentDate");
+            if(payDateEl && !payDateEl.value) payDateEl.value = today;
+            
+            document.getElementById("feeActionButtonsContainer").style.display = "none";
+            document.getElementById("feeDetailFormContainer").style.display = "none";
+            document.getElementById("memberResultList").innerHTML = "";
+            document.getElementById("feeManagementForm").reset();
+            document.getElementById("feeModalPaymentDate").value = today;
+            document.getElementById("dueDaysInfoText").innerText = "";
+            document.getElementById("feeSearchInput").value = "";
+        }
+
+        window.switchBranch = function(branchKey) {
+            activeBranch = branchKey;
+            document.getElementById('coreBranchBtn').classList.remove('active');
+            document.getElementById('nexusBranchBtn').classList.remove('active');
+            
+            if (branchKey === 'core') {
+                document.getElementById('coreBranchBtn').classList.add('active');
+                document.getElementById('coreBranchSection').style.display = 'block';
+                document.getElementById('nexusBranchSection').style.display = 'none';
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-building-columns"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability';
+            } else {
+                document.getElementById('nexusBranchBtn').classList.add('active');
+                document.getElementById('coreBranchSection').style.display = 'none';
+                document.getElementById('nexusBranchSection').style.display = 'block';
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-graduation-cap"></i> Nexus Branch - <span class="blink-live">Live</span> Seat Availability';
+            }
+            renderLayouts();
+        }
+
+        function createSeatNode(num, row, col) {
+            const seat = document.createElement("div");
+            const branchSeats = allData[activeBranch] || {};
+            const info = branchSeats[num] || { status: 'vacant' };
+            
+            let seatImage = "Desk1.png";
+            let statusLabel = "Available";
+
+            if (info.status === 'booked') {
+                seatImage = "Desk2.png";
+                statusLabel = "Booked";
+            } else if (info.status === 'waiting') {
+                seatImage = "Desk4.png";
+                statusLabel = "On Hold (Waiting)";
+            }
+
+            let tooltipClass = (row === 1) ? 'seat tooltip-down' : 'seat';
+            seat.className = `${tooltipClass} ${info.status}`;
+            seat.style.gridRow = row;
+            seat.style.gridColumn = col;
+            
+            seat.innerHTML = `
+                <img src="${seatImage}" alt="Seat" class="seat-icon">
+                <span>${num}</span>
+                <div class="seat-tooltip ${info.status}">
+                    Seat #${num}<br><span class="tooltip-status-text">${statusLabel}</span>
+                </div>
+            `;
+            seat.onclick = () => { openAdminQuickModal(num, info); };
+            return seat;
+        }
+
+        function renderLayouts() {
+            if (!activeBranch) return;
+            if (activeBranch === 'core') {
+                const h1Container = document.getElementById("hall1GridContainer");
+                if(h1Container) {
+                    h1Container.innerHTML = "";
+                    for (let i = 12; i <= 18; i++) h1Container.appendChild(createSeatNode(i, 1, i - 11));
+                    for (let i = 11; i >= 1; i--) h1Container.appendChild(createSeatNode(i, 13 - i, 1));
+                    for (let i = 19; i <= 32; i++) h1Container.appendChild(createSeatNode(i, i - 18, 8));
+                    for (let i = 57, r = 3; i >= 49; i--, r++) h1Container.appendChild(createSeatNode(i, r, 3));
+                    [58, 41, 42, 43, 44, 45, 46, 47, 48].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 5)));
+                    [59, 40, 39, 38, 37, 36, 35, 34, 33].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 6)));
+                }
+
+                const h2Container = document.getElementById("hall2GridContainer");
+                if(h2Container) {
+                    h2Container.innerHTML = "";
+                    for (let i = 65; i <= 70; i++) h2Container.appendChild(createSeatNode(i, 1, i - 64));
+                    [64, 63, 62, 61].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 1)));
+                    [71, 72, 73, 74].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 6)));
+                    [80, 79, 78].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 3)));
+                    [77, 76, 75].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 4)));
+                    h2Container.appendChild(createSeatNode(81, 6, 3));
+                    h2Container.appendChild(createSeatNode(82, 6, 4));
+                    h2Container.appendChild(createSeatNode(83, 6, 6));
+                }
+            } else {
+                const nexusContainer = document.getElementById("nexusGridContainer");
+                if(nexusContainer) {
+                    nexusContainer.innerHTML = "";
+                    for (let i = 1; i <= 65; i++) {
+                        let r = Math.floor((i - 1) / 8) + 1;
+                        let c = ((i - 1) % 8) + 1;
+                        nexusContainer.appendChild(createSeatNode(i, r, c));
+                    }
+                }
+            }
+        }
+
+        window.openAdminQuickModal = function(seatNum, seatInfo) {
+            quickSelectedSeatNum = seatNum;
+            document.getElementById("quickModalSeatNo").innerText = seatNum;
+            const detailsBox = document.getElementById("seatReadOnlyDetails");
+            if (seatInfo.status && seatInfo.status !== 'vacant') {
+                detailsBox.innerHTML = `<b>Branch:</b> ${activeBranch.toUpperCase()} | <b>Seat #:</b> ${seatNum}<br><b>Name:</b> ${seatInfo.studentName || seatInfo.name || 'N/A'}<br><b>Mobile:</b> ${seatInfo.mobile || seatInfo.phone || 'N/A'} | <b>UID:</b> ${seatInfo.uid || 'N/A'}<br><b>Current Fee:</b> ${seatInfo.feeStatus || 'Paid'}`;
+            } else {
+                detailsBox.innerHTML = `<b>Seat #${seatNum}:</b> <span style="color: green; font-weight:600;">Vacant (Available)</span>`;
+            }
+            document.getElementById("quickModalNewStatus").value = seatInfo.status || 'vacant';
+            document.getElementById("quickModalFeeStatus").value = seatInfo.feeStatus || 'Paid';
+            document.getElementById("quickBtnNotify").style.display = (!seatInfo.status || seatInfo.status === 'vacant') ? "none" : "block";
+            document.getElementById("adminQuickModal").style.display = "flex";
+        }
+
+        window.applyQuickSeatStatusChange = function() {
+            const newStatus = document.getElementById("quickModalNewStatus").value;
+            const newFeeStatus = document.getElementById("quickModalFeeStatus").value;
+            if (!allData[activeBranch]) allData[activeBranch] = {};
+            
+            if (newStatus === 'vacant') {
+                allData[activeBranch][quickSelectedSeatNum] = { status: 'vacant' };
+            } else {
+                if (allData[activeBranch][quickSelectedSeatNum]) {
+                    allData[activeBranch][quickSelectedSeatNum].status = newStatus;
+                    allData[activeBranch][quickSelectedSeatNum].feeStatus = newFeeStatus;
+                } else {
+                    allData[activeBranch][quickSelectedSeatNum] = { status: newStatus, feeStatus: newFeeStatus };
+                }
+            }
+            closeModal('adminQuickModal');
+            renderLayouts();
+            saveToSheet();
+            alert("Seat & Fee status updated successfully!");
+        }
+
+        window.notifyQuickStudentWhatsApp = function() {
+            const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
+            let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
+            if (student && mobNum) {
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat & Fee Update*\n\nHello ${student.studentName || student.name},\nआपके सीट नंबर #${quickSelectedSeatNum} का स्टेटस अपडेट कर दिया गया है। Fee Status: ${student.feeStatus || 'Paid'}. Happy Study -- Team Eminence.\n\n`;
+                window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
+            } else {
+                alert("No mobile number available for this seat.");
+            }
+        }
+
+        // --- FIXED & ADVANCED MULTI-MATCH SEARCH LOGIC ---
+        window.performMemberSearch = function() {
+            const query = document.getElementById("feeSearchInput").value.trim().toLowerCase();
+            const listContainer = document.getElementById("memberResultList");
+            
+            if (!query) {
+                listContainer.innerHTML = "";
+                document.getElementById("feeDetailFormContainer").style.display = "none";
+                return;
+            }
+
+            let matches = [];
+            
+            for (let branch in allData) {
+                let branchSeats = allData[branch];
+                if (branchSeats && typeof branchSeats === 'object') {
+                    for (let seat in branchSeats) {
+                        let s = branchSeats[seat];
+                        
+                        if (s && (s.status !== 'vacant' || s.studentName || s.name || s.mobile || s.phone)) {
+                            let name = (s.studentName || s.name || '').toString().toLowerCase();
+                            let mob = (s.mobile || s.phone || s.mob || s.contact || '').toString().toLowerCase();
+                            let uid = (s.uid || s.id || '').toString().toLowerCase();
+                            let seatNumStr = seat.toString().toLowerCase();
+                            
+                            let cleanMob = mob.replace(/\D/g, ''); 
+                            let cleanQuery = query.replace(/\D/g, '');
+                            
+                            let isMobMatch = false;
+                            if (cleanMob && cleanQuery) {
+                                if (cleanMob.includes(cleanQuery) || cleanQuery.includes(cleanMob)) {
+                                    isMobMatch = true;
+                                }
+                                if (cleanQuery.length >= 4 && cleanMob.slice(-4) === cleanQuery.slice(-4)) {
+                                    isMobMatch = true;
+                                }
+                            }
+
+                            if (name.includes(query) || 
+                                isMobMatch || 
+                                mob.includes(query) || 
+                                uid.includes(query) || 
+                                seatNumStr === query) {
+                                
+                                matches.push({ 
+                                    branch: branch, 
+                                    seat: seat, 
+                                    studentName: s.studentName || s.name || 'N/A',
+                                    mobile: s.mobile || s.phone || s.mob || s.contact || 'N/A',
+                                    uid: s.uid || s.id || 'N/A',
+                                    shift: s.shift || 'Full Day',
+                                    feeStatus: s.feeStatus || 'Paid',
+                                    utrNo: s.utrNo || '',
+                                    amount: s.amount || '',
+                                    paymentDate: s.paymentDate || '',
+                                    expiryDate: s.expiryDate || ''
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (matches.length > 0) {
+                listContainer.innerHTML = matches.map(m => `
+                    <div style="background:#ffffff; border:1px solid #cbd5e1; padding:10px 12px; margin-bottom:8px; border-radius:8px; cursor:pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" 
+                         onclick="selectMemberForFee('${m.branch}', '${m.seat}')">
+                        <div style="font-weight:700; color:#1e293b; font-size:0.88rem;">
+                            <i class="fa-solid fa-user" style="color:#ff6600;"></i> ${m.studentName} 
+                            <span style="float:right; font-size:0.75rem; background:#e2e8f0; padding:2px 6px; border-radius:4px;">Seat #${m.seat} (${m.branch.toUpperCase()})</span>
+                        </div>
+                        <div style="font-size:0.78rem; color:#64748b; margin-top:4px;">
+                            <i class="fa-solid fa-mobile-screen"></i> Mob: ${m.mobile} | <i class="fa-solid fa-id-card"></i> UID: ${m.uid}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                listContainer.innerHTML = `<div style="padding:10px; color:#dc2626; font-size:0.82rem; text-align:center;"><i class="fa-solid fa-triangle-exclamation"></i> No member found matching "${query}".</div>`;
+                document.getElementById("feeDetailFormContainer").style.display = "none";
+            }
+        };
+
+        window.selectMemberForFee = function(branch, seatNum) {
+            const branchData = allData[branch];
+            if (!branchData || !branchData[seatNum]) {
+                alert("Data not found for this selection.");
+                return;
+            }
+            
+            const data = branchData[seatNum];
+
+            document.getElementById("memberResultList").innerHTML = `
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.85rem; color:#166534; display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fa-solid fa-check-circle"></i> Selected: <b>${data.studentName || data.name || 'N/A'}</b> (Seat #${seatNum} - ${branch.toUpperCase()})</span>
+                    <button type="button" onclick="performMemberSearch()" style="background:none; border:none; color:#166534; cursor:pointer; font-weight:700; text-decoration:underline;">Change</button>
+                </div>
+            `;
+
+            document.getElementById("feeModalBranch").value = branch;
+            document.getElementById("feeModalSeatNo").value = seatNum;
+            document.getElementById("feeModalName").value = data.studentName || data.name || '';
+            document.getElementById("feeModalMobile").value = data.mobile || data.phone || data.mob || '';
+            document.getElementById("feeModalUid").value = data.uid || data.id || '';
+            
+            if(document.getElementById("feeModalShift")) document.getElementById("feeModalShift").value = data.shift || 'Full Day';
+            if(document.getElementById("feeModalStatus")) document.getElementById("feeModalStatus").value = data.feeStatus || 'Paid';
+            if(document.getElementById("feeModalUtr")) document.getElementById("feeModalUtr").value = data.utrNo || '';
+            if(document.getElementById("feeModalAmount")) document.getElementById("feeModalAmount").value = data.amount || '';
+            if(document.getElementById("feeModalPaymentDate")) document.getElementById("feeModalPaymentDate").value = data.paymentDate || '';
+            
+            if(data.expiryDate) {
+                document.getElementById("feeModalExpiryDate").value = data.expiryDate;
+                calculateDueDays();
+            } else {
+                document.getElementById("feeModalExpiryDate").value = '';
+                document.getElementById("dueDaysInfoText").innerText = '';
+            }
+
+            document.getElementById("feeDetailFormContainer").style.display = "block";
+        };
+
+        window.calculateDueDays = function() {
+            const expiryVal = document.getElementById("feeModalExpiryDate").value;
+            const dueInfoBox = document.getElementById("dueDaysInfoText");
+
+            if (!expiryVal) {
+                dueInfoBox.innerText = "";
+                return null;
+            }
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const expiryDate = new Date(expiryVal);
+            expiryDate.setHours(0,0,0,0);
+
+            const diffTime = expiryDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 0) {
+                dueInfoBox.style.color = "#16a34a";
+                dueInfoBox.innerHTML = `<i class="fa-solid fa-clock"></i> Next Fee Due in <b>${diffDays} days</b> (Paid Status)`;
+            } else if (diffDays === 0) {
+                dueInfoBox.style.color = "#d97706";
+                dueInfoBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Fee Expires <b>Today!</b> (Due Alert Applicable)`;
+            } else {
+                dueInfoBox.style.color = "#dc2626";
+                dueInfoBox.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Overdue by <b>${Math.abs(diffDays)} days!</b> (Due Alert Applicable)`;
+            }
+            return diffDays;
+        }
+
+        window.saveFeeRecordToSheet = function(event) {
+            event.preventDefault();
+            const branch = document.getElementById("feeModalBranch").value;
+            const seatNum = document.getElementById("feeModalSeatNo").value.trim();
+            const studentName = document.getElementById("feeModalName").value.trim();
+            const mobile = document.getElementById("feeModalMobile").value.trim();
+            const uid = document.getElementById("feeModalUid").value.trim();
+            const shift = document.getElementById("feeModalShift").value;
+            const utrNo = document.getElementById("feeModalUtr").value.trim();
+            const amount = document.getElementById("feeModalAmount").value.trim();
+            const paymentDate = document.getElementById("feeModalPaymentDate").value;
+            const expiryDate = document.getElementById("feeModalExpiryDate").value;
+            const feeStatus = document.getElementById("feeModalStatus").value;
+
+            if (!seatNum || !studentName || !mobile) {
+                alert("Please fill out all required fields.");
+                return;
+            }
+
+            if (!allData[branch]) allData[branch] = {};
+
+            let currentStatus = allData[branch][seatNum] ? allData[branch][seatNum].status : 'booked';
+            if(currentStatus === 'vacant') currentStatus = 'booked';
+
+            allData[branch][seatNum] = {
+                status: currentStatus,
+                studentName: studentName,
+                mobile: mobile,
+                uid: uid,
+                shift: shift,
+                utrNo: utrNo,
+                amount: amount,
+                paymentDate: paymentDate,
+                expiryDate: expiryDate,
+                feeStatus: feeStatus
+            };
+
+            const dueDays = expiryDate ? Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) : 1;
+            const isFeeDue = (feeStatus === 'Pending' || dueDays <= 0);
+
+            lastSavedFeeDetails = { branch, seatNum, studentName, mobile, amount, expiryDate, feeStatus, isFeeDue, shift, utrNo, paymentDate, uid };
+
+            saveToSheet();
+            
+            const btnPaidWrapper = document.getElementById("whatsappPaidBtnWrapper");
+            const btnDueWrapper = document.getElementById("whatsappDueBtnWrapper");
+
+            if (isFeeDue) {
+                btnPaidWrapper.style.display = "none";
+                btnDueWrapper.style.display = "block";
+            } else {
+                btnPaidWrapper.style.display = "block";
+                btnDueWrapper.style.display = "none";
+            }
+
+            document.getElementById("feeActionButtonsContainer").style.display = "block";
+            alert("Fee record updated & saved successfully!");
+        }
+
+        window.sendPaymentSuccessWhatsApp = function() {
+            if (!lastSavedFeeDetails) return;
+            const d = lastSavedFeeDetails;
+            const msg = `*Eminence Library (${d.branch.toUpperCase()}) - Fee Payment Receipt*\n\nDear *${d.studentName}*,\nआपकी फीस सफलतापूर्वक जमा हो गई है!\n\n🪑 *Seat No:* #${d.seatNum}\n💰 *Amount Paid:* Rs. ${d.amount || 'N/A'}\n📅 *Valid Till:* ${d.expiryDate || 'N/A'}\n\nThank you -- Team Eminence Library`;
+            window.open(`https://wa.me/91${d.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        window.sendFeeDueAlertWhatsApp = function() {
+            if (!lastSavedFeeDetails) return;
+            const d = lastSavedFeeDetails;
+            const msg = `*Eminence Library (${d.branch.toUpperCase()}) - Fee Due Alert*\n\nHello *${d.studentName}*,\nयह सूचना दी जाती है कि आपके सीट नंबर *#${d.seatNum}* की फीस ड्यू/एक्सपायर हो चुकी है। कृपया जल्द से जल्द अपनी फीस जमा करें।\n\n-- Team Eminence Library`;
+            window.open(`https://wa.me/91${d.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        window.generateFeeReceipt = function() {
+            if (!lastSavedFeeDetails) {
+                alert("No fee record found to generate receipt.");
+                return;
+            }
+            const d = lastSavedFeeDetails;
+            const receiptWindow = window.open('', '_blank', 'width=600,height=700');
+            receiptWindow.document.write(`
+                <html>
+                <head>
+                    <title>Fee Receipt - Eminence Library</title>
+                    <style>
+                        body { font-family: 'Poppins', sans-serif; padding: 30px; color: #1e293b; background: #f8fafc; }
+                        .receipt-box { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 6px solid #ff6600; }
+                        h2 { text-align: center; color: #ff6600; margin-bottom: 5px; }
+                        p { font-size: 0.9rem; margin: 8px 0; }
+                        .details-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+                        .details-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.88rem; }
+                        .details-table td:first-child { font-weight: 600; color: #475569; }
+                        .footer { text-align: center; margin-top: 30px; font-size: 0.8rem; color: #64748b; }
+                        .print-btn { background: #ff6600; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; display: block; margin: 20px auto 0 auto; }
+                    </style>
+                </head>
+                <body>
+                    <div class="receipt-box">
+                        <h2>Eminence Library</h2>
+                        <p style="text-align: center; font-size:0.8rem; color:#64748b;">Branch: ${d.branch.toUpperCase()}</p>
+                        <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+                        <table class="details-table">
+                            <tr><td>Student Name:</td><td>${d.studentName}</td></tr>
+                            <tr><td>Mobile Number:</td><td>${d.mobile}</td></tr>
+                            <tr><td>UID / ID:</td><td>${d.uid || 'N/A'}</td></tr>
+                            <tr><td>Seat Number:</td><td>#${d.seatNum} (${d.shift})</td></tr>
+                            <tr><td>Payment Date:</td><td>${d.paymentDate || 'N/A'}</td></tr>
+                            <tr><td>Amount Paid:</td><td>Rs. ${d.amount || '0'}</td></tr>
+                            <tr><td>UTR / Txn ID:</td><td>${d.utrNo || 'N/A'}</td></tr>
+                            <tr><td>Fee Expiry Date:</td><td>${d.expiryDate || 'N/A'}</td></tr>
+                            <tr><td>Fee Status:</td><td><b style="color:green;">${d.feeStatus}</b></td></tr>
+                        </table>
+                        <button class="print-btn" onclick="window.print()">Print Receipt</button>
+                    </div>
+                </body>
+                </html>
+            `);
+            receiptWindow.document.close();
+        }
+
+        window.searchMember = function() {
+            const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
+            const res = document.getElementById("adminSearchResult");
+            if (!query) {
+                res.style.color = "red";
+                res.innerHTML = "Please Enter Valid Mobile No. or UID.";
+                return;
+            }
+            let foundResults = [];
+            for (let branch in allData) {
+                for (let seat in allData[branch]) {
+                    let s = allData[branch][seat];
+                    let mobStr = (s.mobile || s.phone || '').toString().toLowerCase();
+                    let uidStr = (s.uid || '').toString().toLowerCase();
+                    if (mobStr.includes(query) || uidStr.includes(query)) {
+                        foundResults.push({ branch: branch, seat: seat, info: s });
+                    }
+                }
+            }
+            if (foundResults.length > 0) {
+                res.style.color = "#0f172a";
+                let htmlOutput = "";
+                foundResults.forEach(item => {
+                    let s = item.info;
+                    let branchFullName = item.branch === 'core' ? 'Core Branch - Main Library' : 'Eminence Library 2 - Basement, Agarsen Hospital, Devi Nagar, Jaipur';
+                    let uidVal = (s.uid && s.uid !== "" && s.uid !== "undefined") ? s.uid : "#N/A";
+                    
+                    htmlOutput += `
+                    <div style="background:#ffffff; border: 1px solid #e2e8f0; padding:12px 14px; border-radius:10px; margin-top:10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div style="font-size: 0.92rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <i class="fa-solid fa-user" style="color: #ff6600;"></i> <span>${s.studentName || s.name || 'N/A'}</span> 
+                            <span style="font-size: 0.72rem; background: #fff7ed; color: #c2410c; padding: 2px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #ffedd5;"><i class="fa-solid fa-id-card"></i> UID: ${uidVal}</span>
+                            <span style="font-size: 0.75rem; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; color: #334155; font-weight: 700; margin-left: auto; border: 1px solid #cbd5e1;">Seat #${item.seat}</span>
+                        </div>
+                        <div style="font-size: 0.88rem; font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                            <i class="fa-solid fa-mobile-screen" style="color: #64748b;"></i> <span>${s.mobile || s.phone || 'N/A'}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; font-weight: 500; color: #475569; display: flex; align-items: center; gap: 6px; border-top: 1px solid #f1f5f9; padding-top: 6px;">
+                            <i class="fa-solid fa-building" style="color: #94a3b8;"></i> <span><b>Branch:</b> ${branchFullName}</span>
+                        </div>
+                    </div>`;
+                });
+                res.innerHTML = htmlOutput;
+            } else {
+                res.style.color = "#dc2626";
+                res.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> No live booking found.";
+            }
+        }
+
+        window.openGlobalSearchModal = function() { document.getElementById("globalSearchModal").style.display = "flex"; }
+        window.closeModal = function(id) { document.getElementById(id).style.display = "none"; }
+console.log(allData);
+    </script>
+    
+    <style>
+        :root { --primary-color: #ff6600; --primary-hover: #e65c00; --bg-light: #f8fafc; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background-color: #0f172a; color: #334155; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .admin-gate-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: flex; justify-content: center; align-items: center; z-index: 5000; padding: 20px; }
+        .admin-gate-card { background: #ffffff; width: 100%; max-width: 420px; border-radius: 16px; padding: 35px 25px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-top: 6px solid var(--primary-color); display: flex; flex-direction: column; justify-content: space-between; }
+        .portal-icon-container { width: 85px; height: 85px; margin: 0 auto 15px auto; border-radius: 50%; border: 2px solid var(--primary-color); display: flex; align-items: center; justify-content: center; background: #fffaf5; overflow: hidden; }
+        .portal-icon-img { width: 50px; height: 50px; object-fit: contain; }
+        .admin-gate-card h2 { font-size: 1.1rem; color: #1e293b; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .portal-title { font-size: 1.35rem; color: var(--primary-color); font-weight: 700; margin-bottom: 12px; text-transform: uppercase; }
+        .admin-gate-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 25px; line-height: 1.5; }
+        .form-group { margin-bottom: 12px; text-align: left; }
+        .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+        .form-control { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none; font-family: 'Poppins', sans-serif; }
+        .form-control:focus { border-color: var(--primary-color); }
+        .form-control[readonly] { background-color: #f1f5f9; color: #64748b; cursor: not-allowed; }
+        .btn-submit { background: var(--primary-color); color: #ffffff; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3); }
+        .btn-submit:hover { background: var(--primary-hover); }
+        .dashboard-container { width: 100%; max-width: 900px; display: none; }
+        .windows-wrapper { display: flex; gap: 25px; justify-content: center; flex-wrap: wrap; width: 100%; }
+        #liveSeatManagementContainer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-light); z-index: 6000; overflow-y: auto; padding-bottom: 80px; }
+        header { background-color: var(--primary-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; border-bottom: 4px solid #0f172a; }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .main-logo-banner { max-width: 180px; height: auto; display: block; }
+        .admin-portal-badge { background: #0f172a; color: #ffffff; font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; }
+        .nav-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-btn { padding: 8px 14px; font-weight: 700; border-radius: 20px; font-size: 0.78rem; text-transform: uppercase; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; text-decoration: none; background: #334155; color: #ffffff; }
+        .nav-btn.active { background: #0f172a; border: 2px solid #ffffff; }
+        .nav-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+        .btn-search-nav { background: #0284c7; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        .status-legend { display: flex; justify-content: center; gap: 25px; margin-bottom: 20px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; color: #334155; }
+        .legend-seat-icon { width: 55px; height: 55px; object-fit: contain; }
+        .chart-header { background: #ffffff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        .chart-header h3 { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; color: #0f172a; }
+        .blink-live { color: #16a34a; animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        .hall-section { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-bottom: 30px; }
+        .hall-title { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #1e293b; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #f1f5f9; }
+        .seat-grid { display: grid; gap: 10px; justify-content: center; }
+        .core-h1-grid { grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(12, 60px); }
+        .core-h2-grid { grid-template-columns: repeat(6, 60px); grid-template-rows: repeat(6, 60px); }
+        .nexus-grid { grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(9, 60px); }
+        .seat { position: relative; background: transparent; border: none; border-radius: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; color: #334155; transition: transform 0.2s; user-select: none; }
+        .seat:hover { transform: scale(1.08); z-index: 10; }
+        .seat-icon { width: 55px; height: 55px; object-fit: contain; margin-bottom: 2px; }
+        .seat-tooltip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #0f172a; color: #ffffff; padding: 5px 8px; border-radius: 6px; font-size: 0.65rem; white-space: nowrap; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-align: center; margin-bottom: 5px; }
+        .seat.tooltip-down .seat-tooltip { bottom: auto !important; top: calc(100% + 5px) !important; margin-bottom: 0 !important; }
+        .seat:hover .seat-tooltip { display: block; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.75); display: none; justify-content: center; align-items: center; z-index: 7000; padding: 20px; }
+        .modal-card { background: #ffffff; width: 100%; max-width: 650px; border-radius: 16px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        .modal-header h3 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #0f172a; }
+        .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
+        @media (max-width: 768px) {
+            .core-h1-grid { grid-template-columns: repeat(8, 42px); grid-template-rows: repeat(12, 42px); }
+            .core-h2-grid { grid-template-columns: repeat(6, 42px); grid-template-rows: repeat(6, 42px); }
+            .nexus-grid { grid-template-columns: repeat(8, 42px); grid-template-rows: repeat(9, 42px); }
+            .seat-icon { width: 24px; height: 24px; }
+            .seat { font-size: 0.6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="adminGateOverlay" class="admin-gate-overlay">
+        <div class="admin-gate-card">
+            <div>
+                <img src="logo.png" alt="Eminence Logo" style="width: 75px; height: 75px; display: block; margin: 0 auto 12px auto; border-radius: 50%; object-fit: cover; background: #cbd5e1;">
+                <h2>Eminence Library</h2>
+                <p>Admin Authentication Required</p>
+            </div>
+            <div class="form-group">
+                <label>Master Admin Password</label>
+                <input type="password" id="masterAdminPass" class="form-control" placeholder="Enter admin password">
+            </div>
+            <button type="button" class="btn-submit" onclick="loginMasterAdmin()">Login Dashboard</button>
+        </div>
+    </div>
+
+    <div id="mainDashboardPortal" class="dashboard-container">
+        <div class="windows-wrapper">
+            <div class="admin-gate-card">
+                <div>
+                    <div class="portal-icon-container"><img src="Desk5.png" alt="Seat Management" class="portal-icon-img"></div>
+                    <h2>Eminence Library</h2>
+                    <div class="portal-title">Seat Management</div>
+                    <p>लाइब्रेरी की सभी सीटों की स्थिति मैनेज और ट्रैक करें।</p>
+                </div>
+                <button type="button" class="btn-submit" onclick="openSeatManagement()">Manage Seats</button>
+            </div>
+
+            <div class="admin-gate-card" style="border-top-color: #0284c7;">
+                <div>
+                    <div class="portal-icon-container" style="border-color: #0284c7; background: #f0f9ff;"><img src="Rs.png" alt="Fee Management" class="portal-icon-img"></div>
+                    <h2>Eminence Library</h2>
+                    <div class="portal-title" style="color: #0284c7;">Fee Management</div>
+                    <p>छात्रों की फीस का स्टेटस और रिकॉर्ड यहाँ अपडेट करें।</p>
+                </div>
+                <button type="button" class="btn-submit" style="background: #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);" onclick="openFeeManagementModal()">Manage Fees</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Management Modal with Multi-Match Search -->
+    <div id="feeManagementModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-file-invoice-dollar" style="color: #0284c7;"></i> Fee Management Panel</h3>
+                <button class="modal-close" onclick="closeModal('feeManagementModal')">&times;</button>
+            </div>
+            
+            <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #0284c7;">
+                <label style="font-size: 0.78rem; font-weight: 600; color: #0369a1; display: block; margin-bottom: 4px;">Search Member (Enter Mobile No., Last 4 Digits, or UID)</label>
+                <input type="text" id="feeSearchInput" class="form-control" placeholder="Type here to search..." style="padding: 8px 10px; background: #ffffff;" oninput="performMemberSearch()">
+                
+                <!-- Container for listing multiple matches -->
+                <div id="memberResultList" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- Detailed Form Container (Hidden until a member is selected) -->
+            <div id="feeDetailFormContainer" style="display: none;">
+                <form id="feeManagementForm" onsubmit="saveFeeRecordToSheet(event)">
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Branch</label>
+                            <select id="feeModalBranch" class="form-control">
+                                <option value="core">Core Branch</option>
+                                <option value="nexus">Nexus Branch</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Seat Number</label>
+                            <input type="number" id="feeModalSeatNo" class="form-control" placeholder="Seat #" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Student Name</label>
+                        <input type="text" id="feeModalName" class="form-control" placeholder="Student full name" required>
+                    </div>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Mobile Number</label>
+                            <input type="text" id="feeModalMobile" class="form-control" placeholder="10-digit mobile" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>UID / ID</label>
+                            <input type="text" id="feeModalUid" class="form-control" placeholder="e.g., EMIN101">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Choose Shift</label>
+                            <select id="feeModalShift" class="form-control">
+                                <option value="Full Day">Full Day</option>
+                                <option value="Morning">Morning</option>
+                                <option value="Evening">Evening</option>
+                                <option value="Night">Night</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Fee Status</label>
+                            <select id="feeModalStatus" class="form-control">
+                                <option value="Paid">Paid</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>UTR No. / Transaction ID</label>
+                            <input type="text" id="feeModalUtr" class="form-control" placeholder="UPI / Bank UTR">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Amount (Rs.)</label>
+                            <input type="number" id="feeModalAmount" class="form-control" placeholder="e.g., 1000">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Payment Date</label>
+                            <input type="date" id="feeModalPaymentDate" class="form-control">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Expiry Date</label>
+                            <input type="date" id="feeModalExpiryDate" class="form-control" onchange="calculateDueDays()">
+                        </div>
+                    </div>
+
+                    <div id="dueDaysInfoText" style="font-size: 0.8rem; font-weight: 600; margin-bottom: 10px; text-align: center;"></div>
+
+                    <button type="submit" class="btn-submit" style="background: #0284c7;">Save Fee Record</button>
+                </form>
+
+                <div id="feeActionButtonsContainer" style="display: none; margin-top: 15px; padding-top: 12px; border-top: 2px dashed #cbd5e1;">
+                    <label style="font-size: 0.78rem; font-weight: 700; color: #0f172a; display: block; margin-bottom: 8px;"><i class="fa-brands fa-whatsapp" style="color: #16a34a;"></i> WhatsApp Notification Options:</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        
+                        <div id="whatsappPaidBtnWrapper" style="flex: 1; display: none;">
+                            <button type="button" class="btn-submit" style="background: #16a34a; font-size: 0.82rem; padding: 10px; width: 100%;" onclick="sendPaymentSuccessWhatsApp()"><i class="fa-solid fa-circle-check"></i> WhatsApp Payment Receipt</button>
+                        </div>
+
+                        <div id="whatsappDueBtnWrapper" style="flex: 1; display: none;">
+                            <button type="button" class="btn-submit" style="background: #d97706; font-size: 0.82rem; padding: 10px; width: 100%;" onclick="sendFeeDueAlertWhatsApp()"><i class="fa-solid fa-triangle-exclamation"></i> Send Fee Due Alert</button>
+                        </div>
+
+                        <div style="flex: 1;">
+                            <button type="button" class="btn-submit" style="background: #475569; font-size: 0.82rem; padding: 10px; width: 100%;" onclick="generateFeeReceipt()"><i class="fa-solid fa-print"></i> Generate Receipt</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Seat Management Container -->
+    <div id="liveSeatManagementContainer">
+        <header>
+            <div class="header-brand">
+                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
+                <span class="admin-portal-badge"><i class="fa-solid fa-shield-halved"></i> Admin Management Portal</span>
+            </div>
+            <div class="nav-buttons">
+                <button id="coreBranchBtn" onclick="switchBranch('core')" class="nav-btn active"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
+                <button id="nexusBranchBtn" onclick="switchBranch('nexus')" class="nav-btn"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch</button>
+                <button onclick="openGlobalSearchModal()" class="nav-btn btn-search-nav"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+                <button onclick="backToDashboard()" class="nav-btn" style="background: #dc2626;"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="chart-header">
+                <h3 id="chartHeadingText"><i class="fa-solid fa-chart-pie"></i> Live Seat Availability</h3>
+            </div>
+            
+            <div class="status-legend">
+                <div class="legend-item"><img src="Desk1.png" alt="Available" class="legend-seat-icon"> Available</div>
+                <div class="legend-item"><img src="Desk4.png" alt="Waiting" class="legend-seat-icon"> On Hold (Waiting)</div>
+                <div class="legend-item"><img src="Desk2.png" alt="Booked" class="legend-seat-icon"> Booked</div>
+            </div>
+
+            <div id="coreBranchSection">
+                <div class="hall-section">
+                    <div class="hall-title"><i class="fa-solid fa-door-open"></i> Hall 1 (Seats 1-59)</div>
+                    <div style="overflow-x: auto;"><div id="hall1GridContainer" class="seat-grid core-h1-grid"></div></div>
+                </div>
+                <div class="hall-section">
+                    <div class="hall-title"><i class="fa-solid fa-door-open"></i> Hall 2 (Seats 61-83)</div>
+                    <div style="overflow-x: auto;"><div id="hall2GridContainer" class="seat-grid core-h2-grid"></div></div>
+                </div>
+            </div>
+
+            <div id="nexusBranchSection" style="display: none;">
+                <div class="hall-section">
+                    <div class="hall-title"><i class="fa-solid fa-building"></i> Nexus Branch Main Hall (Seats 1-65)</div>
+                    <div style="overflow-x: auto;"><div id="nexusGridContainer" class="seat-grid nexus-grid"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="adminQuickModal" class="modal-overlay">
+            <div class="modal-card" style="max-width: 480px;">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-circle-info"></i> Seat #<span id="quickModalSeatNo"></span> Details</h3>
+                    <button class="modal-close" onclick="closeModal('adminQuickModal')">&times;</button>
+                </div>
+                <div id="seatReadOnlyDetails" style="background:#f1f5f9; padding:14px; border-radius:8px; margin-bottom:15px; border-left:4px solid var(--primary-color); font-size: 0.85rem; line-height: 1.6;"></div>
+                <div class="form-group">
+                    <label>Change Seat Status</label>
+                    <select id="quickModalNewStatus" class="form-control">
+                        <option value="vacant">Vacant (Available)</option>
+                        <option value="waiting">On Hold (Waiting)</option>
+                        <option value="booked">Booked</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Change Fee Status</label>
+                    <select id="quickModalFeeStatus" class="form-control">
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="button" class="btn-submit" onclick="applyQuickSeatStatusChange()">Update Status</button>
+                    <button type="button" id="quickBtnNotify" class="btn-submit" style="background:#16a34a; display:none;" onclick="notifyQuickStudentWhatsApp()">WhatsApp Allotment</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="globalSearchModal" class="modal-overlay">
+            <div class="modal-card">
+                <button class="modal-close-btn" onclick="closeModal('globalSearchModal')">&times;</button>
+                <h3 style="font-size:1.1rem; color:#1e293b; margin-bottom:15px;">
+                    <i class="fa-solid fa-magnifying-glass" style="color:var(--primary-color);"></i> Member Lookup
+                </h3>
+                
+                <div class="form-group">
+                    <input type="text" id="searchMemberInput" class="form-control" placeholder="Enter mobile or UID..." oninput="searchMember()">
+                </div>
+
+                <div id="adminSearchResult" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:10px; margin-bottom:15px;">
+                </div>
+
+                <div id="formActionsContainer" style="border-top:2px dashed #e2e8f0; padding-top:15px;">
+                    <p style="font-size:0.8rem; color:#64748b; margin-bottom:10px;">Quick actions for the found member:</p>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-submit" onclick="editMember()">Edit Details</button>
+                        <button class="btn-submit" style="background:#16a34a;" onclick="openWhatsApp()">WhatsApp</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
