@@ -116,8 +116,9 @@
             document.getElementById('feeManagementModal').style.display = 'flex';
             document.getElementById("feeSearchInput").value = "";
             document.getElementById("feeSearchResults").style.display = "none";
-            document.getElementById("feeDetailsSection").style.display = "none";
-            feeSelectedMember = null;
+            document.getElementById("feeDetailsSection").style.display = "block";
+            
+            feeSelectedMember = { name: "Direct Walk-in / Member", mobile: "", uid: "DIRECT", branch: activeBranch };
             feeFlowState = 1;
             fetchFeeLibraryData();
         }
@@ -127,7 +128,7 @@
             let utrContainer = document.getElementById("utrContainer");
             let cashContainer = document.getElementById("cashContainer");
             
-            if (mode === "Online" || mode === "UPI") {
+            if (mode === "Online" || mode === "By QR") {
                 if(utrContainer) utrContainer.style.display = "block";
                 if(cashContainer) cashContainer.style.display = "none";
             } else {
@@ -176,8 +177,11 @@
                 recordsList = feeLibraryDataObject;
             } else if (typeof feeLibraryDataObject === 'object' && feeLibraryDataObject !== null) {
                 for (let mob in feeLibraryDataObject) {
-                    if (Array.isArray(feeLibraryDataObject[mob])) {
-                        recordsList = recordsList.concat(feeLibraryDataObject[mob]);
+                    let item = feeLibraryDataObject[mob];
+                    if (Array.isArray(item)) {
+                        recordsList = recordsList.concat(item);
+                    } else if (item && typeof item === 'object') {
+                        recordsList.push(item);
                     }
                 }
             }
@@ -397,51 +401,68 @@
             if (!feeSelectedMember) return;
 
             let expiryDate = document.getElementById("feeExpiryDate").value;
-            const successMsg = `${feeSelectedMember.name} (${feeSelectedMember.uid}) aapki Eminence Library sadasyata ko dinank ${expiryDate} तक aage badha diya gaya hai--dhanyawad`;
+            const successMsg = `${feeSelectedMember.name} (${feeSelectedMember.uid}) aapki Eminence Library sadasyata ko dinank ${expiryDate} तक आगे बढ़ा दिया गया है--धन्यवाद`;
             
-            window.open(`https://wa.me/91${feeSelectedMember.mobile}?text=${encodeURIComponent(successMsg)}`, '_blank');
+            if (feeSelectedMember.mobile) {
+                window.open(`https://wa.me/91${feeSelectedMember.mobile}?text=${encodeURIComponent(successMsg)}`, '_blank');
+            }
 
             clearEntireFeeFormAndMember();
         };
 
+        // Universal Duplicate Fee Validation Logic with Strict Normalization
         window.validateAndSubmitFee = function() {
             if (!feeSelectedMember) {
                 alert("Please select a member first!");
                 return;
             }
 
-            let feeMonth = document.getElementById("feeForMonth").value.trim();
+            let rawInputMonth = document.getElementById("feeForMonth").value.trim();
 
-            if (!feeMonth.includes("-")) {
-                alert("⚠️ Error: Month aur Year ke beech mein hyphen '-' होना zaroori hai (e.g., October-2026).");
+            if (!rawInputMonth.includes("-")) {
+                alert("⚠️ Error: Month aur Year ke beech mein hyphen '-' hona zaroori hai (e.g., October-2026).");
                 document.getElementById("feeForMonth").focus();
                 return;
             }
+
+            let normalizeStr = (str) => String(str || "").toLowerCase().replace(/[\s_]+/g, "-").trim();
+            let targetMonth = normalizeStr(rawInputMonth);
 
             let recordsList = [];
             if (Array.isArray(feeLibraryDataObject)) {
                 recordsList = feeLibraryDataObject;
             } else if (typeof feeLibraryDataObject === 'object' && feeLibraryDataObject !== null) {
-                for (let mob in feeLibraryDataObject) {
-                    if (Array.isArray(feeLibraryDataObject[mob])) {
-                        recordsList = recordsList.concat(feeLibraryDataObject[mob]);
+                for (let key in feeLibraryDataObject) {
+                    let item = feeLibraryDataObject[key];
+                    if (Array.isArray(item)) {
+                        recordsList = recordsList.concat(item);
+                    } else if (item && typeof item === 'object') {
+                        recordsList.push(item);
                     }
                 }
             }
 
             let isDuplicate = recordsList.some(m => {
-                let mMob = String(m["Mobile Number"] || m.mobile || m.phone || "").trim();
-                let mUid = String(m["UID Code"] || m.uid || "").trim();
-                let mMonth = String(m["Fees For Month"] || m.feesformonth || m.month || "").trim();
+                let mMob = String(m["Mobile Number"] || m.mobile || m.phone || m.Mob || "").trim();
+                let mUid = String(m["UID Code"] || m.uid || m.UID || "").trim();
                 
-                let matchesUser = (mMob === String(feeSelectedMember.mobile).trim() && mUid === String(feeSelectedMember.uid).trim());
-                let matchesMonth = (mMonth.toLowerCase() === feeMonth.toLowerCase());
+                let mMonthRaw = m["Fees For Month"] || m.feesformonth || m.feeMonth || m.month || m.PaymentFor || m.paymentfor || "";
+                let mMonth = normalizeStr(mMonthRaw);
+
+                let matchesUser = false;
+                if (feeSelectedMember.uid && feeSelectedMember.uid !== "DIRECT") {
+                    matchesUser = (mUid.toLowerCase() === String(feeSelectedMember.uid).toLowerCase());
+                } else if (feeSelectedMember.mobile) {
+                    matchesUser = (mMob === String(feeSelectedMember.mobile).trim());
+                }
+                
+                let matchesMonth = (mMonth === targetMonth || mMonth.includes(targetMonth) || targetMonth.includes(mMonth));
                 
                 return matchesUser && matchesMonth;
             });
 
             if (isDuplicate) {
-                alert(`⚠️ Duplicate Error: ${feeSelectedMember.name} ki "${feeMonth}" mahine ki fees pehle hi jama ho chuki hai! Aap same mahine ki dobara fees jama nahi kar sakte.`);
+                alert(`⚠️ Duplicate Error: ${feeSelectedMember.name || 'Is sadasya'} ki "${rawInputMonth}" mahine ki fees pehle hi jama ho chuki hai! Aap same mahine ki dobara entry nahi kar sakte.`);
                 return;
             }
 
@@ -464,7 +485,7 @@
                 mobile: feeSelectedMember.mobile,
                 branch: feeSelectedMember.branch,
                 shift: document.getElementById("feeShift").value,
-                feesformonth: feeMonth,
+                feesformonth: rawInputMonth,
                 amount: amount,
                 mode: mode,
                 utr: utr || "N/A",
@@ -509,7 +530,6 @@
             document.getElementById("feeSearchResults").style.display = "none";
             document.getElementById("feeSearchResults").innerHTML = "";
             document.getElementById("selectedMemberSummary").innerHTML = "";
-            document.getElementById("feeDetailsSection").style.display = "none";
 
             document.getElementById("feeAmount").value = "";
             document.getElementById("feeUtr").value = "";
@@ -592,7 +612,7 @@
                             <tr><td class="label">Shift:</td><td>${shift}</td></tr>
                             <tr><td class="label">Payment Amount:</td><td><b style="color: #16a34a;">₹${amount}</b></td></tr>
                             <tr><td class="label">Payment Mode:</td><td>${mode}</td></tr>
-                            ${(mode === "Online" || mode === "UPI") ? `<tr><td class="label">UTR Number:</td><td><b>${utr}</b></td></tr>` : ''}
+                            ${(mode === "Online" || mode === "By QR") ? `<tr><td class="label">UTR Number:</td><td><b>${utr}</b></td></tr>` : ''}
                             <tr><td class="label">Payment For:</td><td><b style="color: #c2410c;">${remark}</b></td></tr>
                             <tr><td class="label">Fees Pay Date:</td><td>${payDate}</td></tr>
                             <tr><td class="label">Fees Expiry Date:</td><td><b style="color: #dc2626;">${expiryDate}</b></td></tr>
@@ -866,7 +886,7 @@
     <div id="adminGateOverlay" class="admin-gate-overlay">
         <div class="admin-gate-card">
             <div>
-                <img src="logo.png" alt="Eminence Logo" style="width: 75px; height: 75px; display: block; margin: 0 auto 12px auto; border-radius: 50%; object-fit: cover; background: #cbd5e1;">
+                <img src="logo2.png" alt="Eminence Logo" style="width: 75px; height: 75px; display: block; margin: 0 auto 12px auto; border-radius: 50%; object-fit: cover; background: #cbd5e1;">
                 <h2>Eminence Library</h2>
                 <p>Admin Authentication Required</p>
             </div>
@@ -885,24 +905,24 @@
                     <div class="portal-icon-container"><img src="Desk5.png" alt="Seat Management" class="portal-icon-img"></div>
                     <h2>Eminence Library</h2>
                     <div class="portal-title">Seat Management</div>
-                    <p>लाइब्रेरी की सभी सीटों की स्थिति मैनेज और ट्रैक करें।</p>
+                    <p> सीटों की स्थिति मैनेज और ट्रैक करें।</p>
                 </div>
                 <button type="button" class="btn-submit" onclick="openSeatManagement()">Manage Seats</button>
             </div>
 
             <div class="admin-gate-card" style="border-top-color: #0284c7;">
                 <div>
-                    <div class="portal-icon-container" style="border-color: #0284c7; background: #f0f9ff;"><img src="Rs.png" alt="Fee Management" class="portal-icon-img"></div>
+                    <div class="portal-icon-container" style="border-color: #0284c7; background: #f0f9ff;"><img src="Rs.png" alt="Fee Deposit" class="portal-icon-img"></div>
                     <h2>Eminence Library</h2>
-                    <div class="portal-title" style="color: #0284c7;">Fee Management</div>
-                    <p>छात्रों की फीस का स्टेटस और रिकॉर्ड यहाँ देखें।</p>
+                    <div class="portal-title" style="color: #0284c7;">Fee Deposit</div>
+                    <p> फीस यहाँ अपडेट करें ।</p>
                 </div>
                 <button type="button" class="btn-submit" style="background: #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);" onclick="openFeeManagementModal()">Manage Fees</button>
             </div>
         </div>
     </div>
 
-    <!-- Fee Management Modal Window (Direct Search & Form Combined) -->
+    <!-- Fee Management Modal Window (Direct Form Panel) -->
     <div id="feeManagementModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -911,14 +931,17 @@
             </div>
             <div style="padding: 10px 0;">
                 <div class="form-group">
-                    <label for="feeSearchInput" style="font-weight: 600; color: #334155; font-size: 13px; margin-bottom: 6px; display: block;">पूरा मोबाइल नंबर, आखिरी 4 अंक या UID दर्ज करें:</label>
+                    <label for="feeSearchInput" style="font-weight: 600; color: #334155; font-size: 13px; margin-bottom: 6px; display: block;">सर्च करें (Optional - मोबाइल नंबर या UID):</label>
                     <input type="text" id="feeSearchInput" class="form-control" placeholder="मोबाइल नंबर या UID दर्ज करें..." oninput="searchLibraryData()">
                     <div id="feeSearchResults" class="search-results"></div>
                 </div>
 
-                <div id="feeDetailsSection" style="display: none; margin-top: 15px; border-top: 2px solid #e2e8f0; padding-top: 15px;">
+                <!-- Direct Fee Form Section -->
+                <div id="feeDetailsSection" style="display: block; margin-top: 15px; border-top: 2px solid #e2e8f0; padding-top: 15px;">
                     
-                    <div id="selectedMemberSummary" style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; padding: 10px 14px; border-radius: 8px; margin-bottom: 15px;"></div>
+                    <div id="selectedMemberSummary" style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; padding: 10px 14px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">👤 Direct Entry Mode Active</div>
+                    </div>
 
                     <div id="feeTransactionFormFields">
                         <h4 style="font-size: 0.95rem; color: #0f172a; margin-bottom: 12px;"><i class="fa-solid fa-receipt"></i> Fee Transaction Details</h4>
@@ -927,14 +950,14 @@
                             <div class="form-group">
                                 <label>Shift</label>
                                 <select id="feeShift" class="form-control">
-                                    <option value="Morning Shift">Morning Shift</option>
-                                    <option value="Evening Shift">Evening Shift</option>
-                                    <option value="Full Day Shift">Full Day Shift</option>
-                                    <option value="Night Shift">Night Shift</option>
+                                    <option value="Morning Shift (07:00 AM To 02:00 PM)">Morning Shift (07:00 AM To 02:00 PM)</option>
+                                    <option value="Evening Shift (02:00 PM To 11:00 PM)">Evening Shift (02:00 PM To 11:00 PM)</option>
+                                    <option value="Full Day Shift(07:00 AM To 11:00 PM)">Full Day Shift(07:00 AM To 11:00 PM)</option>
+                                    <option value="Short Term Plan (For Min 15 Days)">Short Term Plan (For Min 15 Days)</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Fees For Month (e.g. October-2026)</label>
+                                <label>Fees For Month (e.g. August-2026)</label>
                                 <input type="text" id="feeForMonth" class="form-control" placeholder="October-2026" oninput="checkFormCompletion()">
                             </div>
                         </div>
@@ -959,7 +982,7 @@
                                 <select id="feePaymentMode" class="form-control" onchange="handlePaymentModeChange()">
                                     <option value="Cash">Cash</option>
                                     <option value="Online">Online</option>
-                                    <option value="UPI">UPI</option>
+                                    <option value="By QR">By QR</option>
                                 </select>
                             </div>
                             <div class="form-group" id="utrContainer" style="display: none;">
@@ -985,7 +1008,6 @@
 
                         <div id="feeDueDaysDisplay" style="margin: 10px 0; font-size: 0.88rem;"></div>
 
-                        <!-- Single Action Button Container with strict field-fill requirement -->
                         <div style="margin-top: 15px;">
                             <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); display: none; width: 100%;" onclick="handleFeeButtonAction()">
                                 <i class="fa-solid fa-sync"></i> Update Fee
