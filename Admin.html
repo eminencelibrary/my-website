@@ -11,9 +11,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
-        const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcipVYb2RFh_nF6gdB3GjklbnvQDVI3I_Q2cqeVUjj7puo2dLeg7BsCxZWhzmCmPYa/exec";
+        const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5WEnufQq_eV3HmsGShNC28Wig5DA7QRqVSsQ7T0SQyLgui1HUXkcYZRH5yiIHmvX5/exec";
         const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarHm6enNyPnaydyi0gKEdh06lYaN9nsI0O7jtV6qEAh3SWX0fhmXhYVJwEAqzPNDF/exec";
-        const FEE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwgEOpKF8P2zTeTHJn99x3n7gQV4xeTo0a00W4N1ip4-rEPEyEq9A236dR6DgqNmI7Z/exec";
+        const FEE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzrWw-rkRBkG0Bc8W8FgcXbxaMQ9-sDteW7V5BvcSflzPiFws6K9diX46XuBYnG10D/exec";
 
         let activeBranch = 'core'; 
         let allData = { core: {}, nexus: {} };
@@ -22,39 +22,73 @@
         let feeSelectedMember = null;
         let isAdminLoggedIn = false;
         let quickSelectedSeatNum = null;
-        let feeFlowState = 1; // 1: Update Fee, 2: Print Receipt, 3: Submit & Finish
+        let feeFlowState = 1; // 1: Update Fee, 2: Print Receipt
+        let feeSaveInProgress = false;
+
+        let oldStudentsDataPromise = null;
 
         function fetchOldStudentsData() {
-            if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return;
-            fetch(OLD_STUDENTS_SCRIPT_URL)
-                .then(response => response.json())
-                .then(data => { if (data && typeof data === 'object') existingMembersDB = data; })
-                .catch(err => console.log("Old students fetch error: ", err));
-        }
+            if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return Promise.resolve({});
 
-        function fetchFeeLibraryData() {
-            if (!FEE_WEB_APP_URL.startsWith("http")) return;
-            fetch(FEE_WEB_APP_URL)
+            // Re-use the same request instead of firing a new request on every keypress.
+            if (oldStudentsDataPromise) return oldStudentsDataPromise;
+
+            oldStudentsDataPromise = fetch(OLD_STUDENTS_SCRIPT_URL, { cache: "no-store" })
                 .then(response => response.json())
-                .then(data => { 
-                    if (data) {
-                        feeLibraryDataObject = data; 
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        existingMembersDB = data;
                     }
+                    return existingMembersDB;
                 })
-                .catch(err => console.log("Fee data fetch error: ", err));
+                .catch(err => {
+                    console.log("Old students fetch error: ", err);
+                    return existingMembersDB;
+                });
+
+            return oldStudentsDataPromise;
         }
 
-        function fetchSheetData() {
-            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
-            fetch(LIVE_BOOKING_SCRIPT_URL)
+        let feeLibraryDataPromise = null;
+        let liveSheetDataPromise = null;
+
+        function fetchFeeLibraryData(forceRefresh = false) {
+            if (!FEE_WEB_APP_URL.startsWith("http")) return Promise.resolve(feeLibraryDataObject);
+            if (feeLibraryDataPromise && !forceRefresh) return feeLibraryDataPromise;
+
+            feeLibraryDataPromise = fetch(FEE_WEB_APP_URL + "?t=" + Date.now(), { cache: "no-store" })
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data)) feeLibraryDataObject = data;
+                    return feeLibraryDataObject;
+                })
+                .catch(err => {
+                    console.log("Fee data fetch error: ", err);
+                    return feeLibraryDataObject;
+                });
+
+            return feeLibraryDataPromise;
+        }
+
+        function fetchSheetData(forceRefresh = false, silent = false) {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return Promise.resolve(allData);
+            if (liveSheetDataPromise && !forceRefresh) return liveSheetDataPromise;
+
+            liveSheetDataPromise = fetch(LIVE_BOOKING_SCRIPT_URL + "?t=" + Date.now(), { cache: "no-store" })
                 .then(response => response.json())
                 .then(data => {
                     if (data && typeof data === 'object') {
                         allData = data;
-                        if (isAdminLoggedIn) renderLayouts();
+                        if (isAdminLoggedIn && !silent) renderLayouts();
                     }
+                    return allData;
                 })
-                .catch(err => console.log("Live sheet fetch error: ", err));
+                .catch(err => {
+                    console.log("Live sheet fetch error: ", err);
+                    return allData;
+                });
+
+            return liveSheetDataPromise;
         }
 
         function saveToSheet() {
@@ -120,7 +154,7 @@
             
             feeSelectedMember = { name: "Direct Walk-in / Member", mobile: "", uid: "DIRECT", branch: activeBranch };
             feeFlowState = 1;
-            fetchFeeLibraryData();
+            Promise.all([fetchOldStudentsData(), fetchFeeLibraryData(), fetchSheetData(false, true)]);
         }
 
         window.handlePaymentModeChange = function() {
@@ -161,71 +195,239 @@
             }
         }
 
-        window.searchLibraryData = function() {
-            let query = document.getElementById("feeSearchInput").value.trim().toLowerCase();
-            let resultsDiv = document.getElementById("feeSearchResults");
+        // ============================================================
+        // FEE MEMBER SEARCH - SEARCHES ALL MEMBER SOURCES
+        // 1. Fee Updation history
+        // 2. Old/current member database
+        // 3. Live seat/member data
+        // This allows a BRAND-NEW member to be selected even when
+        // they have never paid a fee before.
+        // ============================================================
+
+        window.feeSearchMatchCache = [];
+
+        function getMemberField(obj, names) {
+            if (!obj || typeof obj !== 'object') return '';
+
+            const wanted = names.map(x => String(x).toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+            for (const key of Object.keys(obj)) {
+                const cleanKey = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (wanted.includes(cleanKey)) {
+                    const value = obj[key];
+                    if (value !== null && value !== undefined && String(value).trim() !== '') {
+                        return value;
+                    }
+                }
+            }
+
+            return '';
+        }
+
+        function normalizeSearchText(value) {
+            return String(value ?? '').trim().toLowerCase();
+        }
+
+        function normalizeSearchMobile(value) {
+            return String(value ?? '').replace(/\D/g, '');
+        }
+
+        function extractMemberRecords(source, output, visited) {
+            if (source === null || source === undefined) return;
+
+            if (typeof source !== 'object') return;
+
+            if (visited.has(source)) return;
+            visited.add(source);
+
+            if (Array.isArray(source)) {
+                source.forEach(item => extractMemberRecords(item, output, visited));
+                return;
+            }
+
+            const mobile = getMemberField(source, [
+                'Mobile Number', 'Mobile', 'Phone', 'Phone Number', 'mobileNumber', 'phoneNumber', 'mob'
+            ]);
+            const uid = getMemberField(source, [
+                'UID Code', 'UID', 'uidCode', 'Student UID', 'Member UID'
+            ]);
+            const name = getMemberField(source, [
+                'Member Name', 'Name', 'Student Name', 'StudentName', 'Full Name', 'studentName'
+            ]);
+            const branch = getMemberField(source, [
+                'Branch Name', 'Branch', 'branchName', 'Library Branch'
+            ]);
+
+            // Treat an object as a member record when it contains at least
+            // one useful identity field. This works with different sheet
+            // header names and with nested member databases.
+            if (mobile || uid || name) {
+                output.push({
+                    mobile: String(mobile || '').trim(),
+                    uid: String(uid || '').trim(),
+                    name: String(name || '').trim(),
+                    branch: String(branch || '').trim(),
+                    record: source
+                });
+            }
+
+            Object.keys(source).forEach(key => {
+                const value = source[key];
+                if (value && typeof value === 'object') {
+                    extractMemberRecords(value, output, visited);
+                }
+            });
+        }
+
+        function mergeMemberRecords(records) {
+            const merged = new Map();
+
+            function keyFor(m) {
+                const mob = normalizeSearchMobile(m.mobile);
+                const uid = normalizeSearchText(m.uid);
+                const name = normalizeSearchText(m.name);
+                if (uid && uid !== 'direct') return 'uid:' + uid;
+                if (mob) return 'mob:' + mob;
+                if (name) return 'name:' + name;
+                return 'unknown:' + Math.random();
+            }
+
+            records.forEach(m => {
+                const key = keyFor(m);
+                if (!merged.has(key)) {
+                    merged.set(key, { ...m });
+                    return;
+                }
+
+                const old = merged.get(key);
+
+                // Merge fields from all sources. This fixes the problem where
+                // one source has UID while another has Mobile/Branch.
+                if (!old.name && m.name) old.name = m.name;
+                if (!old.mobile && m.mobile) old.mobile = m.mobile;
+                if (!old.uid && m.uid) old.uid = m.uid;
+                if (!old.branch && m.branch) old.branch = m.branch;
+
+                const oldScore =
+                    (old.name ? 1 : 0) + (old.mobile ? 1 : 0) +
+                    (old.uid ? 1 : 0) + (old.branch ? 1 : 0);
+                const newScore =
+                    (m.name ? 1 : 0) + (m.mobile ? 1 : 0) +
+                    (m.uid ? 1 : 0) + (m.branch ? 1 : 0);
+
+                if (newScore > oldScore) old.record = m.record;
+            });
+
+            return Array.from(merged.values());
+        }
+
+        function collectFeeSearchMembers() {
+            const records = [];
+            extractMemberRecords(feeLibraryDataObject, records, new WeakSet());
+            extractMemberRecords(existingMembersDB, records, new WeakSet());
+            extractMemberRecords(allData, records, new WeakSet());
+            return mergeMemberRecords(records);
+        }
+
+        let feeSearchTimer = null;
+        window.debouncedFeeSearch = function() {
+            clearTimeout(feeSearchTimer);
+            feeSearchTimer = setTimeout(() => searchLibraryData(), 180);
+        };
+
+        window.searchLibraryData = async function() {
+            const input = document.getElementById("feeSearchInput");
+            const resultsDiv = document.getElementById("feeSearchResults");
+            if (!input || !resultsDiv) return;
+
+            const query = input.value.trim().toLowerCase();
 
             if (query === "") {
                 resultsDiv.style.display = "none";
                 resultsDiv.innerHTML = "";
+                window.feeSearchMatchCache = [];
                 return;
             }
 
-            let matches = [];
-            let recordsList = [];
-            if (Array.isArray(feeLibraryDataObject)) {
-                recordsList = feeLibraryDataObject;
-            } else if (typeof feeLibraryDataObject === 'object' && feeLibraryDataObject !== null) {
-                for (let mob in feeLibraryDataObject) {
-                    let item = feeLibraryDataObject[mob];
-                    if (Array.isArray(item)) {
-                        recordsList = recordsList.concat(item);
-                    } else if (item && typeof item === 'object') {
-                        recordsList.push(item);
-                    }
-                }
-            }
+            resultsDiv.style.display = "block";
+            resultsDiv.innerHTML = "<span style='color:#64748b;font-size:12px;'>Member data load ho raha hai...</span>";
 
-            let uniqueMap = new Map();
-            recordsList.forEach(m => {
-                let mobile = String(m["Mobile Number"] || m.mobile || m.phone || "").trim();
-                let uid = String(m["UID Code"] || m.uid || "").trim();
-                let name = String(m["Member Name"] || m.name || m.studentName || "").trim();
-                let branch = String(m["Branch Name"] || m.branch || "").trim();
+            // Do not download the Fee Updation sheet on every keypress.
+            // Only wait for the sources that are still loading.
+            await Promise.all([
+                fetchOldStudentsData(),
+                fetchFeeLibraryData(),
+                fetchSheetData(false, true)
+            ]);
 
-                let mobStr = mobile.toLowerCase();
-                let uidStr = uid.toLowerCase();
-                let nameStr = name.toLowerCase();
+            const sourceRecords = collectFeeSearchMembers();
+            const matches = [];
+            const queryDigits = normalizeSearchMobile(query);
 
-                let isFullMobileMatch = (mobStr === query);
-                let isLast4Match = (query.length === 4 && mobStr.endsWith(query));
-                let isUidMatch = (uidStr === query);
-                let isNameMatch = nameStr.includes(query);
+            sourceRecords.forEach(member => {
+                const mobile = String(member.mobile || '').trim();
+                const uid = String(member.uid || '').trim();
+                const name = String(member.name || '').trim();
+                const branch = String(member.branch || '').trim();
 
-                if (isFullMobileMatch || isLast4Match || isUidMatch || isNameMatch) {
-                    let uniqueKey = `${mobile}_${uid}`;
-                    if (!uniqueMap.has(uniqueKey)) {
-                        uniqueMap.set(uniqueKey, { mobile, name, uid, branch, record: m });
-                        matches.push({ mobile, name, uid, branch, record: m });
-                    }
+                const mobDigits = normalizeSearchMobile(mobile);
+                const uidStr = normalizeSearchText(uid);
+                const nameStr = normalizeSearchText(name);
+
+                const isFullMobileMatch = queryDigits.length >= 5 && mobDigits && mobDigits === queryDigits;
+                const isLast4Match = queryDigits.length === 4 && mobDigits.endsWith(queryDigits);
+                const isUidMatch = uidStr && uidStr === query;
+                const isPartialUidMatch = query.length >= 3 && uidStr && uidStr.includes(query);
+                const isNameMatch = nameStr && nameStr.includes(query);
+                const isPartialMobileMatch = queryDigits.length >= 4 && mobDigits.includes(queryDigits);
+
+                if (isFullMobileMatch || isLast4Match || isUidMatch || isPartialUidMatch || isNameMatch || isPartialMobileMatch) {
+                    matches.push({ mobile, name, uid, branch, record: member.record });
                 }
             });
 
+            window.feeSearchMatchCache = matches;
+
             if (matches.length > 0) {
-                resultsDiv.style.display = "block";
-                resultsDiv.innerHTML = matches.map(m => `
-                    <div onclick="selectThisMember('${m.name}', '${m.mobile}', '${m.uid}', '${m.branch}')" style="padding: 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
-                        👤 <b>${m.name}</b> | 📱 <b>${m.mobile}</b> | 🆔 <b>${m.uid}</b><br>
-                        <span style="font-size: 11px; color: #64748b;">🏢 <b>Branch:</b> ${m.branch || 'N/A'}</span>
+                resultsDiv.innerHTML = matches.slice(0, 30).map((m, index) => `
+                    <div onclick="selectThisMemberByIndex(${index})"
+                         style="padding:10px;border-bottom:1px solid #f1f5f9;cursor:pointer;">
+                        👤 <b>${escapeHtml(m.name || 'N/A')}</b>
+                        | 📱 <b>${escapeHtml(m.mobile || 'N/A')}</b>
+                        | 🆔 <b>${escapeHtml(m.uid || 'N/A')}</b><br>
+                        <span style="font-size:11px;color:#64748b;">
+                            🏢 <b>Branch:</b> ${escapeHtml(m.branch || 'N/A')}
+                        </span>
                     </div>
                 `).join("");
             } else {
-                resultsDiv.style.display = "block";
-                resultsDiv.innerHTML = "<span style='color: #64748b; font-size: 12px;'>कोई सदस्य नहीं मिला। कृपया पूरा मोबाइल नंबर, आखिरी 4 अंक या सही UID दर्ज करें।</span>";
+                resultsDiv.innerHTML = "<span style='color:#64748b;font-size:12px;'>कोई सदस्य नहीं मिला। Mobile, UID या Name से search करें।</span>";
             }
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
-        window.selectThisMember = function(name, mobile, uid, branch) {
+        window.selectThisMemberByIndex = function(index) {
+            const item = window.feeSearchMatchCache[index];
+            if (!item) return;
+
+            selectThisMember(
+                item.name,
+                item.mobile,
+                item.uid,
+                item.branch,
+                item.record
+            );
+        };
+
+        window.selectThisMember = function(name, mobile, uid, branch, sourceRecord) {
             feeSelectedMember = { name, mobile, uid, branch };
             feeFlowState = 1;
             
@@ -252,7 +454,11 @@
                 memberHistory = feeLibraryDataObject[mobile] || [];
             }
 
-            let matchedRecord = memberHistory[memberHistory.length - 1] || {}; 
+            // For a brand-new member there may be no fee history yet.
+            // In that case use the selected member's source record (if it
+            // contains an expiry/validity field) instead of leaving the
+            // member unselected.
+            let matchedRecord = memberHistory[memberHistory.length - 1] || sourceRecord || {};
             
             let expDate = "";
             if (matchedRecord) {
@@ -379,148 +585,524 @@
         }
 
         window.handleFeeButtonAction = function() {
-            if (feeFlowState === 1) {
-                validateAndSubmitFee();
-            } 
-            else if (feeFlowState === 2) {
-                generateFeeReceiptOnly();
-
-                let submitBtn = document.getElementById("feeSubmitBtn");
-                if (submitBtn) {
-                    submitBtn.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> Submit & Finish';
-                    submitBtn.style.background = "#0284c7"; 
+            if (typeof feeFlowState !== 'undefined' && feeFlowState === 2) {
+                if (typeof generateFeeReceiptOnly === 'function') {
+                    generateFeeReceiptOnly();
+                    // Receipt print hone ke baad form auto-blank aur default values par reset ho jayega
+                    clearEntireFeeFormAndMember();
+                } else {
+                    alert("Receipt printing function not found!");
                 }
-                feeFlowState = 3;
-            } 
-            else if (feeFlowState === 3) {
-                sendWhatsAppAndFinish();
+                return;
             }
+
+            validateAndSubmitFee();
         };
 
-        window.sendWhatsAppAndFinish = function() {
-            if (!feeSelectedMember) return;
+        // ============================================================
+        // FEE MONTH NORMALIZATION
+        // Converts:
+        // August-2026 / August 2026 / 2026-08 / Google Sheet Date
+        // into the same YYYY-MM value.
+        // ============================================================
+        function normalizeFeeMonth(value) {
+            if (value === null || value === undefined || value === "") return "";
 
-            let expiryDate = document.getElementById("feeExpiryDate").value;
-            const successMsg = `${feeSelectedMember.name} (${feeSelectedMember.uid}) aapki Eminence Library sadasyata ko dinank ${expiryDate} तक आगे बढ़ा दिया गया है--धन्यवाद`;
-            
-            if (feeSelectedMember.mobile) {
-                window.open(`https://wa.me/91${feeSelectedMember.mobile}?text=${encodeURIComponent(successMsg)}`, '_blank');
+            if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+                return value.getFullYear() + "-" + String(value.getMonth() + 1).padStart(2, "0");
             }
 
-            clearEntireFeeFormAndMember();
-        };
+            const str = String(value).trim().toLowerCase();
+            if (!str) return "";
 
-        // Universal Duplicate Fee Validation Logic with Strict Normalization
-        window.validateAndSubmitFee = function() {
-            if (!feeSelectedMember) {
-                alert("Please select a member first!");
-                return;
-            }
-
-            let rawInputMonth = document.getElementById("feeForMonth").value.trim();
-
-            if (!rawInputMonth.includes("-")) {
-                alert("⚠️ Error: Month aur Year ke beech mein hyphen '-' hona zaroori hai (e.g., October-2026).");
-                document.getElementById("feeForMonth").focus();
-                return;
-            }
-
-            let normalizeStr = (str) => String(str || "").toLowerCase().replace(/[\s_]+/g, "-").trim();
-            let targetMonth = normalizeStr(rawInputMonth);
-
-            let recordsList = [];
-            if (Array.isArray(feeLibraryDataObject)) {
-                recordsList = feeLibraryDataObject;
-            } else if (typeof feeLibraryDataObject === 'object' && feeLibraryDataObject !== null) {
-                for (let key in feeLibraryDataObject) {
-                    let item = feeLibraryDataObject[key];
-                    if (Array.isArray(item)) {
-                        recordsList = recordsList.concat(item);
-                    } else if (item && typeof item === 'object') {
-                        recordsList.push(item);
-                    }
+            // ISO date from Google Sheet JSON: 2026-07-31T18:30:00.000Z
+            const iso = str.match(/^(\d{4})-(\d{2})-\d{2}t/);
+            if (iso) {
+                const d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    // The Sheet value is UTC; convert to local/India month.
+                    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
                 }
             }
 
-            let isDuplicate = recordsList.some(m => {
-                let mMob = String(m["Mobile Number"] || m.mobile || m.phone || m.Mob || "").trim();
-                let mUid = String(m["UID Code"] || m.uid || m.UID || "").trim();
-                
-                let mMonthRaw = m["Fees For Month"] || m.feesformonth || m.feeMonth || m.month || m.PaymentFor || m.paymentfor || "";
-                let mMonth = normalizeStr(mMonthRaw);
+            let m = str.match(/^(\d{4})-(\d{1,2})$/);
+            if (m) return m[1] + "-" + String(m[2]).padStart(2, "0");
 
-                let matchesUser = false;
-                if (feeSelectedMember.uid && feeSelectedMember.uid !== "DIRECT") {
-                    matchesUser = (mUid.toLowerCase() === String(feeSelectedMember.uid).toLowerCase());
-                } else if (feeSelectedMember.mobile) {
-                    matchesUser = (mMob === String(feeSelectedMember.mobile).trim());
-                }
-                
-                let matchesMonth = (mMonth === targetMonth || mMonth.includes(targetMonth) || targetMonth.includes(mMonth));
-                
-                return matchesUser && matchesMonth;
-            });
+            m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+            if (m) return m[1] + "-" + String(m[2]).padStart(2, "0");
 
-            if (isDuplicate) {
-                alert(`⚠️ Duplicate Error: ${feeSelectedMember.name || 'Is sadasya'} ki "${rawInputMonth}" mahine ki fees pehle hi jama ho chuki hai! Aap same mahine ki dobara entry nahi kar sakte.`);
-                return;
-            }
-
-            let amount = document.getElementById("feeAmount").value;
-            let payDate = document.getElementById("feePayDate").value;
-            let expiryDate = document.getElementById("feeExpiryDate").value;
-            let mode = document.getElementById("feePaymentMode").value;
-            let utr = mode === "Cash" ? "Cash Payment" : document.getElementById("feeUtr").value;
-
-            let submitBtn = document.getElementById("feeSubmitBtn");
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-                submitBtn.disabled = true;
-            }
-
-            let payload = {
-                action: "saveFee",
-                name: feeSelectedMember.name,
-                uid: feeSelectedMember.uid,
-                mobile: feeSelectedMember.mobile,
-                branch: feeSelectedMember.branch,
-                shift: document.getElementById("feeShift").value,
-                feesformonth: rawInputMonth,
-                amount: amount,
-                mode: mode,
-                utr: utr || "N/A",
-                paymentfor: document.getElementById("feeRemark").value,
-                payDate: payDate,
-                expiryDate: expiryDate,
-                remark: document.getElementById("feeRemark").value
+            const months = {
+                january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+                july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+                jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+                jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12
             };
 
-            fetch(FEE_WEB_APP_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            })
-            .then(() => {
-                alert("✅ Fee data successfully updated in Google Sheet!");
+            m = str.match(/^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)[\s\-_\/]*(\d{4})$/);
+            if (m) return m[2] + "-" + String(months[m[1]]).padStart(2, "0");
 
-                feeFlowState = 2;
-                if (submitBtn) {
-                    submitBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Receipt';
-                    submitBtn.style.background = "#f59e0b"; 
-                    submitBtn.disabled = false;
-                    submitBtn.style.display = "block";
+            return str.replace(/[\s\-_\/]/g, "");
+        }
+
+        function normalizeFeeIdentifier(value) {
+            return String(value ?? "").trim().toLowerCase();
+        }
+
+        function normalizeFeeMobile(value) {
+            return String(value ?? "").replace(/\D/g, "");
+        }
+
+        function makeFeeRequestId() {
+            return "FEE-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+        }
+
+async function waitForFeeSaveStatus(requestId, maxAttempts = 10) {
+            const delays = [300, 500, 700, 1000, 1200, 1500, 1500, 1500, 1500, 1500];
+
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                try {
+                    const response = await fetch(
+                        FEE_WEB_APP_URL + "?action=feeSaveStatus&requestId=" + encodeURIComponent(requestId) + "&t=" + Date.now(),
+                        { cache: "no-store" }
+                    );
+                    const result = await response.json();
+                    if (result && result.status) {
+                        return result; // यह सही status ('success' या 'duplicate') रिटर्न करेगा
+                    }
+                } catch (err) {
+                    console.log("Fee save status check error:", err);
                 }
-            })
-            .catch(err => {
-                console.error("Error saving fee: ", err);
-                alert("Error updating data to sheet.");
-                if (submitBtn) {
-                    submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
-                    submitBtn.disabled = false;
+                await new Promise(resolve => setTimeout(resolve, delays[attempt] || 1000));
+            }
+
+            return { status: "timeout", message: "Google Sheet से confirmation नहीं मिली। कृपया Sheet चेक करें।" };
+        }
+
+window.validateAndSubmitFee = async function() {
+    if (feeSaveInProgress) return;
+
+    if (!feeSelectedMember) {
+        alert("Please select a member first!");
+        return;
+    }
+
+    const rawInputMonth = document.getElementById("feeForMonth").value.trim();
+    const normalizedMonth = normalizeFeeMonth(rawInputMonth);
+
+    if (!rawInputMonth || !normalizedMonth) {
+        alert("⚠️ Please enter a valid Fee Month. Example: August-2026");
+        document.getElementById("feeForMonth").focus();
+        return;
+    }
+
+    const submitBtn = document.getElementById("feeSubmitBtn");
+
+    feeSaveInProgress = true;
+
+    if (submitBtn) {
+        submitBtn.innerHTML =
+            '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
+        submitBtn.disabled = true;
+    }
+
+    try {
+
+        // =========================================================
+        // STEP 1: ALWAYS GET FRESH FEE DATA BEFORE DUPLICATE CHECK
+        // =========================================================
+
+        feeLibraryDataPromise = null;
+
+        await fetchFeeLibraryData(true);
+
+        const currentUID = normalizeFeeIdentifier(feeSelectedMember.uid);
+        const currentMobile = normalizeFeeMobile(feeSelectedMember.mobile);
+
+        let duplicateRecord = null;
+
+        if (Array.isArray(feeLibraryDataObject)) {
+
+            for (const row of feeLibraryDataObject) {
+
+                if (!row || typeof row !== "object") continue;
+
+                const rowUID = normalizeFeeIdentifier(
+                    row["UID Code"] ??
+                    row["UID"] ??
+                    row["uid"] ??
+                    row["uidCode"] ??
+                    ""
+                );
+
+                const rowMobile = normalizeFeeMobile(
+                    row["Mobile Number"] ??
+                    row["Mobile"] ??
+                    row["mobile"] ??
+                    row["Phone"] ??
+                    ""
+                );
+
+                const rowMonth = normalizeFeeMonth(
+                    row["Fees For Month"] ??
+                    row["Fee For Month"] ??
+                    row["feesformonth"] ??
+                    row["Fee Month"] ??
+                    ""
+                );
+
+                if (!rowMonth || rowMonth !== normalizedMonth) {
+                    continue;
                 }
-            });
+
+                // -------------------------------------------------
+                // RULE 1:
+                // SAME UID + SAME FEE MONTH = DUPLICATE
+                // -------------------------------------------------
+
+                const uidDuplicate =
+                    currentUID &&
+                    currentUID !== "direct" &&
+                    rowUID &&
+                    rowUID !== "direct" &&
+                    currentUID === rowUID;
+
+                // -------------------------------------------------
+                // RULE 2:
+                // SAME MOBILE + SAME FEE MONTH = DUPLICATE
+                // -------------------------------------------------
+
+                const mobileDuplicate =
+                    currentMobile &&
+                    rowMobile &&
+                    currentMobile === rowMobile;
+
+                if (uidDuplicate || mobileDuplicate) {
+                    duplicateRecord = row;
+                    break;
+                }
+            }
+        }
+
+        // =========================================================
+        // DUPLICATE FOUND
+        // =========================================================
+
+        if (duplicateRecord) {
+
+            let duplicateName =
+                duplicateRecord["Member Name"] ||
+                duplicateRecord["Name"] ||
+                feeSelectedMember.name ||
+                "This member";
+
+            let duplicateMonth =
+                duplicateRecord["Fees For Month"] ||
+                duplicateRecord["Fee For Month"] ||
+                rawInputMonth;
+
+            alert(
+                "⚠️ DUPLICATE ENTRY!\n\n" +
+                duplicateName +
+                " ki " +
+                duplicateMonth +
+                " ki fee already deposited hai.\n\n" +
+                "Same UID/Mobile + Same Fee Month ki entry dobara save nahi ki jayegi."
+            );
+
+            feeFlowState = 1;
+
+            if (submitBtn) {
+                submitBtn.innerHTML =
+                    '<i class="fa-solid fa-sync"></i> Update Fee';
+                submitBtn.style.background = "#16a34a";
+                submitBtn.disabled = false;
+            }
+
+            feeSaveInProgress = false;
+            return;
+        }
+
+        // =========================================================
+        // STEP 2: PREPARE DATA
+        // =========================================================
+
+        if (submitBtn) {
+            submitBtn.innerHTML =
+                '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        }
+
+        const rawPayDate =
+            document.getElementById("feePayDate").value;
+
+        const rawExpiryDate =
+            document.getElementById("feeExpiryDate").value;
+
+        function formatDateToDDMMYYYY(dateStr) {
+            if (!dateStr) return "";
+
+            const parts = dateStr.split("-");
+
+            return parts.length === 3
+                ? `${parts[2]}-${parts[1]}-${parts[0]}`
+                : dateStr;
+        }
+
+        const mode =
+            document.getElementById("feePaymentMode").value;
+
+        const utr =
+            mode === "Cash"
+                ? "Cash Payment"
+                : document.getElementById("feeUtr").value.trim();
+
+        const requestId = makeFeeRequestId();
+
+        const payload = {
+            action: "saveFee",
+            requestId: requestId,
+
+            name: feeSelectedMember.name || "",
+            uid: feeSelectedMember.uid || "",
+            mobile: feeSelectedMember.mobile || "",
+            branch: feeSelectedMember.branch || "",
+
+            shift:
+                document.getElementById("feeShift").value,
+
+            feesformonth:
+                rawInputMonth,
+
+            amount:
+                document.getElementById("feeAmount").value,
+
+            mode: mode,
+
+            utr:
+                utr || "N/A",
+
+            paymentfor:
+                document.getElementById("feeRemark").value,
+
+            payDate:
+                formatDateToDDMMYYYY(rawPayDate),
+
+            expiryDate:
+                formatDateToDDMMYYYY(rawExpiryDate),
+
+            remark:
+                document.getElementById("feeRemark").value
         };
+
+        // =========================================================
+        // STEP 3: SEND TO GOOGLE APPS SCRIPT
+        // =========================================================
+
+        let postResponse;
+
+        try {
+
+            postResponse = await fetch(FEE_WEB_APP_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify(payload)
+            });
+
+        } catch (postError) {
+
+            console.error("Fee POST Error:", postError);
+
+            throw new Error(
+                "Google Sheet server se connection nahi ho saka."
+            );
+        }
+
+        // POST response ko read karna important hai
+        let postResult = null;
+
+        try {
+            const postText = await postResponse.text();
+
+            console.log(
+                "Google Apps Script POST Response:",
+                postText
+            );
+
+            if (postText) {
+                try {
+                    postResult = JSON.parse(postText);
+                } catch (parseError) {
+                    console.log(
+                        "POST response JSON nahi hai:",
+                        postText
+                    );
+                }
+            }
+
+        } catch (responseError) {
+            console.log(
+                "POST response read error:",
+                responseError
+            );
+        }
+
+        // =========================================================
+        // STEP 4: DIRECT DUPLICATE RESPONSE FROM BACKEND
+        // =========================================================
+
+        if (
+            postResult &&
+            (
+                postResult.status === "duplicate" ||
+                postResult.result === "duplicate" ||
+                postResult.success === false &&
+                String(postResult.message || "")
+                    .toLowerCase()
+                    .includes("duplicate")
+            )
+        ) {
+
+            alert(
+                "⚠️ DUPLICATE ENTRY!\n\n" +
+                (
+                    postResult.message ||
+                    "Same UID/Mobile + Same Fee Month already exists."
+                )
+            );
+
+            feeFlowState = 1;
+
+            if (submitBtn) {
+                submitBtn.innerHTML =
+                    '<i class="fa-solid fa-sync"></i> Update Fee';
+                submitBtn.style.background = "#16a34a";
+                submitBtn.disabled = false;
+            }
+
+            return;
+        }
+
+        // =========================================================
+        // STEP 5: WAIT FOR SERVER CONFIRMATION
+        // =========================================================
+
+        const result =
+            await waitForFeeSaveStatus(requestId);
+
+        console.log(
+            "Final Fee Save Status:",
+            result
+        );
+
+        // =========================================================
+        // DUPLICATE
+        // =========================================================
+
+        if (
+            result &&
+            (
+                result.status === "duplicate" ||
+                result.result === "duplicate"
+            )
+        ) {
+
+            alert(
+                "⚠️ DUPLICATE ENTRY!\n\n" +
+                (
+                    result.message ||
+                    "इस सदस्य की इस महीने की फीस पहले ही जमा है।"
+                )
+            );
+
+            feeFlowState = 1;
+
+            if (submitBtn) {
+                submitBtn.innerHTML =
+                    '<i class="fa-solid fa-sync"></i> Update Fee';
+
+                submitBtn.style.background = "#16a34a";
+                submitBtn.disabled = false;
+            }
+
+            return;
+        }
+
+        // =========================================================
+        // SUCCESS
+        // =========================================================
+
+        if (
+            result &&
+            result.status === "success"
+        ) {
+
+            alert(
+                "✅ Fee data successfully updated in Google Sheet!"
+            );
+
+            feeLibraryDataPromise = null;
+
+            await fetchFeeLibraryData(true);
+
+            feeFlowState = 2;
+
+            if (submitBtn) {
+
+                submitBtn.innerHTML =
+                    '<i class="fa-solid fa-print"></i> Print Receipt';
+
+                submitBtn.style.background = "#f59e0b";
+                submitBtn.disabled = false;
+                submitBtn.style.display = "block";
+            }
+
+            return;
+        }
+
+        // =========================================================
+        // UNKNOWN / TIMEOUT
+        // =========================================================
+
+        throw new Error(
+            (result && result.message) ||
+            "Google Sheet save confirmation nahi mili."
+        );
+
+    } catch (err) {
+
+        console.error(
+            "Fee save error:",
+            err
+        );
+
+        alert(
+            "❌ Fee save confirm nahi ho saki.\n\n" +
+            (
+                err.message ||
+                "Please Google Sheet check karein."
+            )
+        );
+
+        feeFlowState = 1;
+
+        if (submitBtn) {
+
+            submitBtn.innerHTML =
+                '<i class="fa-solid fa-sync"></i> Update Fee';
+
+            submitBtn.style.background = "#16a34a";
+            submitBtn.disabled = false;
+        }
+
+    } finally {
+
+        feeSaveInProgress = false;
+    }
+};        
+
+
+
 
         window.clearEntireFeeFormAndMember = function() {
             feeSelectedMember = null;
@@ -756,7 +1338,12 @@
             const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
             let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
             if (student && mobNum) {
-                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello ${student.studentName || student.name},\naapke seat number #${quickSelectedSeatNum} ka allotment kar diya gaya hai. Happy Study -- Team Eminence.\n\n`;
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*
+
+Hello ${student.studentName || student.name},
+aapke seat number #${quickSelectedSeatNum} ka allotment kar diya gaya hai. Happy Study -- Team Eminence.
+
+`;
                 window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
             } else {
                 alert("No mobile number available for this seat.");
@@ -882,7 +1469,6 @@
     </style>
 </head>
 <body>
-
     <div id="adminGateOverlay" class="admin-gate-overlay">
         <div class="admin-gate-card">
             <div>
@@ -922,7 +1508,7 @@
         </div>
     </div>
 
-    <!-- Fee Management Modal Window (Direct Form Panel) -->
+    <!-- Fee Management Modal Window -->
     <div id="feeManagementModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -932,13 +1518,11 @@
             <div style="padding: 10px 0;">
                 <div class="form-group">
                     <label for="feeSearchInput" style="font-weight: 600; color: #334155; font-size: 13px; margin-bottom: 6px; display: block;">सर्च करें (Optional - मोबाइल नंबर या UID):</label>
-                    <input type="text" id="feeSearchInput" class="form-control" placeholder="मोबाइल नंबर या UID दर्ज करें..." oninput="searchLibraryData()">
+                    <input type="text" id="feeSearchInput" class="form-control" placeholder="मोबाइल नंबर या UID दर्ज करें..." oninput="debouncedFeeSearch()">
                     <div id="feeSearchResults" class="search-results"></div>
                 </div>
 
-                <!-- Direct Fee Form Section -->
                 <div id="feeDetailsSection" style="display: block; margin-top: 15px; border-top: 2px solid #e2e8f0; padding-top: 15px;">
-                    
                     <div id="selectedMemberSummary" style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; padding: 10px 14px; border-radius: 8px; margin-bottom: 15px;">
                         <div style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">👤 Direct Entry Mode Active</div>
                     </div>
@@ -1102,6 +1686,5 @@
             </div>
         </div>
     </div>
-
 </body>
 </html>
