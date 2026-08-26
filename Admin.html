@@ -26,6 +26,8 @@
         let quickSelectedSeatNum = null;
         let feeFlowState = 1; // 1: Update Fee, 2: Print Receipt
         let feeSaveInProgress = false;
+        let feeReceiptMode = "new"; // new = newly saved fee, reprint = historical receipt
+        let feeReceiptPrinted = false;
 
         let oldStudentsDataPromise = null;
 
@@ -310,6 +312,8 @@
 
             feeSelectedMember = { name: "Direct Walk-in / Member", mobile: "", uid: "DIRECT", branch: activeBranch };
             feeFlowState = 1;
+            feeReceiptMode = "new";
+            feeReceiptPrinted = false;
             
             let submitBtn = document.getElementById("feeSubmitBtn");
             if (submitBtn) {
@@ -610,12 +614,16 @@
             const item = reprintSearchMatchCache[index];
             if (!item) return;
 
+            // Reprint selection is independent from the new-fee flow.
             feeSelectedMember = {
                 name: item.name || "",
                 mobile: item.mobile || "",
                 uid: item.uid || "",
                 branch: item.branch || activeBranch
             };
+            feeReceiptMode = "reprint";
+            feeReceiptPrinted = false;
+            feeFlowState = 1;
 
             const searchInput = document.getElementById("reprintQueryInput");
             if (searchInput) {
@@ -627,12 +635,16 @@
 
             const monthSelect = document.getElementById("reprintMonthSelect");
             if (monthSelect) {
-                monthSelect.innerHTML = '<option value="">⏳ Paid history load ho rahi hai...</option>';
+                monthSelect.innerHTML = '<option value="">⏳ Is member ki actual paid history load ho rahi hai...</option>';
                 monthSelect.disabled = true;
             }
 
             currentMemberFeeHistory = [];
 
+            // Google Sheet / Fee Updation API column structure:
+            // A Date, B Member Name, C UID Code, D Mobile Number, E Branch,
+            // F Shift, G Fees for month, H Paid Amount, I Payment Mode,
+            // J UTR, K Payment For, L Payment Date, M expiryDate.
             const keyNorm = v => String(v ?? "")
                 .toLowerCase()
                 .replace(/[\u200B-\u200D\uFEFF]/g, "")
@@ -653,18 +665,18 @@
             };
 
             const aliases = {
-                date: ["date", "paydate", "paymentdate"],
+                date: ["date"],
                 name: ["membername", "name", "studentname"],
                 uid: ["uidcode", "uid", "studentuid", "memberuid"],
                 mobile: ["mobilenumber", "mobile", "phone", "phonenumber", "contactnumber"],
                 branch: ["branchname", "branch"],
                 shift: ["shift"],
-                month: ["feesformonth", "feesformonth", "feefor", "feemonth", "month", "feesmonth"],
+                month: ["feesformonth", "feefor", "feemonth", "month", "feesmonth"],
                 amount: ["paidamount", "amount", "paymentamount", "feesamount", "feeamount"],
                 mode: ["paymentmode", "paymentmo", "mode", "paymode"],
                 utr: ["utr", "utrnumber", "transactionid", "transactionnumber"],
                 remark: ["paymentforremark", "paymentfor", "remark", "paymentremark"],
-                payDate: ["paydate", "paymentdate", "date"],
+                payDate: ["paymentdate", "paydate"],
                 expiryDate: ["expirydate", "feesexpirydate", "expiry", "validity"]
             };
 
@@ -681,6 +693,7 @@
                 const wanted = aliases[field] || [];
                 const wantedSet = new Set(wanted.map(keyNorm));
 
+                // Exact normalized header match first.
                 for (const key of Object.keys(record)) {
                     if (wantedSet.has(keyNorm(key))) {
                         const value = record[key];
@@ -690,6 +703,8 @@
                     }
                 }
 
+                // Then a conservative partial match. This is intentionally not used
+                // for the month field when the record has a real "Fees for month" key.
                 for (const key of Object.keys(record)) {
                     const nk = keyNorm(key);
                     if (wanted.some(alias => nk.includes(keyNorm(alias)) || keyNorm(alias).includes(nk))) {
@@ -699,79 +714,99 @@
                         }
                     }
                 }
-
                 return "";
             }
-            
-            // Expose readFeeField globally for month change handler
+
             window.__readFeeReprintField = readFeeField;
 
             const targetMobile = mobileNorm(feeSelectedMember.mobile);
             const targetUID = keyNorm(feeSelectedMember.uid);
 
-            const filterHistory = rows => (Array.isArray(rows) ? rows : []).filter(record => {
-                const recordMobile = mobileNorm(readFeeField(record, "mobile"));
-                const recordUID = keyNorm(readFeeField(record, "uid"));
-                return Boolean(
-                    (targetMobile && recordMobile && recordMobile === targetMobile) ||
-                    (targetUID && recordUID && recordUID === targetUID)
-                );
-            });
-
-            currentMemberFeeHistory = filterHistory(feeLibraryDataObject);
-
-            if (currentMemberFeeHistory.length === 0) {
-                try {
-                    await fetchReprintLibraryData(
-                        feeSelectedMember.uid,
-                        feeSelectedMember.mobile,
-                        true
-                    );
-                    currentMemberFeeHistory = filterHistory(reprintLibraryDataObject);
-
-                    if (
-                        currentMemberFeeHistory.length === 0 &&
-                        Array.isArray(reprintLibraryDataObject)
-                    ) {
-                        currentMemberFeeHistory = reprintLibraryDataObject.slice();
-                    }
-                } catch (error) {
-                    console.error("Targeted Reprint history error:", error);
+            // IMPORTANT FIX:
+            // Reprint history MUST come from the complete Fee Updation dataset
+            // (the same dataset backed by the Google Sheet shown by the user).
+            // Do NOT use feeHistory/searchFee first because those endpoints can
+            // return a latest/generic record such as July-2026 for every member.
+            let allPaymentRows = [];
+            try {
+                await fetchFeeLibraryData(true); // force fresh Google Sheet data
+                if (Array.isArray(feeLibraryDataObject)) {
+                    allPaymentRows = feeLibraryDataObject.slice();
                 }
+            } catch (error) {
+                console.warn("Fee Updation complete dataset load failed:", error);
             }
 
+            // Match by UID OR mobile. UID is preferred, but mobile is also accepted
+            // so historical rows remain visible if an old row has a blank/different UID.
+            const memberRows = allPaymentRows.filter(record => {
+                const recordMobile = mobileNorm(readFeeField(record, "mobile"));
+                const recordUID = keyNorm(readFeeField(record, "uid"));
+
+                const uidMatch = Boolean(targetUID && targetUID !== "direct" && recordUID && recordUID === targetUID);
+                const mobileMatch = Boolean(targetMobile && recordMobile && recordMobile === targetMobile);
+
+                return uidMatch || mobileMatch;
+            });
+
+            // Only payment rows having an actual Fees for month are valid for the
+            // Reprint month dropdown. Column G is the authoritative paid month.
+            const validPaymentRows = memberRows.filter(record => {
+                const rawMonth = String(readFeeField(record, "month") || "").trim();
+                return rawMonth !== "" && rawMonth.toLowerCase() !== "unknown month";
+            });
+
+            currentMemberFeeHistory = validPaymentRows.slice();
+
+            // Sort newest payment record first, but DISPLAY the Fees for month,
+            // not the payment-date month.
             currentMemberFeeHistory.sort((a, b) => {
                 const da = new Date(readFeeField(a, "payDate") || readFeeField(a, "date") || 0);
                 const db = new Date(readFeeField(b, "payDate") || readFeeField(b, "date") || 0);
                 return db - da;
             });
 
+            // Remove exact duplicate payment rows only.
+            const uniqueHistory = [];
+            const seenHistoryKeys = new Set();
+            currentMemberFeeHistory.forEach(record => {
+                const monthKey = formatMonthYear(readFeeField(record, "month") || "");
+                const amountKey = String(readFeeField(record, "amount") || "").trim();
+                const dateKey = String(readFeeField(record, "payDate") || readFeeField(record, "date") || "").trim();
+                const utrKey = String(readFeeField(record, "utr") || "").trim();
+                const uniqueKey = [monthKey, amountKey, dateKey, utrKey].join("|");
+
+                if (!seenHistoryKeys.has(uniqueKey)) {
+                    seenHistoryKeys.add(uniqueKey);
+                    uniqueHistory.push(record);
+                }
+            });
+            currentMemberFeeHistory = uniqueHistory;
+
             if (!monthSelect) return;
 
             if (currentMemberFeeHistory.length === 0) {
-                monthSelect.innerHTML = '<option value="">⚠️ Is member ki Paid history nahi mili</option>';
+                monthSelect.innerHTML = '<option value="">⚠️ Is member ki actual payment history nahi mili</option>';
                 monthSelect.disabled = true;
                 return;
             }
 
             let optionsHtml = '<option value="">-- Paid Month Select Karein --</option>';
-
             currentMemberFeeHistory.forEach((record, idx) => {
-                let rawMonth = readFeeField(record, "month") || readFeeField(record, "feesForMonth") || "Unknown Month";
+                // IMPORTANT: Only Column G / Fees for month is shown here.
+                // Payment Date (Column L) must NOT be appended as another month.
+                const rawMonth = readFeeField(record, "month") || "Unknown Month";
                 const amount = readFeeField(record, "amount") || "0";
-                let payDate = readFeeField(record, "payDate") || readFeeField(record, "date") || "";
-
                 const formattedMonth = formatMonthYear(rawMonth);
-                const formattedPayDate = payDate ? formatMonthYear(payDate) : "";
 
-                optionsHtml += `<option value="${idx}">${escapeHtml(String(formattedMonth))} — Paid ₹${escapeHtml(String(amount))}${formattedPayDate ? ` | ${escapeHtml(String(formattedPayDate))}` : ""}</option>`;
+                optionsHtml += `<option value="${idx}">${escapeHtml(String(formattedMonth))} — Paid ₹${escapeHtml(String(amount))}</option>`;
             });
 
             monthSelect.innerHTML = optionsHtml;
             monthSelect.disabled = false;
-        }; // <-- Yahan function properly close kar diya gaya hai
+        };
 
-       window.handleReprintMonthChange = function() {
+        window.handleReprintMonthChange = function() {
             const monthSelect = document.getElementById("reprintMonthSelect");
             if (!monthSelect) return;
 
@@ -779,6 +814,9 @@
             if (selectedIdx === "" || !currentMemberFeeHistory[selectedIdx]) return;
 
             const record = currentMemberFeeHistory[selectedIdx];
+            feeReceiptMode = "reprint";
+            feeFlowState = 1;
+            feeReceiptPrinted = false;
             const readFeeField = window.__readFeeReprintField || function(rec, field) {
                 return "";
             };
@@ -788,7 +826,6 @@
                 if (el && value !== "") el.value = value;
             };
 
-            // --- यहाँ सुधार किया गया है (महीने और साल को सही फ़ॉर्मैट करने के लिए) ---
             let rawMonth = readFeeField(record, "month") || readFeeField(record, "feesForMonth");
             if (rawMonth) {
                 let formattedMonth = formatMonthYear(rawMonth);
@@ -810,6 +847,7 @@
             if (typeof handlePaymentModeChange === "function") handlePaymentModeChange();
             if (typeof calculateDueDays === "function") calculateDueDays();
         };
+
         function escapeHtml(value) {
             return String(value ?? '')
                 .replace(/&/g, '&amp;')
@@ -828,6 +866,8 @@
         window.selectThisMember = function(name, mobile, uid, branch, sourceRecord) {
             feeSelectedMember = { name, mobile, uid, branch };
             feeFlowState = 1;
+            feeReceiptMode = "new";
+            feeReceiptPrinted = false;
             
             let searchInput = document.getElementById("feeSearchInput");
             if (searchInput) searchInput.value = `${name} (${mobile} - ${uid})`;
@@ -962,12 +1002,17 @@
         }
 
         window.handleFeeButtonAction = function() {
-            if (typeof feeFlowState !== 'undefined' && feeFlowState === 2) {
-                if (typeof generateFeeReceiptOnly === 'function') {
-                    generateFeeReceiptOnly();
-                }
+            if (feeFlowState === 2) {
+                generateFeeReceiptOnly(false);
                 return;
             }
+
+            if (feeFlowState === 3) {
+                sendFeeWhatsAppNotification();
+                return;
+            }
+
+            // State 1 is always the first step: Update Fee.
             validateAndSubmitFee();
         };
 
@@ -1124,6 +1169,7 @@
                     feeLibraryDataPromise = null;
                     reprintLibraryDataPromise = null;
                     fetchFeeLibraryData(true).catch(() => {});
+                    
                     feeFlowState = 2;
 
                     if (submitBtn) {
@@ -1134,9 +1180,10 @@
                     }
 
                     let extraActionButtons = document.getElementById("feeExtraActionButtons");
-                    if (extraActionButtons) extraActionButtons.style.display = "grid";
+                    if (extraActionButtons) extraActionButtons.style.display = "none";
+                    feeReceiptMode = "new";
+                    feeReceiptPrinted = false;
 
-                    generateFeeReceiptOnly();
                     return;
                 }
 
@@ -1148,9 +1195,7 @@
 
                 if (errorText.startsWith("__DUPLICATE__")) {
                     const monthText = errorText.replace("__DUPLICATE__", "");
-                    alert("⚠️ DUPLICATE ENTRY!\n\n" +
-                          "Is member ki " + monthText + " fee already paid hai.\n" +
-                          "Same UID + same Fee Month ya Same Mobile + same Fee Month dobara save nahi kiya ja sakta.");
+                    alert("⚠️ DUPLICATE ENTRY!\n\n" + "Is member ki " + monthText + " fee already paid hai. ");
                 } else if (/duplicate|already.*paid|already.*exist|already.*exists/i.test(errorText)) {
                     alert("⚠️ DUPLICATE ENTRY!\n\n" + (errorText || "Is month ki fee already paid hai."));
                 } else {
@@ -1169,19 +1214,19 @@
 
         window.sendFeeWhatsAppNotification = function() {
             if (!feeSelectedMember || !feeSelectedMember.mobile) {
+                alert("⚠️ Member mobile number is not available.");
                 return;
             }
 
-            let feeMonth = document.getElementById("feeForMonth").value.trim();
-            let amount = document.getElementById("feeAmount").value;
-            let expiryDate = document.getElementById("feeExpiryDate").value;
-            let name = feeSelectedMember.name;
+            const feeMonth = document.getElementById("feeForMonth").value.trim();
+            const amount = document.getElementById("feeAmount").value;
+            const expiryDate = document.getElementById("feeExpiryDate").value;
+            const name = feeSelectedMember.name || "Member";
 
-            let msg = `*Eminence Library - Fee Receipt Confirmation*
-*${name}*,आपकी  Eminence Library की माह *${feeMonth}* की फ़ीस *₹${amount}*  प्राप्त हो गई है जिसकी वैधता  *दिनांक :${expiryDate}* तक है
-	Thank you! -- Team Eminence Library`;
+            const msg = `*Eminence Library - Fee Receipt Confirmation*\n\n*${name}*, आपकी Eminence Library की माह *${feeMonth}* की फीस प्राप्त हो गई है जिसकी वैधता *दिनांक : ${expiryDate}* तक है.\n\nThank you! -- Team Eminence Library`;
 
-            window.open(`https://wa.me/91${feeSelectedMember.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
+            // Open WhatsApp first, then clear the complete fee form.
+            window.open(`https://wa.me/91${normalizeSearchMobile(feeSelectedMember.mobile)}?text=${encodeURIComponent(msg)}`, '_blank');
             clearFeeEntryForm();
         };
 
@@ -1245,25 +1290,38 @@
 
             feeSelectedMember = null;
             feeFlowState = 1;
+            feeReceiptMode = "new";
+            feeReceiptPrinted = false;
             feeSaveInProgress = false;
 
             const searchInput = document.getElementById("feeSearchInput");
             if (searchInput) searchInput.focus();
         };
 
-        window.generateFeeReceiptOnly = function() {
-            if (!feeSelectedMember) return;
+        window.generateFeeReceiptOnly = function(isReprint = false) {
+            if (!feeSelectedMember) {
+                alert("⚠️ Please select a member first.");
+                return;
+            }
 
-            let feeMonth = document.getElementById("feeForMonth").value.trim();
-            let shift = document.getElementById("feeShift").value;
-            let amount = document.getElementById("feeAmount").value;
-            let mode = document.getElementById("feePaymentMode").value;
-            let utr = mode === "Cash" ? "Cash Payment" : document.getElementById("feeUtr").value;
-            let remark = document.getElementById("feeRemark").value;
-            let payDate = document.getElementById("feePayDate").value;
-            let expiryDate = document.getElementById("feeExpiryDate").value;
+            const feeMonth = document.getElementById("feeForMonth").value.trim();
+            const shift = document.getElementById("feeShift").value;
+            const amount = document.getElementById("feeAmount").value;
+            const mode = document.getElementById("feePaymentMode").value;
+            const utr = mode === "Cash" ? "Cash Payment" : document.getElementById("feeUtr").value;
+            const remark = document.getElementById("feeRemark").value;
+            const payDate = document.getElementById("feePayDate").value;
+            const expiryDate = document.getElementById("feeExpiryDate").value;
 
-            let receiptWindow = window.open('', '_blank', 'width=750,height=650');
+            const receiptWindow = window.open('', '_blank', 'width=750,height=650');
+            if (!receiptWindow) {
+                alert("⚠️ Receipt window blocked. Please allow pop-ups for this site.");
+                return;
+            }
+
+            const safe = value => escapeHtml(value);
+            const receiptTitle = isReprint ? "Official Fee Receipt (Reprint)" : "Official Fee Receipt";
+
             receiptWindow.document.write(`
                 <html>
                 <head>
@@ -1279,10 +1337,12 @@
                         .title-text h2 .eminence-part { color: #ff6600; }
                         .title-text h2 .library-part { color: #000000; }
                         .title-text p { margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b; }
-                        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
                         .details-table td { padding: 8px 10px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; }
                         .details-table td.label { font-weight: 600; color: #475569; width: 40%; }
-                        .footer { text-align: center; margin-top: 30px; font-size: 0.8rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
+                        .note { text-align: left; margin: 8px 0 18px 0; font-size: 0.76rem; line-height: 1.45; color: #475569; font-weight: 600; }
+                        .footer { text-align: center; margin-top: 8px; font-size: 0.8rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
+                        @media print { body { padding: 0; } .receipt-box { border: 1px solid #cbd5e1; box-shadow: none; } }
                     </style>
                 </head>
                 <body>
@@ -1292,27 +1352,26 @@
                                 <img src="logo2.png" alt="Logo" class="logo-img">
                                 <div class="title-text">
                                     <h2><span class="eminence-part">Eminence</span> <span class="library-part">Library</span></h2>
-                                    <p>Official Fee Receipt (Reprint)</p>
+                                    <p>${receiptTitle}</p>
                                 </div>
                             </div>
-                            <div style="text-align: right; font-size: 0.85rem; color: #64748b;">
-                                <b>Date:</b> ${payDate}
-                            </div>
+                            <div style="text-align:right;font-size:0.85rem;color:#64748b;"><b>Date:</b> ${safe(payDate)}</div>
                         </div>
                         <table class="details-table">
-                            <tr><td class="label">Student Name:</td><td><b>${feeSelectedMember.name}</b></td></tr>
-                            <tr><td class="label">UID:</td><td>${feeSelectedMember.uid}</td></tr>
-                            <tr><td class="label">Mobile Number:</td><td>${feeSelectedMember.mobile}</td></tr>
-                            <tr><td class="label">Branch:</td><td>${feeSelectedMember.branch}</td></tr>
-                            <tr><td class="label">Fees For Month:</td><td><b style="color: #0284c7;">${feeMonth}</b></td></tr>
-                            <tr><td class="label">Shift:</td><td>${shift}</td></tr>
-                            <tr><td class="label">Payment Amount:</td><td><b style="color: #16a34a;">₹${amount}</b></td></tr>
-                            <tr><td class="label">Payment Mode:</td><td>${mode}</td></tr>
-                            ${(mode === "Online" || mode === "By QR") ? `<tr><td class="label">UTR Number:</td><td><b>${utr}</b></td></tr>` : ''}
-                            <tr><td class="label">Payment For:</td><td><b style="color: #c2410c;">${remark}</b></td></tr>
-                            <tr><td class="label">Fees Pay Date:</td><td>${payDate}</td></tr>
-                            <tr><td class="label">Fees Expiry Date:</td><td><b style="color: #dc2626;">${expiryDate}</b></td></tr>
+                            <tr><td class="label">Student Name:</td><td><b>${safe(feeSelectedMember.name)}</b></td></tr>
+                            <tr><td class="label">UID:</td><td>${safe(feeSelectedMember.uid)}</td></tr>
+                            <tr><td class="label">Mobile Number:</td><td>${safe(feeSelectedMember.mobile)}</td></tr>
+                            <tr><td class="label">Branch:</td><td>${safe(feeSelectedMember.branch)}</td></tr>
+                            <tr><td class="label">Fees For Month:</td><td><b style="color:#0284c7;">${safe(feeMonth)}</b></td></tr>
+                            <tr><td class="label">Shift:</td><td>${safe(shift)}</td></tr>
+                            <tr><td class="label">Payment Amount:</td><td><b style="color:#16a34a;">₹${safe(amount)}</b></td></tr>
+                            <tr><td class="label">Payment Mode:</td><td>${safe(mode)}</td></tr>
+                            ${(mode === "Online" || mode === "By QR") ? `<tr><td class="label">UTR Number:</td><td><b>${safe(utr)}</b></td></tr>` : ''}
+                            <tr><td class="label">Payment For:</td><td><b style="color:#c2410c;">${safe(remark)}</b></td></tr>
+                            <tr><td class="label">Fees Pay Date:</td><td>${safe(payDate)}</td></tr>
+                            <tr><td class="label">Fees Expiry Date:</td><td><b style="color:#dc2626;">${safe(expiryDate)}</b></td></tr>
                         </table>
+                        <div class="note">Note: The above fees are non-refundable, non-transferable &amp; non adjustable</div>
                         <div class="footer">
                             <p>Thank you for studying with Eminence Library! -- Team Eminence</p>
                         </div>
@@ -1321,7 +1380,27 @@
                 </html>
             `);
             receiptWindow.document.close();
-            receiptWindow.print();
+
+            // New-payment flow: Update Fee -> Print Receipt -> WhatsApp -> Clear Form.
+            // Reprint flow: only generate/print the selected historical receipt.
+            if (!isReprint) {
+                feeReceiptPrinted = true;
+                feeFlowState = 3;
+                const submitBtn = document.getElementById("feeSubmitBtn");
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> WhatsApp';
+                    submitBtn.style.background = "#25d366";
+                    submitBtn.disabled = false;
+                    submitBtn.style.display = "block";
+                }
+                const extraActions = document.getElementById("feeExtraActionButtons");
+                if (extraActions) extraActions.style.display = "none";
+            }
+
+            receiptWindow.focus();
+            setTimeout(() => {
+                try { receiptWindow.print(); } catch (e) { console.warn("Receipt print error:", e); }
+            }, 250);
         };
 
         window.switchBranch = function(branchKey) {
@@ -1648,7 +1727,7 @@
                             </select>
                         </div>
                     </div>
-                    <button type="button" class="btn-submit" style="background: #0284c7; padding: 5px; font-size: 0.85rem; box-shadow: none;" onclick="generateFeeReceiptOnly()">
+                    <button type="button" class="btn-submit" style="background: #0284c7; padding: 5px; font-size: 0.85rem; box-shadow: none;" onclick="generateFeeReceiptOnly(true)">
                         <i class="fa-solid fa-print"></i> Reprint Receipt
                     </button>
                 </div>
