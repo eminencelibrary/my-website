@@ -552,33 +552,33 @@
             feeFlowState = 1;
 
             const searchInput = document.getElementById("reprintQueryInput");
-            if (searchInput) {
-                searchInput.value = `${feeSelectedMember.name} (${feeSelectedMember.mobile} - ${feeSelectedMember.uid})`;
-            }
+if (searchInput) {
+    searchInput.value = `${feeSelectedMember.name} (${feeSelectedMember.mobile} - ${feeSelectedMember.uid})`;
+}
 
-            const searchResults = document.getElementById("reprintSearchResults");
-            if (searchResults) searchResults.style.display = "none";
+const searchResults = document.getElementById("reprintSearchResults");
+if (searchResults) searchResults.style.display = "none";
 
-            const monthSelect = document.getElementById("reprintMonthSelect");
-            if (monthSelect) {
-                monthSelect.innerHTML = '<option value="">⏳ Member's Payment History Loading...</option>';
-                monthSelect.disabled = true;
-            }
+const monthSelect = document.getElementById("reprintMonthSelect");
+if (monthSelect) {
+    monthSelect.innerHTML = `<option value="">⏳ Member's Payment History Loading...</option>`;
+    monthSelect.disabled = true;
+}
 
-            currentMemberFeeHistory = [];
+currentMemberFeeHistory = [];
 
-            const keyNorm = v => String(v ?? "")
-                .toLowerCase()
-                .replace(/[\u200B-\u200D\uFEFF]/g, "")
-                .replace(/[^a-z0-9]+/g, "")
-                .trim();
+const keyNorm = v => String(v ?? "")
+    .toLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
 
-            const mobileNorm = v => {
-                let digits = String(v ?? "").replace(/\D/g, "");
-                if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
-                if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
-                return digits;
-            };
+const mobileNorm = v => {
+    let digits = String(v ?? "").replace(/\D/g, "");
+    if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+    if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+    return digits;
+};
 
             const COL = {
                 payDateA: 0,
@@ -1544,7 +1544,7 @@
             const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
             let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
             if (student && mobNum) {
-                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello ${student.studentName || student.name},\naapke seat number #${quickSelectedSeatNum} ka allotment kar diya gaya hai. Happy Study -- Team Eminence.\n\n`;
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello ${student.studentName || student.name},\naapke seat number #${quickSelectedSeatNum} ka allotment kar diya gaya है. Happy Study -- Team Eminence.\n\n`;
                 window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
             } else {
                 alert("No mobile number available for this seat.");
@@ -1805,22 +1805,23 @@
                             </div>
                         </div>
 
-                        <div id="utrContainer" class="form-group" style="display: none;">
-                            <label>UTR / Transaction Number</label>
-                            <input type="text" id="feeUtr" class="form-control" placeholder="Enter UPI Transaction / UTR No." oninput="checkFormCompletion()">
-                        </div>
-
-                        <!-- Row 4: Fees Pay Date -->
-                        <div class="form-group">
-                            <label>Fees Pay Date</label>
-                            <input type="date" id="feePayDate" class="form-control" oninput="checkFormCompletion()">
+                        <!-- Row 4 (Updated): UTR Number & Fees Pay Date Side-by-Side -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div id="utrContainer" class="form-group" style="display: none; margin-bottom: 12px;">
+                                <label>UTR / Transaction Number</label>
+                                <input type="text" id="feeUtr" class="form-control" placeholder="Enter UPI Transaction / UTR No." oninput="checkFormCompletion()">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label>Fees Pay Date</label>
+                                <input type="date" id="feePayDate" class="form-control" oninput="checkFormCompletion()">
+                            </div>
                         </div>
 
                         <div id="feeDueDaysDisplay" style="margin-bottom: 12px;"></div>
 
-                        <!-- Action Buttons Container (70% width for main button & Clear button on right) -->
+                        <!-- Action Buttons Container -->
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-top: 15px;">
-                            <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; width: 70%; margin-top: 0;" onclick="handleFeeButtonAction()">
+                            <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; width: 28%; margin-top: 0;" onclick="handleFeeButtonAction()">
                                 <i class="fa-solid fa-sync"></i> Update Fee
                             </button>
                             <button type="button" id="feeClearBtn" class="btn-submit" style="background: #64748b; width: 28%; margin-top: 0;" onclick="clearFeeEntryForm()">
@@ -1909,13 +1910,13 @@
                 <button class="modal-close" onclick="closeModal('globalSearchModal')">&times;</button>
             </div>
             <div class="form-group">
-                <label>Search by Mobile Number or UID</label>
+                <label>Search by Mobile No. or UID</label>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="searchMemberInput" class="form-control" placeholder="Enter mobile or UID...">
-                    <button type="button" class="btn-submit" style="width: 120px;" onclick="searchMember()">Search</button>
+                    <input type="text" id="searchMemberInput" class="form-control" placeholder="Enter Mobile No. or UID...">
+                    <button type="button" class="btn-submit" style="width: auto; padding: 0 20px;" onclick="searchMember()">Search</button>
                 </div>
             </div>
-            <div id="adminSearchResult" style="margin-top: 15px; font-size: 0.85rem; max-height: 300px; overflow-y: auto;"></div>
+            <div id="adminSearchResult" style="margin-top: 15px; font-size: 0.85rem; max-height: 250px; overflow-y: auto;"></div>
         </div>
     </div>
 </body>
