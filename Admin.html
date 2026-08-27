@@ -14,13 +14,11 @@
         const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5WEnufQq_eV3HmsGShNC28Wig5DA7QRqVSsQ7T0SQyLgui1HUXkcYZRH5yiIHmvX5/exec";
         const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarHm6enNyPnaydyi0gKEdh06lYaN9nsI0O7jtV6qEAh3SWX0fhmXhYVJwEAqzPNDF/exec";
         const FEE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx2qPG4a-igYx7io3NE9OHT1rW8Mmq2pWBW__yEjSz3lLa-uDswuJycJ5yZEM0EQnN8/exec";
-        const REPRINT_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxTV4ChSNS_UFugOMv_sxk9kQEPYfAR88ZBxX7sd_iRv-OuHQTB0EllYz6Sb9K5ULW8/exec"
         
         let activeBranch = 'core'; 
         let allData = { core: {}, nexus: {} };
         let existingMembersDB = {}; 
         let feeLibraryDataObject = []; 
-        let reprintLibraryDataObject = []; 
         let feeSelectedMember = null;
         let isAdminLoggedIn = false;
         let quickSelectedSeatNum = null;
@@ -52,27 +50,50 @@
         }
 
         let feeLibraryDataPromise = null;
-        let reprintLibraryDataPromise = null;
         let liveSheetDataPromise = null;
 
         function formatMonthYear(dateString) {
-            if (!dateString) return '';
-            try {
-                if (typeof dateString === 'string' && !dateString.includes('T') && !dateString.includes('-')) {
-                    return dateString;
+            if (dateString === null || dateString === undefined || String(dateString).trim() === '') return '';
+            const raw = String(dateString).trim();
+
+            if (/^[A-Za-z]+-\d{4}$/.test(raw)) return raw;
+
+            let m = raw.match(/^(\d{4})[-\/](\d{1,2})(?:[-\/](\d{1,2}))?$/);
+            if (m) {
+                const monthNo = Number(m[2]);
+                if (monthNo >= 1 && monthNo <= 12) {
+                    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                    return names[monthNo - 1] + "-" + m[1];
                 }
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) return dateString;
+            }
+
+            m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            if (m) {
+                const monthNo = Number(m[2]);
+                if (monthNo >= 1 && monthNo <= 12) {
+                    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                    return names[monthNo - 1] + "-" + m[3];
+                }
+            }
+
+            try {
+                let cleanStr = raw;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+                    cleanStr = raw + "T00:00:00";
+                }
+                const date = new Date(cleanStr);
+                if (isNaN(date.getTime())) return raw;
                 
-                const options = { month: 'long', year: 'numeric', timeZone: 'UTC' };
-                const formatted = date.toLocaleDateString('en-US', options); 
-                return formatted.replace(' ', '-');
+                const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                const monthName = monthNames[date.getUTCMonth() !== undefined && !isNaN(date.getUTCMonth()) ? date.getUTCMonth() : date.getMonth()];
+                const yearVal = date.getUTCFullYear() !== undefined && !isNaN(date.getUTCFullYear()) ? date.getUTCFullYear() : date.getFullYear();
+                
+                return monthName + "-" + yearVal;
             } catch (e) {
                 console.error("Date format error:", e);
-                return dateString;
+                return raw;
             }
         }
-
         function fetchFeeLibraryData(forceRefresh = false) {
             if (!FEE_WEB_APP_URL.startsWith("http")) return Promise.resolve(feeLibraryDataObject);
             if (feeLibraryDataPromise && !forceRefresh) return feeLibraryDataPromise;
@@ -119,97 +140,6 @@
                 });
 
             return feeLibraryDataPromise;
-        }
-
-        function fetchReprintLibraryData(uid = "", mobile = "", forceRefresh = false) {
-            if (!REPRINT_WEB_APP_URL.startsWith("http")) {
-                reprintLibraryDataObject = [];
-                return Promise.resolve([]);
-            }
-
-            const cleanUid = String(uid || "").trim();
-            const cleanMobile = normalizeSearchMobile(mobile);
-
-            const params = new URLSearchParams();
-            if (cleanUid) params.set("uid", cleanUid);
-            if (cleanMobile) params.set("mobile", cleanMobile);
-            params.set("t", Date.now());
-
-            const requestUrl = REPRINT_WEB_APP_URL + "?" + params.toString();
-
-            if (!forceRefresh && reprintLibraryDataPromise) {
-                return reprintLibraryDataPromise;
-            }
-
-            reprintLibraryDataPromise = fetch(requestUrl, {
-                method: "GET",
-                cache: "no-store"
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error("Reprint Web App HTTP " + response.status);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    let rows = [];
-                    if (data && typeof data === "object" && !Array.isArray(data)) {
-                        if (Array.isArray(data.history)) {
-                            rows = data.history;
-                        } else if (Array.isArray(data.data)) {
-                            rows = data.data;
-                        } else if (Array.isArray(data.records)) {
-                            rows = data.records;
-                        } else if (Array.isArray(data.rows)) {
-                            rows = data.rows;
-                        } else if (Array.isArray(data.result)) {
-                            rows = data.result;
-                        } else if (Array.isArray(data.fees)) {
-                            rows = data.fees;
-                        }
-                    } else if (Array.isArray(data)) {
-                        rows = data;
-                    }
-
-                    reprintLibraryDataObject = Array.isArray(rows)
-                        ? rows.filter(row => row && typeof row === "object")
-                        : [];
-                    return reprintLibraryDataObject;
-                })
-                .catch(error => {
-                    console.error("Reprint data fetch error:", error);
-                    reprintLibraryDataObject = [];
-                    throw error;
-                });
-
-            return reprintLibraryDataPromise;
-        }
-
-        async function fetchAllReprintHistory(forceRefresh = false) {
-            if (!REPRINT_WEB_APP_URL.startsWith("http")) return [];
-            try {
-                const response = await fetch(REPRINT_WEB_APP_URL + "?t=" + Date.now(), {
-                    method: "GET",
-                    cache: "no-store"
-                });
-                if (!response.ok) throw new Error("Reprint all-history HTTP " + response.status);
-                const data = await response.json();
-                let rows = [];
-                if (Array.isArray(data)) {
-                    rows = data;
-                } else if (data && typeof data === "object") {
-                    rows = Array.isArray(data.history) ? data.history :
-                           Array.isArray(data.data) ? data.data :
-                           Array.isArray(data.records) ? data.records :
-                           Array.isArray(data.rows) ? data.rows :
-                           Array.isArray(data.result) ? data.result :
-                           Array.isArray(data.fees) ? data.fees : [];
-                }
-                return Array.isArray(rows) ? rows.filter(r => r && typeof r === "object") : [];
-            } catch (err) {
-                console.warn("All reprint history could not be loaded:", err);
-                return [];
-            }
         }
 
         function fetchSheetData(forceRefresh = false, silent = false) {
@@ -335,14 +265,11 @@
         window.handlePaymentModeChange = function() {
             let mode = document.getElementById("feePaymentMode").value;
             let utrContainer = document.getElementById("utrContainer");
-            let cashContainer = document.getElementById("cashContainer");
             
             if (mode === "Online" || mode === "By QR") {
                 if(utrContainer) utrContainer.style.display = "block";
-                if(cashContainer) cashContainer.style.display = "none";
             } else {
                 if(utrContainer) utrContainer.style.display = "none";
-                if(cashContainer) cashContainer.style.display = "block";
             }
             checkFormCompletion();
         }
@@ -614,7 +541,6 @@
             const item = reprintSearchMatchCache[index];
             if (!item) return;
 
-            // Reprint selection is independent from the new-fee flow.
             feeSelectedMember = {
                 name: item.name || "",
                 mobile: item.mobile || "",
@@ -635,16 +561,12 @@
 
             const monthSelect = document.getElementById("reprintMonthSelect");
             if (monthSelect) {
-                monthSelect.innerHTML = '<option value="">⏳ Is member ki actual paid history load ho rahi hai...</option>';
+                monthSelect.innerHTML = '<option value="">⏳ Fee Updation sheet se is member ki actual history load ho rahi hai...</option>';
                 monthSelect.disabled = true;
             }
 
             currentMemberFeeHistory = [];
 
-            // Google Sheet / Fee Updation API column structure:
-            // A Date, B Member Name, C UID Code, D Mobile Number, E Branch,
-            // F Shift, G Fees for month, H Paid Amount, I Payment Mode,
-            // J UTR, K Payment For, L Payment Date, M expiryDate.
             const keyNorm = v => String(v ?? "")
                 .toLowerCase()
                 .replace(/[\u200B-\u200D\uFEFF]/g, "")
@@ -658,25 +580,34 @@
                 return digits;
             };
 
-            const colMap = {
-                date: 0, name: 1, uid: 2, mobile: 3, branch: 4,
-                shift: 5, month: 6, amount: 7, mode: 8, utr: 9,
-                remark: 10, payDate: 11, expiryDate: 12
+            const COL = {
+                payDateA: 0,
+                nameB: 1,
+                uidC: 2,
+                mobileD: 3,
+                branchE: 4,
+                shiftF: 5,
+                feeMonthG: 6,
+                amountH: 7,
+                modeI: 8,
+                utrJ: 9,
+                remarkK: 10,
+                payDateL: 11,
+                expiryM: 12
             };
 
             const aliases = {
-                date: ["date"],
-                name: ["membername", "name", "studentname"],
+                name: ["membername", "name", "studentname", "studentfullname", "fullname"],
                 uid: ["uidcode", "uid", "studentuid", "memberuid"],
                 mobile: ["mobilenumber", "mobile", "phone", "phonenumber", "contactnumber"],
                 branch: ["branchname", "branch"],
                 shift: ["shift"],
-                month: ["feesformonth", "feefor", "feemonth", "month", "feesmonth"],
+                month: ["feesformonth", "feesfor", "feemonth", "feesmonth", "feeformonth"],
                 amount: ["paidamount", "amount", "paymentamount", "feesamount", "feeamount"],
                 mode: ["paymentmode", "paymentmo", "mode", "paymode"],
                 utr: ["utr", "utrnumber", "transactionid", "transactionnumber"],
                 remark: ["paymentforremark", "paymentfor", "remark", "paymentremark"],
-                payDate: ["paymentdate", "paydate"],
+                payDate: ["paydate", "paymentdate"],
                 expiryDate: ["expirydate", "feesexpirydate", "expiry", "validity"]
             };
 
@@ -684,16 +615,50 @@
                 if (record === null || record === undefined) return "";
 
                 if (Array.isArray(record)) {
-                    const idx = colMap[field];
+                    const idx = field === "month" ? COL.feeMonthG :
+                                field === "name" ? COL.nameB :
+                                field === "uid" ? COL.uidC :
+                                field === "mobile" ? COL.mobileD :
+                                field === "branch" ? COL.branchE :
+                                field === "shift" ? COL.shiftF :
+                                field === "amount" ? COL.amountH :
+                                field === "mode" ? COL.modeI :
+                                field === "utr" ? COL.utrJ :
+                                field === "remark" ? COL.remarkK :
+                                field === "payDate" ? COL.payDateL :
+                                field === "expiryDate" ? COL.expiryM :
+                                undefined;
                     return idx !== undefined ? (record[idx] ?? "") : "";
                 }
 
                 if (typeof record !== "object") return "";
 
+                if (field === "month") {
+                    const exactMonthKeys = [
+                        "Fees For Month",
+                        "Fees for Month",
+                        "Fees for month",
+                        "FeesForMonth",
+                        "feesForMonth",
+                        "Fee Month",
+                        "Fees Month",
+                        "feeForMonth",
+                        "G",
+                        "6"
+                    ];
+                    for (const key of exactMonthKeys) {
+                        if (Object.prototype.hasOwnProperty.call(record, key)) {
+                            const value = record[key];
+                            if (value !== null && value !== undefined && String(value).trim() !== "") {
+                                return value;
+                            }
+                        }
+                    }
+                }
+
                 const wanted = aliases[field] || [];
                 const wantedSet = new Set(wanted.map(keyNorm));
 
-                // Exact normalized header match first.
                 for (const key of Object.keys(record)) {
                     if (wantedSet.has(keyNorm(key))) {
                         const value = record[key];
@@ -703,76 +668,126 @@
                     }
                 }
 
-                // Then a conservative partial match. This is intentionally not used
-                // for the month field when the record has a real "Fees for month" key.
-                for (const key of Object.keys(record)) {
-                    const nk = keyNorm(key);
-                    if (wanted.some(alias => nk.includes(keyNorm(alias)) || keyNorm(alias).includes(nk))) {
-                        const value = record[key];
-                        if (value !== null && value !== undefined && String(value).trim() !== "") {
-                            return value;
-                        }
+                const numericIndex = field === "month" ? COL.feeMonthG :
+                                     field === "name" ? COL.nameB :
+                                     field === "uid" ? COL.uidC :
+                                     field === "mobile" ? COL.mobileD :
+                                     field === "branch" ? COL.branchE :
+                                     field === "shift" ? COL.shiftF :
+                                     field === "amount" ? COL.amountH :
+                                     field === "mode" ? COL.modeI :
+                                     field === "utr" ? COL.utrJ :
+                                     field === "remark" ? COL.remarkK :
+                                     field === "payDate" ? COL.payDateL :
+                                     field === "expiryDate" ? COL.expiryM :
+                                     undefined;
+                if (numericIndex !== undefined && Object.prototype.hasOwnProperty.call(record, String(numericIndex))) {
+                    const value = record[String(numericIndex)];
+                    if (value !== null && value !== undefined && String(value).trim() !== "") {
+                        return value;
                     }
                 }
+
+                const values = Object.values(record);
+                if (values.length >= 13 && numericIndex !== undefined) {
+                    const value = values[numericIndex];
+                    if (value !== null && value !== undefined && String(value).trim() !== "") {
+                        return value;
+                    }
+                }
+
                 return "";
             }
 
             window.__readFeeReprintField = readFeeField;
 
-            const targetMobile = mobileNorm(feeSelectedMember.mobile);
             const targetUID = keyNorm(feeSelectedMember.uid);
+            const targetMobile = mobileNorm(feeSelectedMember.mobile);
 
-            // IMPORTANT FIX:
-            // Reprint history MUST come from the complete Fee Updation dataset
-            // (the same dataset backed by the Google Sheet shown by the user).
-            // Do NOT use feeHistory/searchFee first because those endpoints can
-            // return a latest/generic record such as July-2026 for every member.
-            let allPaymentRows = [];
-            try {
-                await fetchFeeLibraryData(true); // force fresh Google Sheet data
-                if (Array.isArray(feeLibraryDataObject)) {
-                    allPaymentRows = feeLibraryDataObject.slice();
+            const strictMemberMatch = record => {
+                const recordUID = keyNorm(readFeeField(record, "uid"));
+                const recordMobile = mobileNorm(readFeeField(record, "mobile"));
+
+                if (targetUID && targetUID !== "direct") {
+                    if (recordUID) return recordUID === targetUID;
+                    return Boolean(targetMobile && recordMobile && recordMobile === targetMobile);
                 }
-            } catch (error) {
-                console.warn("Fee Updation complete dataset load failed:", error);
+                return Boolean(targetMobile && recordMobile && recordMobile === targetMobile);
+            };
+
+            const extractRows = data => {
+                if (Array.isArray(data)) return data;
+                if (!data || typeof data !== "object") return [];
+                if (Array.isArray(data.history)) return data.history;
+                if (Array.isArray(data.data)) return data.data;
+                if (Array.isArray(data.records)) return data.records;
+                if (Array.isArray(data.rows)) return data.rows;
+                if (Array.isArray(data.result)) return data.result;
+                if (Array.isArray(data.fees)) return data.fees;
+                return [];
+            };
+
+            let historyRows = [];
+
+            for (const action of ["feeHistory", "searchFee"]) {
+                try {
+                    const params = new URLSearchParams();
+                    params.set("action", action);
+                    if (feeSelectedMember.uid) params.set("uid", String(feeSelectedMember.uid).trim());
+                    if (targetMobile) params.set("mobile", targetMobile);
+                    if (feeSelectedMember.name) params.set("name", String(feeSelectedMember.name).trim());
+                    params.set("t", String(Date.now()));
+
+                    const response = await fetch(FEE_WEB_APP_URL + "?" + params.toString(), {
+                        method: "GET",
+                        cache: "no-store"
+                    });
+
+                    if (!response.ok) continue;
+
+                    const data = await response.json();
+                    const rows = extractRows(data).filter(r => r && (typeof r === "object" || Array.isArray(r)));
+                    const matched = rows.filter(strictMemberMatch);
+
+                    if (matched.length > 0) {
+                        historyRows = matched;
+                        break;
+                    }
+                } catch (error) {
+                    console.warn("Fee history API action failed:", action, error);
+                }
             }
 
-            // Match by UID OR mobile. UID is preferred, but mobile is also accepted
-            // so historical rows remain visible if an old row has a blank/different UID.
-            const memberRows = allPaymentRows.filter(record => {
-                const recordMobile = mobileNorm(readFeeField(record, "mobile"));
-                const recordUID = keyNorm(readFeeField(record, "uid"));
+            if (historyRows.length === 0) {
+                try {
+                    await fetchFeeLibraryData(true);
+                    if (Array.isArray(feeLibraryDataObject)) {
+                        historyRows = feeLibraryDataObject.filter(strictMemberMatch);
+                    }
+                } catch (error) {
+                    console.warn("Fee Updation full history refresh failed:", error);
+                }
+            }
 
-                const uidMatch = Boolean(targetUID && targetUID !== "direct" && recordUID && recordUID === targetUID);
-                const mobileMatch = Boolean(targetMobile && recordMobile && recordMobile === targetMobile);
-
-                return uidMatch || mobileMatch;
+            historyRows = historyRows.filter(record => {
+                const gValue = readFeeField(record, "month");
+                return gValue !== null && gValue !== undefined && String(gValue).trim() !== "";
             });
 
-            // Only payment rows having an actual Fees for month are valid for the
-            // Reprint month dropdown. Column G is the authoritative paid month.
-            const validPaymentRows = memberRows.filter(record => {
-                const rawMonth = String(readFeeField(record, "month") || "").trim();
-                return rawMonth !== "" && rawMonth.toLowerCase() !== "unknown month";
-            });
+            currentMemberFeeHistory = historyRows.slice();
 
-            currentMemberFeeHistory = validPaymentRows.slice();
-
-            // Sort newest payment record first, but DISPLAY the Fees for month,
-            // not the payment-date month.
             currentMemberFeeHistory.sort((a, b) => {
-                const da = new Date(readFeeField(a, "payDate") || readFeeField(a, "date") || 0);
-                const db = new Date(readFeeField(b, "payDate") || readFeeField(b, "date") || 0);
+                const da = new Date(readFeeField(a, "payDate") || 0).getTime() || 0;
+                const db = new Date(readFeeField(b, "payDate") || 0).getTime() || 0;
                 return db - da;
             });
 
-            // Remove exact duplicate payment rows only.
             const uniqueHistory = [];
             const seenHistoryKeys = new Set();
             currentMemberFeeHistory.forEach(record => {
-                const monthKey = formatMonthYear(readFeeField(record, "month") || "");
+                const monthKey = String(readFeeField(record, "month") || "").trim().toLowerCase();
                 const amountKey = String(readFeeField(record, "amount") || "").trim();
-                const dateKey = String(readFeeField(record, "payDate") || readFeeField(record, "date") || "").trim();
+                const dateKey = String(readFeeField(record, "payDate") || "").trim();
                 const utrKey = String(readFeeField(record, "utr") || "").trim();
                 const uniqueKey = [monthKey, amountKey, dateKey, utrKey].join("|");
 
@@ -786,20 +801,21 @@
             if (!monthSelect) return;
 
             if (currentMemberFeeHistory.length === 0) {
-                monthSelect.innerHTML = '<option value="">⚠️ Is member ki actual payment history nahi mili</option>';
+                monthSelect.innerHTML = '<option value="">⚠️ Is member ki Fee Updation sheet me Column G history nahi mili</option>';
                 monthSelect.disabled = true;
                 return;
             }
 
-            let optionsHtml = '<option value="">-- Paid Month Select Karein --</option>';
+            let optionsHtml = '<option value="">-- Select Paid Month --</option>';
             currentMemberFeeHistory.forEach((record, idx) => {
-                // IMPORTANT: Only Column G / Fees for month is shown here.
-                // Payment Date (Column L) must NOT be appended as another month.
-                const rawMonth = readFeeField(record, "month") || "Unknown Month";
+                const rawMonth = readFeeField(record, "month");
                 const amount = readFeeField(record, "amount") || "0";
                 const formattedMonth = formatMonthYear(rawMonth);
 
-                optionsHtml += `<option value="${idx}">${escapeHtml(String(formattedMonth))} — Paid ₹${escapeHtml(String(amount))}</option>`;
+                const paidOnRaw = readFeeField(record, "payDate");
+                const paidOn = paidOnRaw ? formatMonthYear(paidOnRaw) : "";
+                const paidOnText = paidOn ? ` | Paid On: ${escapeHtml(String(paidOn))}` : "";
+                optionsHtml += `<option value="${idx}">Fees For: ${escapeHtml(String(formattedMonth || rawMonth))} — Paid ₹${escapeHtml(String(amount))}${paidOnText}</option>`;
             });
 
             monthSelect.innerHTML = optionsHtml;
@@ -826,10 +842,9 @@
                 if (el && value !== "") el.value = value;
             };
 
-            let rawMonth = readFeeField(record, "month") || readFeeField(record, "feesForMonth");
+            const rawMonth = readFeeField(record, "month");
             if (rawMonth) {
-                let formattedMonth = formatMonthYear(rawMonth);
-                setValue("feeForMonth", formattedMonth);
+                setValue("feeForMonth", rawMonth);
             }
 
             setValue("feeAmount", readFeeField(record, "amount"));
@@ -1012,7 +1027,6 @@
                 return;
             }
 
-            // State 1 is always the first step: Update Fee.
             validateAndSubmitFee();
         };
 
@@ -1225,7 +1239,6 @@
 
             const msg = `*Eminence Library - Fee Receipt Confirmation*\n\n*${name}*, आपकी Eminence Library की माह *${feeMonth}* की फीस प्राप्त हो गई है जिसकी वैधता *दिनांक : ${expiryDate}* तक है.\n\nThank you! -- Team Eminence Library`;
 
-            // Open WhatsApp first, then clear the complete fee form.
             window.open(`https://wa.me/91${normalizeSearchMobile(feeSelectedMember.mobile)}?text=${encodeURIComponent(msg)}`, '_blank');
             clearFeeEntryForm();
         };
@@ -1322,6 +1335,9 @@
             const safe = value => escapeHtml(value);
             const receiptTitle = isReprint ? "Official Fee Receipt (Reprint)" : "Official Fee Receipt";
 
+            const today = new Date();
+            const receiptHeaderDate = `${String(today.getDate()).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(2, "0")}-${today.getFullYear()}`;
+
             receiptWindow.document.write(`
                 <html>
                 <head>
@@ -1355,7 +1371,7 @@
                                     <p>${receiptTitle}</p>
                                 </div>
                             </div>
-                            <div style="text-align:right;font-size:0.85rem;color:#64748b;"><b>Date:</b> ${safe(payDate)}</div>
+                            <div style="text-align:right;font-size:0.85rem;color:#64748b;"><b>Date:</b> ${safe(receiptHeaderDate)}</div>
                         </div>
                         <table class="details-table">
                             <tr><td class="label">Student Name:</td><td><b>${safe(feeSelectedMember.name)}</b></td></tr>
@@ -1381,8 +1397,6 @@
             `);
             receiptWindow.document.close();
 
-            // New-payment flow: Update Fee -> Print Receipt -> WhatsApp -> Clear Form.
-            // Reprint flow: only generate/print the selected historical receipt.
             if (!isReprint) {
                 feeReceiptPrinted = true;
                 feeFlowState = 3;
@@ -1746,6 +1760,7 @@
                     <div id="feeTransactionFormFields">
                         <h4 style="font-size: 0.95rem; color: #0f172a; margin-bottom: 12px;"><i class="fa-solid fa-receipt"></i> Fee Transaction Details</h4>
                         
+                        <!-- Row 1: Shift & Payment Amount (₹) -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group">
                                 <label>Shift</label>
@@ -1757,79 +1772,63 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Fees For Month (e.g. August-2026)</label>
-                                <input type="text" id="feeForMonth" class="form-control" placeholder="August-2026" oninput="checkFormCompletion()">
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group">
                                 <label>Payment Amount (₹)</label>
                                 <input type="number" id="feeAmount" class="form-control" placeholder="Enter amount (e.g. 500)" oninput="checkFormCompletion()">
                             </div>
+                        </div>
+
+                        <!-- Row 2: Fees For Month & Payment For/Remarks -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group">
-                                <label>Payment Remark</label>
-                                <select id="feeRemark" class="form-control">
-                                    <option value="Fee Renewal">Fee Renewal</option>
-                                    <option value="New Member">New Member</option>
-                                </select>
+                                <label>Fees For Month (e.g. August-2026)</label>
+                                <input type="text" id="feeForMonth" class="form-control" placeholder="August-2026" oninput="checkFormCompletion()">
+                            </div>
+                            <div class="form-group">
+                                <label>Payment For / Remarks (Optional)</label>
+                                <input type="text" id="feeRemark" class="form-control" placeholder="e.g. Monthly Library Fee">
                             </div>
                         </div>
 
+                        <!-- Row 3: Fees Expiry Date & Payment Mode -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Fees Expiry Date</label>
+                                <input type="date" id="feeExpiryDate" class="form-control" oninput="calculateDueDays()">
+                            </div>
                             <div class="form-group">
                                 <label>Payment Mode</label>
                                 <select id="feePaymentMode" class="form-control" onchange="handlePaymentModeChange()">
                                     <option value="Cash">Cash</option>
-                                    <option value="Online">Online</option>
-                                    <option value="By QR">By QR</option>
+                                    <option value="Online">Online / UPI</option>
+                                    <option value="By QR">By QR Code</option>
                                 </select>
                             </div>
-                            <div class="form-group" id="utrContainer" style="display: none;">
-                                <label>UTR Number</label>
-                                <input type="text" id="feeUtr" class="form-control" placeholder="Enter UTR / Transaction ID" oninput="checkFormCompletion()">
-                            </div>
-                            <div class="form-group" id="cashContainer" style="display: block;">
-                                <label>Cash Status</label>
-                                <input type="text" class="form-control" value="Cash Payment" readonly style="background: #f1f5f9; font-weight: 600; color: #16a34a;">
-                            </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group">
-                                <label>Fees Pay Date</label>
-                                <input type="date" id="feePayDate" class="form-control" onchange="checkFormCompletion()">
-                            </div>
-                            <div class="form-group">
-                                <label>Fees Expiry Date (Auto-Filled)</label>
-                                <input type="date" id="feeExpiryDate" class="form-control" onchange="calculateDueDays()">
-                            </div>
+                        <div id="utrContainer" class="form-group" style="display: none;">
+                            <label>UTR / Transaction Number</label>
+                            <input type="text" id="feeUtr" class="form-control" placeholder="Enter UPI Transaction / UTR No." oninput="checkFormCompletion()">
                         </div>
 
-                        <div id="feeDueDaysDisplay" style="margin: 10px 0; font-size: 0.88rem;"></div>
-                    </div>
+                        <!-- Row 4: Fees Pay Date -->
+                        <div class="form-group">
+                            <label>Fees Pay Date</label>
+                            <input type="date" id="feePayDate" class="form-control" oninput="checkFormCompletion()">
+                        </div>
 
-                    <div style="margin-top: 15px;">
-                        <button type="button"
-                                id="feeSubmitBtn"
-                                class="btn-submit"
-                                style="background:#16a34a; box-shadow:0 4px 12px rgba(22,163,74,0.3); display:none; width:40%;"
-                                onclick="handleFeeButtonAction()">
-                            <i class="fa-solid fa-sync"></i> Update Fee
-                        </button>
+                        <div id="feeDueDaysDisplay" style="margin-bottom: 12px;"></div>
 
-                        <div id="feeExtraActionButtons" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                            <button type="button" class="btn-submit" style="background: #25d366; box-shadow: 0 4px 12px rgba(37,211,102,0.3);" onclick="sendFeeWhatsAppNotification()">
-                                <i class="fa-brands fa-whatsapp"></i> WhatsApp Msg
+                        <!-- Action Buttons Container (70% width for main button & Clear button on right) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-top: 15px;">
+                            <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; width: 70%; margin-top: 0;" onclick="handleFeeButtonAction()">
+                                <i class="fa-solid fa-sync"></i> Update Fee
+                            </button>
+                            <button type="button" id="feeClearBtn" class="btn-submit" style="background: #64748b; width: 28%; margin-top: 0;" onclick="clearFeeEntryForm()">
+                                <i class="fa-solid fa-eraser"></i> Clear
                             </button>
                         </div>
 
-                        <button type="button"
-                                class="btn-submit"
-                                style="background:#dc2626; box-shadow:0 4px 12px rgba(220,38,38,0.25); width:30%; margin-top:10px;"
-                                onclick="clearFeeEntryForm()">
-                            <i class="fa-solid fa-eraser"></i> Clear Form
-                        </button>
+                        <div id="feeExtraActionButtons" style="display: none; gap: 10px; margin-top: 15px;"></div>
                     </div>
                 </div>
             </div>
@@ -1840,82 +1839,83 @@
         <header>
             <div class="header-brand">
                 <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
-                <span class="admin-portal-badge"><i class="fa-solid fa-shield-halved"></i> Admin Management Portal</span>
+                <span class="admin-portal-badge"><i class="fa-solid fa-shield-halved"></i> Master Control</span>
             </div>
             <div class="nav-buttons">
-                <button id="coreBranchBtn" onclick="switchBranch('core')" class="nav-btn active"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
-                <button id="nexusBranchBtn" onclick="switchBranch('nexus')" class="nav-btn"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch</button>
-                <button onclick="openGlobalSearchModal()" class="nav-btn btn-search-nav"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-                <button onclick="backToDashboard()" class="nav-btn" style="background: #dc2626;"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button type="button" class="nav-btn active" id="coreBranchBtn" onclick="switchBranch('core')"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
+                <button type="button" class="nav-btn" id="nexusBranchBtn" onclick="switchBranch('nexus')"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch</button>
+                <button type="button" class="nav-btn btn-search-nav" onclick="openGlobalSearchModal()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+                <button type="button" class="nav-btn" style="background: #dc2626;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-left"></i> Back</button>
             </div>
         </header>
 
         <div class="container">
-            <div class="chart-header">
-                <h3 id="chartHeadingText"><i class="fa-solid fa-chart-pie"></i> Live Seat Availability</h3>
-            </div>
-            
             <div class="status-legend">
-                <div class="legend-item"><img src="Desk1.png" alt="Available" class="legend-seat-icon"> Available</div>
-                <div class="legend-item"><img src="Desk4.png" alt="Waiting" class="legend-seat-icon"> On Hold (Waiting)</div>
-                <div class="legend-item"><img src="Desk2.png" alt="Booked" class="legend-seat-icon"> Booked</div>
+                <div class="legend-item"><img src="Desk1.png" class="legend-seat-icon" alt="Vacant"> Vacant (Available)</div>
+                <div class="legend-item"><img src="Desk2.png" class="legend-seat-icon" alt="Booked"> Booked (Occupied)</div>
+                <div class="legend-item"><img src="Desk4.png" class="legend-seat-icon" alt="Waiting"> On Hold (Waiting)</div>
+            </div>
+
+            <div class="chart-header">
+                <h3 id="chartHeadingText"><i class="fa-solid fa-building-columns"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability</h3>
             </div>
 
             <div id="coreBranchSection">
                 <div class="hall-section">
-                    <div class="hall-title"><i class="fa-solid fa-door-open"></i> Hall 1 (Seats 1-59)</div>
-                    <div style="overflow-x: auto;"><div id="hall1GridContainer" class="seat-grid core-h1-grid"></div></div>
+                    <div class="hall-title"><i class="fa-solid fa-door-open"></i> Hall 1 (Seats 1 to 59)</div>
+                    <div id="hall1GridContainer" class="seat-grid core-h1-grid"></div>
                 </div>
                 <div class="hall-section">
-                    <div class="hall-title"><i class="fa-solid fa-door-open"></i> Hall 2 (Seats 61-83)</div>
-                    <div style="overflow-x: auto;"><div id="hall2GridContainer" class="seat-grid core-h2-grid"></div></div>
+                    <div class="hall-title"><i class="fa-solid fa-door-closed"></i> Hall 2 (Seats 61 to 83)</div>
+                    <div id="hall2GridContainer" class="seat-grid core-h2-grid"></div>
                 </div>
             </div>
 
             <div id="nexusBranchSection" style="display: none;">
                 <div class="hall-section">
-                    <div class="hall-title"><i class="fa-solid fa-building"></i> Nexus Branch Main Hall (Seats 1-65)</div>
-                    <div style="overflow-x: auto;"><div id="nexusGridContainer" class="seat-grid nexus-grid"></div></div>
+                    <div class="hall-title"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch Hall (Seats 1 to 65)</div>
+                    <div id="nexusGridContainer" class="seat-grid nexus-grid"></div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div id="adminQuickModal" class="modal-overlay">
-            <div class="modal-card" style="max-width: 480px;">
-                <div class="modal-header">
-                    <h3><i class="fa-solid fa-circle-info"></i> Seat #<span id="quickModalSeatNo"></span> Details</h3>
-                    <button class="modal-close" onclick="closeModal('adminQuickModal')">&times;</button>
-                </div>
-                <div id="seatReadOnlyDetails" style="background:#f1f5f9; padding:14px; border-radius:8px; margin-bottom:15px; border-left:4px solid var(--primary-color); font-size: 0.85rem; line-height: 1.6;"></div>
-                <div class="form-group">
-                    <label>Change Seat Status</label>
-                    <select id="quickModalNewStatus" class="form-control">
-                        <option value="vacant">Vacant (Available)</option>
-                        <option value="waiting">On Hold (Waiting)</option>
-                        <option value="booked">Booked</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button type="button" class="btn-submit" onclick="applyQuickSeatStatusChange()">Update Status</button>
-                    <button type="button" id="quickBtnNotify" class="btn-submit" style="background:#16a34a; display:none;" onclick="notifyQuickStudentWhatsApp()">WhatsApp Allotment</button>
-                </div>
+    <div id="adminQuickModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Manage Seat #<span id="quickModalSeatNo"></span></h3>
+                <button class="modal-close" onclick="closeModal('adminQuickModal')">&times;</button>
+            </div>
+            <div id="seatReadOnlyDetails" style="background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px; border: 1px solid #e2e8f0; line-height: 1.5;"></div>
+            <div class="form-group">
+                <label>Change Seat Status</label>
+                <select id="quickModalNewStatus" class="form-control">
+                    <option value="vacant">Vacant (Available)</option>
+                    <option value="booked">Booked (Occupied)</option>
+                    <option value="waiting">On Hold (Waiting)</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" class="btn-submit" onclick="applyQuickSeatStatusChange()">Update Status</button>
+                <button type="button" id="quickBtnNotify" class="btn-submit" style="background: #25d366; display: none;" onclick="notifyQuickStudentWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
             </div>
         </div>
+    </div>
 
-        <div id="globalSearchModal" class="modal-overlay">
-            <div class="modal-card">
-                <button class="modal-close" onclick="closeModal('globalSearchModal')" style="float: right;">&times;</button>
-                <h3 style="font-size:1.1rem; color:#1e293b; margin-bottom:15px;">
-                    <i class="fa-solid fa-magnifying-glass" style="color:var(--primary-color);"></i> Member Lookup
-                </h3>
-                
-                <div class="form-group">
-                    <input type="text" id="searchMemberInput" class="form-control" placeholder="Enter mobile or UID..." oninput="searchMember()">
-                </div>
-
-                <div id="adminSearchResult" style="display:block; background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:10px; margin-top:15px;">
+    <div id="globalSearchModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Global Member Search</h3>
+                <button class="modal-close" onclick="closeModal('globalSearchModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Search by Mobile Number or UID</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="searchMemberInput" class="form-control" placeholder="Enter mobile or UID...">
+                    <button type="button" class="btn-submit" style="width: 120px;" onclick="searchMember()">Search</button>
                 </div>
             </div>
+            <div id="adminSearchResult" style="margin-top: 15px; font-size: 0.85rem; max-height: 300px; overflow-y: auto;"></div>
         </div>
     </div>
 </body>
