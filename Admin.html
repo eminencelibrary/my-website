@@ -237,7 +237,7 @@
             
             document.getElementById("reprintQueryInput").value = "";
             document.getElementById("reprintSearchResults").style.display = "none";
-            document.getElementById("reprintMonthSelect").innerHTML = '<option value="">-- Pehle Member Search Karein --</option>';
+            document.getElementById("reprintMonthSelect").innerHTML = '<option value="">-- First find Member --</option>';
             document.getElementById("reprintMonthSelect").disabled = true;
 
             feeSelectedMember = { name: "Direct Walk-in / Member", mobile: "", uid: "DIRECT", branch: activeBranch };
@@ -561,7 +561,7 @@
 
             const monthSelect = document.getElementById("reprintMonthSelect");
             if (monthSelect) {
-                monthSelect.innerHTML = '<option value="">⏳ Fee Updation sheet se is member ki actual history load ho rahi hai...</option>';
+                monthSelect.innerHTML = '<option value="">⏳ Member's Payment History Loading...</option>';
                 monthSelect.disabled = true;
             }
 
