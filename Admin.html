@@ -22,9 +22,9 @@
         let feeSelectedMember = null;
         let isAdminLoggedIn = false;
         let quickSelectedSeatNum = null;
-        let feeFlowState = 1; // 1: Update Fee, 2: Print Receipt
+        let feeFlowState = 1; // 1: Update Fee, 2: Print Receipt, 3: WhatsApp
         let feeSaveInProgress = false;
-        let feeReceiptMode = "new"; // new = newly saved fee, reprint = historical receipt
+        let feeReceiptMode = "new"; 
         let feeReceiptPrinted = false;
 
         let oldStudentsDataPromise = null;
@@ -94,6 +94,7 @@
                 return raw;
             }
         }
+
         function fetchFeeLibraryData(forceRefresh = false) {
             if (!FEE_WEB_APP_URL.startsWith("http")) return Promise.resolve(feeLibraryDataObject);
             if (feeLibraryDataPromise && !forceRefresh) return feeLibraryDataPromise;
@@ -191,14 +192,24 @@
                 let dateObj = new Date();
                 let month = dateObj.toLocaleString('en-US', { month: 'long' });
                 let year = dateObj.getFullYear();
-                let currentMonthYear = month + "-" + year;
-
-                let feeForMonthElem = document.getElementById("feeForMonth");
-                if(feeForMonthElem) {
-                    feeForMonthElem.value = currentMonthYear;
-                }
+                
+                let feeMonthSelect = document.getElementById("feeMonthSelect");
+                let feeYearSelect = document.getElementById("feeYearSelect");
+                if(feeMonthSelect) feeMonthSelect.value = month;
+                if(feeYearSelect) feeYearSelect.value = year;
+                updateCombinedFeeForMonth();
             } catch (error) {
                 console.error("Error during page load: ", error);
+            }
+        };
+
+        window.updateCombinedFeeForMonth = function() {
+            let m = document.getElementById("feeMonthSelect").value;
+            let y = document.getElementById("feeYearSelect").value;
+            let combinedField = document.getElementById("feeForMonth");
+            if (combinedField && m && y) {
+                combinedField.value = m + "-" + y;
+                checkFormCompletion();
             }
         };
 
@@ -552,49 +563,35 @@
             feeFlowState = 1;
 
             const searchInput = document.getElementById("reprintQueryInput");
-if (searchInput) {
-    searchInput.value = `${feeSelectedMember.name} (${feeSelectedMember.mobile} - ${feeSelectedMember.uid})`;
-}
+            if (searchInput) {
+                searchInput.value = `${feeSelectedMember.name} (${feeSelectedMember.mobile} - ${feeSelectedMember.uid})`;
+            }
 
-const searchResults = document.getElementById("reprintSearchResults");
-if (searchResults) searchResults.style.display = "none";
+            const searchResults = document.getElementById("reprintSearchResults");
+            if (searchResults) searchResults.style.display = "none";
 
-const monthSelect = document.getElementById("reprintMonthSelect");
-if (monthSelect) {
-    monthSelect.innerHTML = `<option value="">⏳ Member's Payment History Loading...</option>`;
-    monthSelect.disabled = true;
-}
+            const monthSelect = document.getElementById("reprintMonthSelect");
+            if (monthSelect) {
+                monthSelect.innerHTML = `<option value="">⏳ Member's Payment History Loading...</option>`;
+                monthSelect.disabled = true;
+            }
 
-currentMemberFeeHistory = [];
+            currentMemberFeeHistory = [];
 
-const keyNorm = v => String(v ?? "")
-    .toLowerCase()
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")
-    .replace(/[^a-z0-9]+/g, "")
-    .trim();
+            const keyNorm = v => String(v ?? "")
+                .toLowerCase()
+                .replace(/[\u200B-\u200D\uFEFF]/g, "")
+                .replace(/[^a-z0-9]+/g, "")
+                .trim();
 
-const mobileNorm = v => {
-    let digits = String(v ?? "").replace(/\D/g, "");
-    if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
-    if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
-    return digits;
-};
-
-            const COL = {
-                payDateA: 0,
-                nameB: 1,
-                uidC: 2,
-                mobileD: 3,
-                branchE: 4,
-                shiftF: 5,
-                feeMonthG: 6,
-                amountH: 7,
-                modeI: 8,
-                utrJ: 9,
-                remarkK: 10,
-                payDateL: 11,
-                expiryM: 12
+            const mobileNorm = v => {
+                let digits = String(v ?? "").replace(/\D/g, "");
+                if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+                if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+                return digits;
             };
+
+            const COL = { payDateA: 0, nameB: 1, uidC: 2, mobileD: 3, branchE: 4, shiftF: 5, feeMonthG: 6, amountH: 7, modeI: 8, utrJ: 9, remarkK: 10, payDateL: 11, expiryM: 12 };
 
             const aliases = {
                 name: ["membername", "name", "studentname", "studentfullname", "fullname"],
@@ -613,89 +610,28 @@ const mobileNorm = v => {
 
             function readFeeField(record, field) {
                 if (record === null || record === undefined) return "";
-
                 if (Array.isArray(record)) {
-                    const idx = field === "month" ? COL.feeMonthG :
-                                field === "name" ? COL.nameB :
-                                field === "uid" ? COL.uidC :
-                                field === "mobile" ? COL.mobileD :
-                                field === "branch" ? COL.branchE :
-                                field === "shift" ? COL.shiftF :
-                                field === "amount" ? COL.amountH :
-                                field === "mode" ? COL.modeI :
-                                field === "utr" ? COL.utrJ :
-                                field === "remark" ? COL.remarkK :
-                                field === "payDate" ? COL.payDateL :
-                                field === "expiryDate" ? COL.expiryM :
-                                undefined;
+                    const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateL : field === "expiryDate" ? COL.expiryM : undefined;
                     return idx !== undefined ? (record[idx] ?? "") : "";
                 }
-
                 if (typeof record !== "object") return "";
-
                 if (field === "month") {
-                    const exactMonthKeys = [
-                        "Fees For Month",
-                        "Fees for Month",
-                        "Fees for month",
-                        "FeesForMonth",
-                        "feesForMonth",
-                        "Fee Month",
-                        "Fees Month",
-                        "feeForMonth",
-                        "G",
-                        "6"
-                    ];
+                    const exactMonthKeys = ["Fees For Month", "Fees for month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"];
                     for (const key of exactMonthKeys) {
                         if (Object.prototype.hasOwnProperty.call(record, key)) {
                             const value = record[key];
-                            if (value !== null && value !== undefined && String(value).trim() !== "") {
-                                return value;
-                            }
+                            if (value !== null && value !== undefined && String(value).trim() !== "") return value;
                         }
                     }
                 }
-
                 const wanted = aliases[field] || [];
                 const wantedSet = new Set(wanted.map(keyNorm));
-
                 for (const key of Object.keys(record)) {
                     if (wantedSet.has(keyNorm(key))) {
                         const value = record[key];
-                        if (value !== null && value !== undefined && String(value).trim() !== "") {
-                            return value;
-                        }
+                        if (value !== null && value !== undefined && String(value).trim() !== "") return value;
                     }
                 }
-
-                const numericIndex = field === "month" ? COL.feeMonthG :
-                                     field === "name" ? COL.nameB :
-                                     field === "uid" ? COL.uidC :
-                                     field === "mobile" ? COL.mobileD :
-                                     field === "branch" ? COL.branchE :
-                                     field === "shift" ? COL.shiftF :
-                                     field === "amount" ? COL.amountH :
-                                     field === "mode" ? COL.modeI :
-                                     field === "utr" ? COL.utrJ :
-                                     field === "remark" ? COL.remarkK :
-                                     field === "payDate" ? COL.payDateL :
-                                     field === "expiryDate" ? COL.expiryM :
-                                     undefined;
-                if (numericIndex !== undefined && Object.prototype.hasOwnProperty.call(record, String(numericIndex))) {
-                    const value = record[String(numericIndex)];
-                    if (value !== null && value !== undefined && String(value).trim() !== "") {
-                        return value;
-                    }
-                }
-
-                const values = Object.values(record);
-                if (values.length >= 13 && numericIndex !== undefined) {
-                    const value = values[numericIndex];
-                    if (value !== null && value !== undefined && String(value).trim() !== "") {
-                        return value;
-                    }
-                }
-
                 return "";
             }
 
@@ -707,7 +643,6 @@ const mobileNorm = v => {
             const strictMemberMatch = record => {
                 const recordUID = keyNorm(readFeeField(record, "uid"));
                 const recordMobile = mobileNorm(readFeeField(record, "mobile"));
-
                 if (targetUID && targetUID !== "direct") {
                     if (recordUID) return recordUID === targetUID;
                     return Boolean(targetMobile && recordMobile && recordMobile === targetMobile);
@@ -728,7 +663,6 @@ const mobileNorm = v => {
             };
 
             let historyRows = [];
-
             for (const action of ["feeHistory", "searchFee"]) {
                 try {
                     const params = new URLSearchParams();
@@ -738,17 +672,11 @@ const mobileNorm = v => {
                     if (feeSelectedMember.name) params.set("name", String(feeSelectedMember.name).trim());
                     params.set("t", String(Date.now()));
 
-                    const response = await fetch(FEE_WEB_APP_URL + "?" + params.toString(), {
-                        method: "GET",
-                        cache: "no-store"
-                    });
-
+                    const response = await fetch(FEE_WEB_APP_URL + "?" + params.toString(), { method: "GET", cache: "no-store" });
                     if (!response.ok) continue;
-
                     const data = await response.json();
                     const rows = extractRows(data).filter(r => r && (typeof r === "object" || Array.isArray(r)));
                     const matched = rows.filter(strictMemberMatch);
-
                     if (matched.length > 0) {
                         historyRows = matched;
                         break;
@@ -775,7 +703,6 @@ const mobileNorm = v => {
             });
 
             currentMemberFeeHistory = historyRows.slice();
-
             currentMemberFeeHistory.sort((a, b) => {
                 const da = new Date(readFeeField(a, "payDate") || 0).getTime() || 0;
                 const db = new Date(readFeeField(b, "payDate") || 0).getTime() || 0;
@@ -799,9 +726,8 @@ const mobileNorm = v => {
             currentMemberFeeHistory = uniqueHistory;
 
             if (!monthSelect) return;
-
             if (currentMemberFeeHistory.length === 0) {
-                monthSelect.innerHTML = '<option value="">⚠️ Is member ki Fee Updation sheet me Column G history nahi mili</option>';
+                monthSelect.innerHTML = '<option value="">⚠️ Is member ki Fee Updation sheet me history nahi mili</option>';
                 monthSelect.disabled = true;
                 return;
             }
@@ -811,7 +737,6 @@ const mobileNorm = v => {
                 const rawMonth = readFeeField(record, "month");
                 const amount = readFeeField(record, "amount") || "0";
                 const formattedMonth = formatMonthYear(rawMonth);
-
                 const paidOnRaw = readFeeField(record, "payDate");
                 const paidOn = paidOnRaw ? formatMonthYear(paidOnRaw) : "";
                 const paidOnText = paidOn ? ` | Paid On: ${escapeHtml(String(paidOn))}` : "";
@@ -833,9 +758,7 @@ const mobileNorm = v => {
             feeReceiptMode = "reprint";
             feeFlowState = 1;
             feeReceiptPrinted = false;
-            const readFeeField = window.__readFeeReprintField || function(rec, field) {
-                return "";
-            };
+            const readFeeField = window.__readFeeReprintField || function(rec, field) { return ""; };
 
             const setValue = (id, value) => {
                 const el = document.getElementById(id);
@@ -845,6 +768,13 @@ const mobileNorm = v => {
             const rawMonth = readFeeField(record, "month");
             if (rawMonth) {
                 setValue("feeForMonth", rawMonth);
+                let parts = String(rawMonth).split("-");
+                if (parts.length === 2) {
+                    let mEl = document.getElementById("feeMonthSelect");
+                    let yEl = document.getElementById("feeYearSelect");
+                    if (mEl) mEl.value = parts[0];
+                    if (yEl) yEl.value = parts[1];
+                }
             }
 
             setValue("feeAmount", readFeeField(record, "amount"));
@@ -903,11 +833,7 @@ const mobileNorm = v => {
             }
 
             let matchedRecord = memberHistory[memberHistory.length - 1] || sourceRecord || {};
-            let expDate = "";
-            let fetchedAmount = "";
-            let fetchedShift = "";
-            let fetchedMode = "";
-            let fetchedRemark = "";
+            let expDate = "", fetchedAmount = "", fetchedShift = "", fetchedMode = "", fetchedRemark = "";
 
             if (matchedRecord) {
                 for (let key in matchedRecord) {
@@ -932,18 +858,17 @@ const mobileNorm = v => {
             
             let feeExpInput = document.getElementById("feeExpiryDate");
             if (feeExpInput) {
-                if (expDate) {
-                    feeExpInput.value = expDate.split('T')[0];
-                } else {
-                    feeExpInput.value = "";
-                }
+                feeExpInput.value = expDate ? expDate.split('T')[0] : "";
                 if (typeof calculateDueDays === 'function') calculateDueDays();
             }
 
             let currentFeeDate = new Date();
-            let currentFeeMonth = currentFeeDate.toLocaleString('en-US', { month: 'long' });
-            let currentFeeYear = currentFeeDate.getFullYear();
-            document.getElementById("feeForMonth").value = currentFeeMonth + "-" + currentFeeYear;
+            let currentMonthName = currentFeeDate.toLocaleString('en-US', { month: 'long' });
+            let currentYearVal = currentFeeDate.getFullYear();
+            
+            document.getElementById("feeMonthSelect").value = currentMonthName;
+            document.getElementById("feeYearSelect").value = currentYearVal;
+            updateCombinedFeeForMonth();
 
             if (fetchedAmount) document.getElementById("feeAmount").value = fetchedAmount;
             if (fetchedShift) document.getElementById("feeShift").value = fetchedShift;
@@ -971,13 +896,11 @@ const mobileNorm = v => {
             handlePaymentModeChange();
 
             let submitBtn = document.getElementById("feeSubmitBtn");
-            let extraActionButtons = document.getElementById("feeExtraActionButtons");
             if (submitBtn) {
                 submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
                 submitBtn.style.background = "#16a34a";
                 checkFormCompletion();
             }
-            if (extraActionButtons) extraActionButtons.style.display = "none";
         };
 
         window.calculateDueDays = function() {
@@ -998,8 +921,7 @@ const mobileNorm = v => {
             let diffTime = expiryDate - today;
             let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            let colorStyle = "";
-            let statusText = "";
+            let colorStyle = "", statusText = "";
 
             if (diffDays > 2) {
                 colorStyle = "color: #16a34a; font-weight: 700; background: #f0fdf4; padding: 6px 10px; border-radius: 6px; border: 1px solid #bbf7d0; display: inline-block;";
@@ -1021,12 +943,10 @@ const mobileNorm = v => {
                 generateFeeReceiptOnly(false);
                 return;
             }
-
             if (feeFlowState === 3) {
                 sendFeeWhatsAppNotification();
                 return;
             }
-
             validateAndSubmitFee();
         };
 
@@ -1040,60 +960,6 @@ const mobileNorm = v => {
 
         function makeFeeRequestId() {
             return "FEE-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
-        }
-
-        function findDuplicateFeeEntry(uid, mobile, normalizedMonth) {
-            const targetUid = normalizeSearchText(uid || "");
-            const targetMobile = normalizeSearchMobile(mobile || "");
-            const targetMonth = normalizeFeeMonth(normalizedMonth || "");
-
-            if (!targetMonth || !Array.isArray(feeLibraryDataObject)) return null;
-
-            const getField = (record, aliases) => {
-                if (!record || typeof record !== "object") return "";
-                const wanted = aliases.map(x => String(x).toLowerCase().replace(/[^a-z0-9]/g, ""));
-                for (const key of Object.keys(record)) {
-                    const nk = String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
-                    if (wanted.includes(nk)) return record[key] ?? "";
-                }
-                for (const key of Object.keys(record)) {
-                    const nk = String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
-                    if (wanted.some(a => nk.includes(a) || a.includes(nk))) return record[key] ?? "";
-                }
-                return "";
-            };
-
-            const monthToKey = value => {
-                const v = String(value ?? "").trim().toLowerCase();
-                if (!v) return "";
-                const m1 = v.match(/^(\d{4})[-\/](\d{1,2})$/);
-                if (m1) return m1[1] + "-" + String(m1[2]).padStart(2, "0");
-                const m2 = v.match(/^([a-z]+)[\s-]+(\d{4})$/i);
-                if (m2) {
-                    const names = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
-                    const n = names[m2[1].toLowerCase()];
-                    if (n) return m2[2] + "-" + String(n).padStart(2, "0");
-                }
-                return normalizeFeeMonth(v);
-            };
-
-            for (const record of feeLibraryDataObject) {
-                const rUid = normalizeSearchText(getField(record, ["UID Code", "UID", "Student UID", "Member UID"]));
-                const rMobile = normalizeSearchMobile(getField(record, ["Mobile Number", "Mobile", "Phone", "Phone Number"]));
-                const rMonth = monthToKey(getField(record, ["Fees For Month", "Fees for month", "Fee Month", "Fees Month", "Month"]));
-
-                const sameMonth = rMonth && targetMonth && rMonth === targetMonth;
-                const sameUid = targetUid && rUid && targetUid === rUid;
-                const sameMobile = targetMobile && rMobile && targetMobile === rMobile;
-
-                if (sameMonth && (sameUid || sameMobile)) {
-                    return {
-                        record,
-                        monthDisplay: getField(record, ["Fees For Month", "Fees for month", "Fee Month", "Month"]) || normalizedMonth
-                    };
-                }
-            }
-            return null;
         }
 
         window.validateAndSubmitFee = async function() {
@@ -1122,16 +988,6 @@ const mobileNorm = v => {
             }
 
             try {
-                const duplicateCheck = findDuplicateFeeEntry(
-                    feeSelectedMember.uid,
-                    feeSelectedMember.mobile,
-                    normalizedMonth
-                );
-
-                if (duplicateCheck) {
-                    throw new Error("__DUPLICATE__" + (duplicateCheck.monthDisplay || rawInputMonth));
-                }
-
                 const rawPayDate = document.getElementById("feePayDate").value;
                 const rawExpiryDate = document.getElementById("feeExpiryDate").value;
 
@@ -1145,7 +1001,7 @@ const mobileNorm = v => {
                 const utr = mode === "Cash" ? "Cash Payment" : document.getElementById("feeUtr").value.trim();
                 const requestId = makeFeeRequestId();
 
-                const saveParams = new URLSearchParams({
+                const payload = {
                     action: "saveFee",
                     requestId: requestId,
                     name: feeSelectedMember.name || "",
@@ -1161,43 +1017,33 @@ const mobileNorm = v => {
                     payDate: formatDateToDDMMYYYY(rawPayDate),
                     expiryDate: formatDateToDDMMYYYY(rawExpiryDate),
                     remark: document.getElementById("feeRemark").value
+                };
+
+                const saveResponse = await fetch(FEE_WEB_APP_URL + "?action=saveFee&t=" + Date.now(), { 
+                    method: "POST", 
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8",
+                    },
+                    body: JSON.stringify(payload)
                 });
-
-                const saveResponse = await fetch(
-                    FEE_WEB_APP_URL + "?" + saveParams.toString() + "&t=" + Date.now(),
-                    { method: "GET", cache: "no-store" }
-                );
-
-                if (!saveResponse.ok) {
-                    throw new Error("Google Web App HTTP " + saveResponse.status);
-                }
+                
+                if (!saveResponse.ok) throw new Error("Google Web App HTTP " + saveResponse.status);
 
                 let result = await saveResponse.json();
 
-                if (result && result.status === "duplicate") {
-                    throw new Error("__DUPLICATE__" + (result.month || rawInputMonth));
-                }
-
-                if (result && result.status === "success") {
+                if (result && (result.status === "success" || result.result === "success" || result.success)) {
                     alert("✅ Fee data successfully updated in Google Sheet!");
-                    feeLibraryDataPromise = null;
-                    reprintLibraryDataPromise = null;
                     fetchFeeLibraryData(true).catch(() => {});
                     
                     feeFlowState = 2;
-
                     if (submitBtn) {
                         submitBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Receipt';
                         submitBtn.style.background = "#f59e0b";
                         submitBtn.disabled = false;
                         submitBtn.style.display = "block";
                     }
-
-                    let extraActionButtons = document.getElementById("feeExtraActionButtons");
-                    if (extraActionButtons) extraActionButtons.style.display = "none";
                     feeReceiptMode = "new";
                     feeReceiptPrinted = false;
-
                     return;
                 }
 
@@ -1205,16 +1051,7 @@ const mobileNorm = v => {
 
             } catch (err) {
                 console.error("Fee save error:", err);
-                const errorText = String(err && err.message || err || "");
-
-                if (errorText.startsWith("__DUPLICATE__")) {
-                    const monthText = errorText.replace("__DUPLICATE__", "");
-                    alert("⚠️ DUPLICATE ENTRY!\n\n" + "Is member ki " + monthText + " fee already paid hai. ");
-                } else if (/duplicate|already.*paid|already.*exist|already.*exists/i.test(errorText)) {
-                    alert("⚠️ DUPLICATE ENTRY!\n\n" + (errorText || "Is month ki fee already paid hai."));
-                } else {
-                    alert("❌ Fee save confirm nahi ho saki.\n\n" + (errorText || "Please try again."));
-                }
+                alert("❌ Fee save confirm nahi ho saki.\n\n" + (err.message || "Please try again."));
                 feeFlowState = 1;
                 if (submitBtn) {
                     submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
@@ -1224,91 +1061,6 @@ const mobileNorm = v => {
             } finally {
                 feeSaveInProgress = false;
             }
-        };
-
-        window.sendFeeWhatsAppNotification = function() {
-            if (!feeSelectedMember || !feeSelectedMember.mobile) {
-                alert("⚠️ Member mobile number is not available.");
-                return;
-            }
-
-            const feeMonth = document.getElementById("feeForMonth").value.trim();
-            const amount = document.getElementById("feeAmount").value;
-            const expiryDate = document.getElementById("feeExpiryDate").value;
-            const name = feeSelectedMember.name || "Member";
-
-            const msg = `*Eminence Library - Fee Receipt Confirmation*\n\n*${name}*, आपकी Eminence Library की माह *${feeMonth}* की फीस प्राप्त हो गई है जिसकी वैधता *दिनांक : ${expiryDate}* तक है.\n\nThank you! -- Team Eminence Library`;
-
-            window.open(`https://wa.me/91${normalizeSearchMobile(feeSelectedMember.mobile)}?text=${encodeURIComponent(msg)}`, '_blank');
-            clearFeeEntryForm();
-        };
-
-        window.clearFeeEntryForm = function() {
-            [
-                "feeSearchInput",
-                "feeForMonth",
-                "feeAmount",
-                "feeUtr",
-                "feePayDate",
-                "feeExpiryDate",
-                "feeRemark"
-            ].forEach(function(id) {
-                const el = document.getElementById(id);
-                if (el) el.value = "";
-            });
-
-            const shift = document.getElementById("feeShift");
-            if (shift) shift.selectedIndex = 0;
-
-            const paymentMode = document.getElementById("feePaymentMode");
-            if (paymentMode) paymentMode.selectedIndex = 0;
-
-            const summary = document.getElementById("selectedMemberSummary");
-            if (summary) summary.innerHTML = "";
-
-            const searchResults = document.getElementById("feeSearchResults");
-            if (searchResults) {
-                searchResults.innerHTML = "";
-                searchResults.style.display = "none";
-            }
-
-            const detailsSection = document.getElementById("feeDetailsSection");
-            if (detailsSection) detailsSection.style.display = "none";
-
-            const dueDays = document.getElementById("feeDueDaysDisplay");
-            if (dueDays) dueDays.innerHTML = "";
-
-            const submitBtn = document.getElementById("feeSubmitBtn");
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
-                submitBtn.style.background = "#16a34a";
-                submitBtn.disabled = false;
-                submitBtn.style.display = "none";
-            }
-
-            const extraActions = document.getElementById("feeExtraActionButtons");
-            if (extraActions) extraActions.style.display = "none";
-
-            const reprintQuery = document.getElementById("reprintQueryInput");
-            if (reprintQuery) reprintQuery.value = "";
-
-            const reprintResults = document.getElementById("reprintSearchResults");
-            if (reprintResults) reprintResults.style.display = "none";
-
-            const reprintMonth = document.getElementById("reprintMonthSelect");
-            if (reprintMonth) {
-                reprintMonth.innerHTML = '<option value="">-- Pehle Member Search Karein --</option>';
-                reprintMonth.disabled = true;
-            }
-
-            feeSelectedMember = null;
-            feeFlowState = 1;
-            feeReceiptMode = "new";
-            feeReceiptPrinted = false;
-            feeSaveInProgress = false;
-
-            const searchInput = document.getElementById("feeSearchInput");
-            if (searchInput) searchInput.focus();
         };
 
         window.generateFeeReceiptOnly = function(isReprint = false) {
@@ -1334,7 +1086,6 @@ const mobileNorm = v => {
 
             const safe = value => escapeHtml(value);
             const receiptTitle = isReprint ? "Official Fee Receipt (Reprint)" : "Official Fee Receipt";
-
             const today = new Date();
             const receiptHeaderDate = `${String(today.getDate()).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(2, "0")}-${today.getFullYear()}`;
 
@@ -1358,7 +1109,6 @@ const mobileNorm = v => {
                         .details-table td.label { font-weight: 600; color: #475569; width: 40%; }
                         .note { text-align: left; margin: 8px 0 18px 0; font-size: 0.76rem; line-height: 1.45; color: #475569; font-weight: 600; }
                         .footer { text-align: center; margin-top: 8px; font-size: 0.8rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
-                        @media print { body { padding: 0; } .receipt-box { border: 1px solid #cbd5e1; box-shadow: none; } }
                     </style>
                 </head>
                 <body>
@@ -1388,9 +1138,7 @@ const mobileNorm = v => {
                             <tr><td class="label">Fees Expiry Date:</td><td><b style="color:#dc2626;">${safe(expiryDate)}</b></td></tr>
                         </table>
                         <div class="note">Note: The above fees are non-refundable, non-transferable &amp; non adjustable</div>
-                        <div class="footer">
-                            <p>Thank you for studying with Eminence Library! -- Team Eminence</p>
-                        </div>
+                        <div class="footer"><p>Thank you for studying with Eminence Library! -- Team Eminence</p></div>
                     </div>
                 </body>
                 </html>
@@ -1407,14 +1155,78 @@ const mobileNorm = v => {
                     submitBtn.disabled = false;
                     submitBtn.style.display = "block";
                 }
-                const extraActions = document.getElementById("feeExtraActionButtons");
-                if (extraActions) extraActions.style.display = "none";
             }
 
             receiptWindow.focus();
             setTimeout(() => {
                 try { receiptWindow.print(); } catch (e) { console.warn("Receipt print error:", e); }
             }, 250);
+        };
+
+        window.sendFeeWhatsAppNotification = function() {
+            if (!feeSelectedMember || !feeSelectedMember.mobile) {
+                alert("⚠️ Member mobile number is not available.");
+                return;
+            }
+
+            const feeMonth = document.getElementById("feeForMonth").value.trim();
+            const expiryDate = document.getElementById("feeExpiryDate").value;
+            const name = feeSelectedMember.name || "Member";
+
+            const msg = `*Eminence Library - Fee Receipt Confirmation*\n\n*${name}*, आपकी Eminence Library की माह *${feeMonth}* की फीस प्राप्त हो गई है जिसकी वैधता *दिनांक : ${expiryDate}* तक है.\n\nThank you! -- Team Eminence Library`;
+
+            window.open(`https://wa.me/91${normalizeSearchMobile(feeSelectedMember.mobile)}?text=${encodeURIComponent(msg)}`, '_blank');
+            clearFeeEntryForm();
+        };
+
+        window.clearFeeEntryForm = function() {
+            ["feeSearchInput", "feeAmount", "feeUtr", "feePayDate", "feeExpiryDate"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = "";
+            });
+
+            document.getElementById("feeShift").selectedIndex = 0;
+            document.getElementById("feePaymentMode").selectedIndex = 0;
+            document.getElementById("feeRemark").selectedIndex = 0;
+            document.getElementById("selectedMemberSummary").innerHTML = "";
+            document.getElementById("feeSearchResults").style.display = "none";
+            document.getElementById("feeDetailsSection").style.display = "block";
+            document.getElementById("feeDueDaysDisplay").innerHTML = "";
+
+            feeSelectedMember = { name: "Direct Walk-in / Member", mobile: "", uid: "DIRECT", branch: activeBranch };
+            let summaryElem = document.getElementById("selectedMemberSummary");
+            if (summaryElem) {
+                summaryElem.innerHTML = `<div style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">👤 Direct Entry Mode Active</div>`;
+            }
+
+            const submitBtn = document.getElementById("feeSubmitBtn");
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
+                submitBtn.style.background = "#16a34a";
+                submitBtn.disabled = false;
+                submitBtn.style.display = "none";
+            }
+
+            feeFlowState = 1;
+            feeReceiptMode = "new";
+            feeReceiptPrinted = false;
+            feeSaveInProgress = false;
+            
+            let today = new Date().toISOString().split('T')[0];
+            let feePayDateElem = document.getElementById("feePayDate");
+            if(feePayDateElem) feePayDateElem.value = today;
+            
+            let dateObj = new Date();
+            let month = dateObj.toLocaleString('en-US', { month: 'long' });
+            let year = dateObj.getFullYear();
+            
+            let feeMonthSelect = document.getElementById("feeMonthSelect");
+            let feeYearSelect = document.getElementById("feeYearSelect");
+            if(feeMonthSelect) feeMonthSelect.value = month;
+            if(feeYearSelect) feeYearSelect.value = year;
+            updateCombinedFeeForMonth();
+            
+            handlePaymentModeChange();
         };
 
         window.switchBranch = function(branchKey) {
@@ -1441,16 +1253,9 @@ const mobileNorm = v => {
             const branchSeats = allData[activeBranch] || {};
             const info = branchSeats[num] || { status: 'vacant' };
             
-            let seatImage = "Desk1.png";
-            let statusLabel = "Available";
-
-            if (info.status === 'booked') {
-                seatImage = "Desk2.png";
-                statusLabel = "Booked";
-            } else if (info.status === 'waiting') {
-                seatImage = "Desk4.png";
-                statusLabel = "On Hold (Waiting)";
-            }
+            let seatImage = "Desk1.png", statusLabel = "Available";
+            if (info.status === 'booked') { seatImage = "Desk2.png"; statusLabel = "Booked"; }
+            else if (info.status === 'waiting') { seatImage = "Desk4.png"; statusLabel = "On Hold (Waiting)"; }
 
             let tooltipClass = (row === 1) ? 'seat tooltip-down' : 'seat';
             seat.className = `${tooltipClass} ${info.status}`;
@@ -1544,7 +1349,7 @@ const mobileNorm = v => {
             const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
             let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
             if (student && mobNum) {
-                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello ${student.studentName || student.name},\naapke seat number #${quickSelectedSeatNum} ka allotment kar diya gaya है. Happy Study -- Team Eminence.\n\n`;
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello ${student.studentName || student.name},\naapke seat number #${quickSelectedSeatNum} का allotment कर दिया गया है. Happy Study -- Team Eminence.\n\n`;
                 window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
             } else {
                 alert("No mobile number available for this seat.");
@@ -1660,13 +1465,6 @@ const mobileNorm = v => {
         .modal-header h3 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #0f172a; }
         .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
         .search-results { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 13px; max-height: 150px; overflow-y: auto; display: none; text-align: left; }
-        @media (max-width: 768px) {
-            .core-h1-grid { grid-template-columns: repeat(8, 42px); grid-template-rows: repeat(12, 42px); }
-            .core-h2-grid { grid-template-columns: repeat(6, 42px); grid-template-rows: repeat(6, 42px); }
-            .nexus-grid { grid-template-columns: repeat(8, 42px); grid-template-rows: repeat(9, 42px); }
-            .seat-icon { width: 24px; height: 24px; }
-            .seat { font-size: 0.6rem; }
-        }
     </style>
 </head>
 <body>
@@ -1760,7 +1558,6 @@ const mobileNorm = v => {
                     <div id="feeTransactionFormFields">
                         <h4 style="font-size: 0.95rem; color: #0f172a; margin-bottom: 12px;"><i class="fa-solid fa-receipt"></i> Fee Transaction Details</h4>
                         
-                        <!-- Row 1: Shift & Payment Amount (₹) -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group">
                                 <label>Shift</label>
@@ -1777,19 +1574,40 @@ const mobileNorm = v => {
                             </div>
                         </div>
 
-                        <!-- Row 2: Fees For Month & Payment For/Remarks -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group">
-                                <label>Fees For Month (e.g. August-2026)</label>
-                                <input type="text" id="feeForMonth" class="form-control" placeholder="August-2026" oninput="checkFormCompletion()">
+                                <label>Fees For Month</label>
+                                <div style="display: flex; gap: 5px;">
+                                    <select id="feeMonthSelect" class="form-control" onchange="updateCombinedFeeForMonth()">
+                                        <option value="January">January</option>
+                                        <option value="February">February</option>
+                                        <option value="March">March</option>
+                                        <option value="April">April</option>
+                                        <option value="May">May</option>
+                                        <option value="June">June</option>
+                                        <option value="July">July</option>
+                                        <option value="August">August</option>
+                                        <option value="September">September</option>
+                                        <option value="October">October</option>
+                                        <option value="November">November</option>
+                                        <option value="December">December</option>
+                                    </select>
+                                    <select id="feeYearSelect" class="form-control" onchange="updateCombinedFeeForMonth()">
+                                        <option value="2026">2026</option>
+                                        <option value="2027">2027</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" id="feeForMonth" value="">
                             </div>
                             <div class="form-group">
                                 <label>Payment For / Remarks (Optional)</label>
-                                <input type="text" id="feeRemark" class="form-control" placeholder="e.g. Monthly Library Fee">
+                                <select id="feeRemark" class="form-control">
+                                    <option value="Payment for New Registration">1. Payment for New Registration</option>
+                                    <option value="Fee Renewal">2. Fee Renewal</option>
+                                </select>
                             </div>
                         </div>
 
-                        <!-- Row 3: Fees Expiry Date & Payment Mode -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group">
                                 <label>Fees Expiry Date</label>
@@ -1805,31 +1623,30 @@ const mobileNorm = v => {
                             </div>
                         </div>
 
-                        <!-- Row 4 (Updated): UTR Number & Fees Pay Date Side-by-Side -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div id="utrContainer" class="form-group" style="display: none; margin-bottom: 12px;">
-                                <label>UTR / Transaction Number</label>
-                                <input type="text" id="feeUtr" class="form-control" placeholder="Enter UPI Transaction / UTR No." oninput="checkFormCompletion()">
-                            </div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group" style="margin-bottom: 12px;">
                                 <label>Fees Pay Date</label>
                                 <input type="date" id="feePayDate" class="form-control" oninput="checkFormCompletion()">
                             </div>
-                        </div>
+                            <div id="utrContainer" class="form-group" style="display: none; margin-bottom: 12px;">
+                                <label>UTR / Transaction Number</label>
+                                <input type="text" id="feeUtr" class="form-control" placeholder="Enter UPI Transaction / UTR No." oninput="checkFormCompletion()">
+                            </div>
+                        </div>                          
+
+			 </div>
+
 
                         <div id="feeDueDaysDisplay" style="margin-bottom: 12px;"></div>
 
-                        <!-- Action Buttons Container -->
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-top: 15px;">
-                            <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; width: 28%; margin-top: 0;" onclick="handleFeeButtonAction()">
+                            <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; width: 48%; margin-top: 0;" onclick="handleFeeButtonAction()">
                                 <i class="fa-solid fa-sync"></i> Update Fee
                             </button>
-                            <button type="button" id="feeClearBtn" class="btn-submit" style="background: #64748b; width: 28%; margin-top: 0;" onclick="clearFeeEntryForm()">
+                            <button type="button" id="feeClearBtn" class="btn-submit" style="background: #64748b; width: 48%; margin-top: 0;" onclick="clearFeeEntryForm()">
                                 <i class="fa-solid fa-eraser"></i> Clear
                             </button>
                         </div>
-
-                        <div id="feeExtraActionButtons" style="display: none; gap: 10px; margin-top: 15px;"></div>
                     </div>
                 </div>
             </div>
@@ -1912,7 +1729,7 @@ const mobileNorm = v => {
             <div class="form-group">
                 <label>Search by Mobile No. or UID</label>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="searchMemberInput" class="form-control" placeholder="Enter Mobile No. or UID...">
+                    <input type="test" id="searchMemberInput" class="form-control" placeholder="Enter Mobile No. or UID...">
                     <button type="button" class="btn-submit" style="width: auto; padding: 0 20px;" onclick="searchMember()">Search</button>
                 </div>
             </div>
