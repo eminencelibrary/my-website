@@ -107,6 +107,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .search-box {
@@ -115,7 +116,7 @@
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             outline: none;
-            width: 260px;
+            width: 240px;
         }
 
         .search-box:focus {
@@ -138,6 +139,24 @@
 
         .btn-refresh:hover {
             background-color: #219653;
+        }
+
+        .btn-bulk-whatsapp {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-bulk-whatsapp:hover {
+            background-color: #20ba5a;
         }
 
         .table-responsive {
@@ -284,8 +303,11 @@
     <div class="header-bar">
         <h2><i class="fa-solid fa-users-gear"></i> Eminence Library - Fee Tracker</h2>
         <div class="header-actions">
+            <button class="btn-bulk-whatsapp" onclick="sendBulkWhatsApp()">
+                <i class="fa-brands fa-whatsapp"></i> Send Bulk Alerts
+            </button>
             <input type="text" id="searchInput" class="search-box" placeholder="Filter by Branch, Name, Reg No..." onkeyup="filterTable()">
-            <button class="btn-refresh" onclick="fetchSheetData()"><i class="fa-solid fa-rotate"></i> Refresh Data</button>
+            <button class="btn-refresh" onclick="fetchSheetData()"><i class="fa-solid fa-rotate"></i> Refresh</button>
         </div>
     </div>
 
@@ -452,6 +474,58 @@
 
         const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedMobile}&text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
+    }
+
+    // नया फीचर: एक साथ सभी एक्सपायर्ड/रिमाइंडर वाले मेंबर्स को WhatsApp विंडो खोलने के लिए
+    function sendBulkWhatsApp() {
+        if (!globalMembersData || globalMembersData.length === 0) {
+            alert("डेटा लोड नहीं हुआ है या कोई डेटा उपलब्ध नहीं है!");
+            return;
+        }
+
+        // उन मेंबर्स को छांटें जिनकी फीस एक्सपायर हो चुकी है (< 0) या अगले 2 दिन में होने वाली है (<= 2)
+        const targetMembers = globalMembersData.filter(member => {
+            const days = member.calculatedDays !== undefined ? member.calculatedDays : getDaysDifference(member);
+            return days <= 2; 
+        });
+
+        if (targetMembers.length === 0) {
+            alert("कोई भी ऐसा मेंबर नहीं है जिसकी फीस एक्सपायर हुई हो या नज़दीक हो!");
+            return;
+        }
+
+        let confirmSend = confirm(`कुल ${targetMembers.length} सदस्यों की फीस एक्सपायर या समाप्त होने वाली है। क्या आप इन्हें एक-एक करके WhatsApp मैसेज भेजना चाहते हैं?`);
+        
+        if (!confirmSend) return;
+
+        targetMembers.forEach((member, index) => {
+            const name = member["Member Name"] || member["Name"] || "Member";
+            const regNo = member["UID Code"] || member["Reg No."] || member["RegNo"] || "";
+            const mobile = String(member["Mobile Number"] || member["Mobile"] || "").trim();
+            const expiryRaw = member["expiryDate"] || member["Expiry Date"] || member["Fees Expiry Date"] || "";
+            const expiryDate = formatDisplayDate(expiryRaw);
+            const days = member.calculatedDays !== undefined ? member.calculatedDays : getDaysDifference(member);
+
+            if (mobile) {
+                let cleanMobile = mobile.replace(/\D/g, '');
+                if (!cleanMobile.startsWith('91') && cleanMobile.length === 10) {
+                    cleanMobile = '91' + cleanMobile;
+                }
+
+                let message = "";
+                if (days < 0) {
+                    message = `*${name} (${regNo})* आप की Eminence Library फीस दिनांक *${expiryDate}* को पूरी हो चुकी है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
+                } else {
+                    message = `*${name} (${regNo})* आप की Eminence Library फीस दिनांक *${expiryDate}* को पूरी हो रही है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
+                }
+
+                // ब्राउज़र के पॉप-अप ब्लॉकर (Popup Blocker) से बचने के लिए डिले (1 सेकंड प्रति चैट) दिया गया है
+                setTimeout(() => {
+                    const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanMobile}&text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                }, index * 1000); 
+            }
+        });
     }
 
     window.onload = fetchSheetData;
