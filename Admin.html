@@ -240,9 +240,8 @@
         }
 
         window.openFeeManagementModal = function() {
-            // Always switch to the Fee Management screen first.
-            // Keep this block defensive so a missing optional element cannot
-            // stop the portal from opening.
+            document.getElementById('feeDetailsSection').style.display = 'none';
+            feeSelectedMember = null;
             const dashboard = document.getElementById('mainDashboardPortal');
             const feeContainer = document.getElementById('feeManagementContainer');
 
@@ -265,12 +264,10 @@
                 if (el) el.value = value;
             };
 
-            setValue('feeSearchInput', '');
-            setDisplay('feeSearchResults', 'none');
-            setDisplay('feeDetailsSection', 'block');
-            setValue('reprintQueryInput', '');
-            setDisplay('reprintSearchResults', 'none');
-
+           	setValue('feeSearchInput', '');
+		setDisplay('feeSearchResults', 'none');
+		setDisplay('feeDetailsSection', 'none');
+		setValue('reprintQueryInput', '');
             const reprintMonthSelect = document.getElementById('reprintMonthSelect');
             if (reprintMonthSelect) {
                 reprintMonthSelect.innerHTML = '<option value="">-- First find Member --</option>';
@@ -293,9 +290,6 @@
             const extraActionButtons = document.getElementById('feeExtraActionButtons');
             if (extraActionButtons) extraActionButtons.style.display = 'none';
 
-            // Load Fee Updation data in the background. The panel is opened
-            // immediately, so a slow Google Apps Script response cannot make
-            // the Manage Fees button appear to do nothing.
             Promise.all([
                 fetchOldStudentsData(),
                 fetchFeeLibraryData(true),
@@ -304,7 +298,6 @@
         };
 
         window.openFeeTrackerModal = function() {
-            // Remember where the tracker was opened from so Back goes exactly one step back.
             const feeContainer = document.getElementById('feeManagementContainer');
             feeTrackerBackTarget = (feeContainer && feeContainer.style.display === 'block') ? "fee" : "dashboard";
             document.getElementById('mainDashboardPortal').style.display = 'none';
@@ -328,7 +321,6 @@
 
             if (tracker) tracker.style.display = 'none';
 
-            // Go one step back instead of ever showing the admin login overlay.
             if (feeTrackerBackTarget === "fee" && feeContainer) {
                 if (dashboard) dashboard.style.display = 'none';
                 feeContainer.style.display = 'block';
@@ -336,7 +328,6 @@
                 dashboard.style.display = 'flex';
             }
 
-            // The login gate must remain closed after returning.
             const gate = document.getElementById('adminGateOverlay');
             if (gate && isAdminLoggedIn) gate.style.display = 'none';
         }
@@ -360,14 +351,11 @@
             if (feeFlowState === 1 && feeSelectedMember) {
                 let monthVal = document.getElementById("feeForMonth").value.trim();
                 let amountVal = document.getElementById("feeAmount").value.trim();
-                let expiryVal = document.getElementById("feeExpiryDate").value.trim();
                 let modeVal = document.getElementById("feePaymentMode").value;
                 let utrVal = document.getElementById("feeUtr").value.trim();
 
                 let isUtrValid = (modeVal === "Cash" || (modeVal !== "Cash" && utrVal !== ""));
 
-                // Expiry may legitimately be blank in the existing Sheet data.
-                // Keep the field editable; the user can enter/update it before saving.
                 if (monthVal !== "" && amountVal !== "" && isUtrValid) {
                     submitBtn.style.display = "block";
                 } else {
@@ -403,8 +391,6 @@
             return String(value ?? '').replace(/\D/g, '');
         }
 
-        // Read a Fee Updation field safely from either an API object or a raw row.
-        // Fee Updation columns: B=Name, C=UID, D=Mobile, ... L=Pay Date, M=Expiry Date.
         function getFeeHistoryField(record, field) {
             if (record === null || record === undefined) return '';
 
@@ -449,20 +435,15 @@
             return '';
         }
 
-        // Converts Google Sheet/API date values to the value required by
-        // <input type="date">. The Fee Updation sheet uses DD-MM-YYYY.
         function feeDateToInputValue(value) {
             if (value === null || value === undefined || String(value).trim() === '') return '';
             const raw = String(value).trim();
 
-            // Already in HTML date format.
             if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
 
-            // Google/ISO date-time.
             const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T/);
             if (iso) return `${iso[1]}-${String(iso[2]).padStart(2,'0')}-${String(iso[3]).padStart(2,'0')}`;
 
-            // Fee Updation Sheet format: DD-MM-YYYY (also accept /).
             let m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
             if (m) {
                 const d = Number(m[1]);
@@ -472,7 +453,6 @@
                 }
             }
 
-            // Last fallback for Date/serialized date values.
             const parsed = new Date(raw);
             if (!isNaN(parsed.getTime())) {
                 return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`;
@@ -480,9 +460,6 @@
             return '';
         }
 
-        // Find the latest NON-BLANK expiry for the selected member.
-        // This is important when the newest fee row has an empty expiry but an
-        // older row still contains the member's last valid expiry date.
         function findLastMemberExpiryDate(historyRows) {
             if (!Array.isArray(historyRows)) return '';
             for (let i = historyRows.length - 1; i >= 0; i--) {
@@ -768,35 +745,34 @@
                 expiryDate: ["expirydate", "feesexpirydate", "expiry", "validity"]
             };
 
-       function readFeeField(record, field) {
-    if (record === null || record === undefined) return "";
-    if (Array.isArray(record)) {
-        const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateL : field === "expiryDate" ? COL.expiryM : undefined;
-        return idx !== undefined ? (record[idx] ?? "") : "";
-    }
-    if (typeof record !== "object") return "";
-    
-    // Agar field month hai, toh column G ke sabhi possible alternative keys check karein
-    if (field === "month") {
-        const exactMonthKeys = ["Fees For Month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"];
-        for (const key of exactMonthKeys) {
-            if (Object.prototype.hasOwnProperty.call(record, key)) {
-                const value = record[key];
-                if (value !== null && value !== undefined && String(value).trim() !== "") return value;
-            }
-        }
-    }
+            function readFeeField(record, field) {
+                if (record === null || record === undefined) return "";
+                if (Array.isArray(record)) {
+                    const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateL : field === "expiryDate" ? COL.expiryM : undefined;
+                    return idx !== undefined ? (record[idx] ?? "") : "";
+                }
+                if (typeof record !== "object") return "";
+                
+                if (field === "month") {
+                    const exactMonthKeys = ["Fees For Month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"];
+                    for (const key of exactMonthKeys) {
+                        if (Object.prototype.hasOwnProperty.call(record, key)) {
+                            const value = record[key];
+                            if (value !== null && value !== undefined && String(value).trim() !== "") return value;
+                        }
+                    }
+                }
 
-    const wanted = aliases[field] || [];
-    const wantedSet = new Set(wanted.map(keyNorm));
-    for (const key of Object.keys(record)) {
-        if (wantedSet.has(keyNorm(key))) {
-            const value = record[key];
-            if (value !== null && value !== undefined && String(value).trim() !== "") return value;
-        }
-    }
-    return "";
-}
+                const wanted = aliases[field] || [];
+                const wantedSet = new Set(wanted.map(keyNorm));
+                for (const key of Object.keys(record)) {
+                    if (wantedSet.has(keyNorm(key))) {
+                        const value = record[key];
+                        if (value !== null && value !== undefined && String(value).trim() !== "") return value;
+                    }
+                }
+                return "";
+            }
             window.__readFeeReprintField = readFeeField;
 
             const targetUID = keyNorm(feeSelectedMember.uid);
@@ -898,7 +874,6 @@
             currentMemberFeeHistory.forEach((record, idx) => {
                 const rawMonth = readFeeField(record, "month");
                 const amount = readFeeField(record, "amount") || "0";
-                // Yahan formatMonthYear hata diya gaya hai taaki Column G ka data bina kisi badlav ke seedhe dikhe
                 const paidOnRaw = readFeeField(record, "payDate");
                 const paidOn = paidOnRaw ? formatMonthYear(paidOnRaw) : "";
                 const paidOnText = paidOn ? ` | Paid On: ${escapeHtml(String(paidOn))}` : "";
@@ -954,7 +929,6 @@
             if (typeof calculateDueDays === "function") calculateDueDays();
         };
 
-        // --- Member Fee Tracker Functions ---
         let trackerSearchMatchCache = [];
         let trackerMemberHistory = [];
 
@@ -1216,7 +1190,6 @@
                 </div>
             `;
         };
-        // --- End Member Fee Tracker Functions ---
 
         function escapeHtml(value) {
             return String(value ?? '')
@@ -1263,9 +1236,6 @@
             let fetchedMode = getFeeHistoryField(matchedRecord, 'mode');
             let fetchedRemark = getFeeHistoryField(matchedRecord, 'remark');
 
-            // IMPORTANT: expiry comes ONLY from Fee Updation history.
-            // We search backwards for the latest non-empty M-column value.
-            // If no row has an expiry date, the field remains genuinely blank.
             const expDate = findLastMemberExpiryDate(memberHistory);
 
             const feeExpInput = document.getElementById('feeExpiryDate');
@@ -1274,9 +1244,6 @@
                 if (typeof calculateDueDays === 'function') calculateDueDays();
             }
 
-            // IMPORTANT: Do not reset Fee For Month when a member is selected.
-            // The month selected by the operator must be preserved (e.g. September-2026).
-            // Only set the current month if the fee month has not been selected yet.
             const feeMonthEl = document.getElementById("feeMonthSelect");
             const feeYearEl = document.getElementById("feeYearSelect");
             const feeCombinedEl = document.getElementById("feeForMonth");
@@ -1289,7 +1256,6 @@
                 updateCombinedFeeForMonth();
             }
 
-            // updateCombinedFeeForMonth must never replace the member's last expiry.
             const feeExpiryAfterMonth = document.getElementById('feeExpiryDate');
             if (feeExpiryAfterMonth) feeExpiryAfterMonth.value = expDate || '';
             if (typeof calculateDueDays === 'function') calculateDueDays();
@@ -1587,38 +1553,31 @@
             }, 250);
         };
 
-      window.sendFeeWhatsAppNotification = function() {
-    if (!feeSelectedMember || !feeSelectedMember.mobile) {
-        alert("⚠️ Member mobile number is not available.");
-        return;
-    }
+        window.sendFeeWhatsAppNotification = function() {
+            if (!feeSelectedMember || !feeSelectedMember.mobile) {
+                alert("⚠️ Member mobile number is not available.");
+                return;
+            }
 
-    const feeMonth = document.getElementById("feeForMonth").value.trim();
-    const rawExpiryDate = document.getElementById("feeExpiryDate").value; // e.g., 2026-12-31
-    
-    // Yahan date ko YYYY-MM-DD se DD-MM-YYYY me badla ja raha hai
-    let formattedExpiryDate = rawExpiryDate;
-    if (rawExpiryDate && rawExpiryDate.includes("-")) {
-        const parts = rawExpiryDate.split("-");
-        if (parts.length === 3) {
-            formattedExpiryDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
-        }
-    }
+            const rawExpiryDate = document.getElementById("feeExpiryDate").value;
+            let formattedExpiryDate = rawExpiryDate;
+            if (rawExpiryDate && rawExpiryDate.includes("-")) {
+                const parts = rawExpiryDate.split("-");
+                if (parts.length === 3) {
+                    formattedExpiryDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+            }
 
-    const name = feeSelectedMember.name || "Member";
-    const uid = feeSelectedMember.uid || "";
-    const mobileNumber = feeSelectedMember.mobile;
+            const name = feeSelectedMember.name || "Member";
+            const uid = feeSelectedMember.uid || "";
+            const mobileNumber = feeSelectedMember.mobile;
 
-    // Ab message me formattedExpiryDate ka use hoga
-    const whatsappMessage = `*${name} (${uid})* आपकी एमिनेंस लाइब्रेरी सदस्यता को दिनांक *${formattedExpiryDate}* तक आगे बढ़ा दिया गया है--धन्यवाद`;
-
-    const whatsappUrl = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(whatsappMessage)}`;
-    
-    window.open(whatsappUrl, '_blank');
-
-    clearFeeEntryForm();
-};
-
+            const whatsappMessage = `*${name} (UID: ${uid})* आपकी एमिनेंस लाइब्रेरी सदस्यता को दिनांक *${formattedExpiryDate}* तक आगे बढ़ा दिया गया है--धन्यवाद`;
+            const whatsappUrl = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+            
+            window.open(whatsappUrl, '_blank');
+            clearFeeEntryForm();
+        };
 
         window.clearFeeEntryForm = function() {
             ["feeSearchInput", "feeAmount", "feeUtr", "feePayDate", "feeExpiryDate"].forEach(id => {
@@ -1966,244 +1925,237 @@
                 <span class="admin-portal-badge"><i class="fa-solid fa-chair"></i> Live Seat Portal</span>
             </div>
             <div class="nav-buttons">
-                <button type="button" id="coreBranchBtn" class="nav-btn active" onclick="switchBranch('core')"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
-                <button type="button" id="nexusBranchBtn" class="nav-btn" onclick="switchBranch('nexus')"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch</button>
-                <button type="button" class="nav-btn btn-search-nav" onclick="openGlobalSearchModal()"><i class="fa-solid fa-search"></i> Search Member</button>
-                <button type="button" class="nav-btn" style="background: #dc2626;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                <button type="button" class="nav-btn active" id="coreBranchBtn" onclick="switchBranch('core')"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
+                <button type="button" class="nav-btn" id="nexusBranchBtn" onclick="switchBranch('nexus')"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch</button>
+                <button type="button" class="nav-btn btn-search-nav" onclick="openGlobalSearchModal()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+                <button type="button" class="nav-btn" style="background:#dc2626;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-left"></i> Back</button>
             </div>
         </header>
-
         <div class="container">
             <div class="status-legend">
-                <div class="legend-item"><img src="Desk1.png" class="legend-seat-icon"><span>Available (Vacant)</span></div>
-                <div class="legend-item"><img src="Desk2.png" class="legend-seat-icon"><span>Booked</span></div>
-                <div class="legend-item"><img src="Desk4.png" class="legend-seat-icon"><span>On Hold (Waiting)</span></div>
+                <div class="legend-item"><img src="Desk1.png" alt="Available" class="legend-seat-icon"> Available</div>
+                <div class="legend-item"><img src="Desk4.png" alt="Waiting" class="legend-seat-icon"> On Hold (Waiting)</div>
+                <div class="legend-item"><img src="Desk2.png" alt="Booked" class="legend-seat-icon"> Booked</div>
             </div>
-
             <div class="chart-header">
                 <h3 id="chartHeadingText"><i class="fa-solid fa-building-columns"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability</h3>
             </div>
-
             <div id="coreBranchSection">
                 <div class="hall-section">
-                    <div class="hall-title"><i class="fa-solid fa-door-open"></i> Hall 1 (Seats 1-59)</div>
+                    <div class="hall-title">Hall 1 (Seats 1-59)</div>
                     <div id="hall1GridContainer" class="seat-grid core-h1-grid"></div>
                 </div>
                 <div class="hall-section">
-                    <div class="hall-title"><i class="fa-solid fa-door-open"></i> Hall 2 (Seats 61-83)</div>
+                    <div class="hall-title">Hall 2 (Seats 61-83)</div>
                     <div id="hall2GridContainer" class="seat-grid core-h2-grid"></div>
                 </div>
             </div>
-
             <div id="nexusBranchSection" style="display: none;">
                 <div class="hall-section">
-                    <div class="hall-title"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch (Seats 1-65)</div>
+                    <div class="hall-title">Nexus Branch Main Hall (Seats 1-65)</div>
                     <div id="nexusGridContainer" class="seat-grid nexus-grid"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="feeManagementContainer">
-        <header>
-            <div class="header-brand">
-                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
-                <span class="admin-portal-badge" style="background: #0284c7;"><i class="fa-solid fa-file-invoice-dollar"></i> Fee Management Portal</span>
-            </div>
-            <div class="nav-buttons">
-                <button onclick="backToDashboardFromFee()" class="nav-btn" style="background: #dc2626;"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            </div>
-        </header>
-
-        <div class="container" style="max-width: 800px; background: #ffffff; padding: 25px; border-radius: 16px; margin-top: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
-            <div class="chart-header" style="margin-bottom: 15px; padding: 10px 0; background: transparent; box-shadow: none; border-bottom: 2px solid #f1f5f9;">
-                <h3 style="color: #0f172a;"><i class="fa-solid fa-file-invoice-dollar" style="color: #0284c7;"></i> Fee Deposit & Management Panel</h3>
-            </div>
-
-            <div style="padding: 10px 0;">
-                <div style="background: #f8fafc; border: 1.5px dashed #0284c7; padding: 14px; border-radius: 10px; margin-bottom: 15px;">
-                    <h4 style="font-size: 0.9rem; color: #FF5533; margin-bottom: 8px;"><i class="fa-solid fa-magnifying-glass" style="color: #0284c7;"></i> Reprint Receipt (Member Search & History Months)</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-size: 12px; font-weight:600; color:#475569;">Member Search (Name/Mobile/UID):</label>
-                            <input type="text" id="reprintQueryInput" class="form-control" placeholder="Name, UID or Mobile..." oninput="debouncedReprintSearch()">
-                            <div id="reprintSearchResults" class="search-results"></div>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-size: 12px; font-weight:600; color:#475569;">Select Month History:</label>
-                            <select id="reprintMonthSelect" class="form-control" disabled onchange="handleReprintMonthChange()">
-                                <option value="">-- Pehle Member Search Karein --</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-submit" style="background: #0284c7; padding: 5px; font-size: 0.85rem; box-shadow: none;" onclick="generateFeeReceiptOnly(true)">
-                        <i class="fa-solid fa-print"></i> Reprint Receipt
-                    </button>
-                </div>
-
-                <div class="form-group">
-                    <label for="feeSearchInput" style="font-weight: 600; color: #FF5533; font-size: 13px; margin-bottom: 6px; display: block;">नया फीस जमा करने के लिए सदस्य खोजें (मोबाइल नंबर या UID):</label>
-                    <input type="text" id="feeSearchInput" class="form-control" placeholder="मोबाइल नंबर या UID दर्ज करें..." oninput="debouncedFeeSearch()">
-                    <div id="feeSearchResults" class="search-results"></div>
-                </div>
-
-                <div id="feeDetailsSection" style="display: block; margin-top: 15px; border-top: 2px solid #e2e8f0; padding-top: 15px;">
-                    <div id="selectedMemberSummary" style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; padding: 10px 14px; border-radius: 8px; margin-bottom: 15px;">
-                        <div style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">👤 Direct Entry Mode Active</div>
-                    </div>
-
-                    <div id="feeTransactionFormFields">
-                        <h4 style="font-size: 0.95rem; color: #0f172a; margin-bottom: 12px;"><i class="fa-solid fa-receipt"></i> Fee Transaction Details</h4>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group">
-                                <label>Shift</label>
-                                <select id="feeShift" class="form-control">
-                                    <option value="Morning Shift (07:00 AM To 02:00 PM)">Morning Shift (07:00 AM To 02:00 PM)</option>
-                                    <option value="Evening Shift (02:00 PM To 11:00 PM)">Evening Shift (02:00 PM To 11:00 PM)</option>
-                                    <option value="Full Day Shift(07:00 AM To 11:00 PM)">Full Day Shift(07:00 AM To 11:00 PM)</option>
-                                    <option value="Short Term Plan (For Min 15 Days)">Short Term Plan (For Min 15 Days)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Payment Amount (₹)</label>
-                                <input type="number" id="feeAmount" class="form-control" placeholder="Enter amount (e.g. 500)" oninput="checkFormCompletion()">
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group">
-                                <label>Fees For Month</label>
-                                <div style="display: flex; gap: 5px;">
-                                    <select id="feeMonthSelect" class="form-control" onchange="updateCombinedFeeForMonth()">
-                                        <option value="January">January</option>
-                                        <option value="February">February</option>
-                                        <option value="March">March</option>
-                                        <option value="April">April</option>
-                                        <option value="May">May</option>
-                                        <option value="June">June</option>
-                                        <option value="July">July</option>
-                                        <option value="August">August</option>
-                                        <option value="September">September</option>
-                                        <option value="October">October</option>
-                                        <option value="November">November</option>
-                                        <option value="December">December</option>
-                                    </select>
-                                    <select id="feeYearSelect" class="form-control" onchange="updateCombinedFeeForMonth()">
-                                        <option value="2026">2026</option>
-                                        <option value="2027">2027</option>
-                                    </select>
-                                </div>
-                                <input type="hidden" id="feeForMonth" value="">
-                            </div>
-                            <div class="form-group">
-                                <label>Payment For / Remarks (Optional)</label>
-                                <select id="feeRemark" class="form-control">
-                                    <option value="Payment for New Registration">Payment for New Registration</option>
-                                    <option value="Fee Renewal">Fee Renewal</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group">
-                                <label>Fees Expiry Date <span style="font-size:11px;color:#64748b;font-weight:500;">(Last saved expiry auto-loads; blank if none)</span></label>
-                                <input type="date" id="feeExpiryDate" class="form-control" oninput="calculateDueDays()">
-                            </div>
-                            <div class="form-group">
-                                <label>Payment Mode</label>
-                                <select id="feePaymentMode" class="form-control" onchange="handlePaymentModeChange()">
-                                    <option value="Cash">Cash</option>
-                                    <option value="Online">Online / UPI</option>
-                                    <option value="By QR">By QR Code</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group" style="margin-bottom: 12px;">
-                                <label>Fees Pay Date</label>
-                                <input type="date" id="feePayDate" class="form-control" oninput="checkFormCompletion()">
-                            </div>
-                            <div id="utrContainer" class="form-group" style="display: none; margin-bottom: 12px;">
-                                <label>UTR / Transaction Number</label>
-                                <input type="text" id="feeUtr" class="form-control" placeholder="Enter UPI Transaction / UTR No." oninput="checkFormCompletion()">
-                            </div>
-                        </div>                          
-                    </div>
-
-                    <div id="feeDueDaysDisplay" style="margin-bottom: 12px;"></div>
-
-                    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px;">
-                        <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; flex: 1; width: auto; margin-top: 0;" onclick="handleFeeButtonAction()"><i class="fa-solid fa-sync"></i> Update Fee</button>
-                        <button type="button" id="feeClearBtn" class="btn-submit" style="background: #64748b; display: block; flex: 1; width: auto; margin-top: 0;" onclick="clearFeeEntryForm()"><i class="fa-solid fa-rotate-left"></i> Clear Form</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="feeTrackerContainer">
-        <header>
-            <div class="header-brand">
-                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
-                <span class="admin-portal-badge" style="background: #16a34a;"><i class="fa-solid fa-chart-line"></i> Fee Tracker Portal</span>
-            </div>
-            <div class="nav-buttons">
-                <button onclick="backToDashboardFromTracker()" class="nav-btn" style="background: #dc2626;"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            </div>
-        </header>
-
-        <div class="container" style="max-width: 800px; background: #ffffff; padding: 25px; border-radius: 16px; margin-top: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
-            <div class="chart-header" style="margin-bottom: 15px; padding: 10px 0; background: transparent; box-shadow: none; border-bottom: 2px solid #f1f5f9;">
-                <h3 style="color: #0f172a;"><i class="fa-solid fa-chart-line" style="color: #16a34a;"></i> Member Fee Tracker (Complete History & Status)</h3>
-            </div>
-
-            <div style="padding: 10px 0;">
-                <div class="form-group" style="margin-bottom: 8px;">
-                    <label style="font-size: 13px; font-weight:600; color:#475569;">Search Member to Track (Name/Mobile/UID):</label>
-                    <input type="text" id="trackerQueryInput" class="form-control" placeholder="Search by Name, UID or Mobile..." oninput="debouncedTrackerSearch()">
-                    <div id="trackerSearchResults" class="search-results"></div>
-                </div>
-                <div id="trackerMemberSummaryBox" style="display:none; background:#fff; border:1px solid #cbd5e1; padding:10px; border-radius:8px; margin-top:10px;"></div>
-                <div id="trackerTableContainer" style="display:none; margin-top:10px;"></div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Quick Seat Status Change Modal -->
     <div id="adminQuickModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>Manage Seat #<span id="quickModalSeatNo"></span></h3>
-                <button class="modal-close" onclick="closeModal('adminQuickModal')">&times;</button>
+                <h3>Seat #<span id="quickModalSeatNo"></span> Details</h3>
+                <button type="button" class="modal-close" onclick="closeModal('adminQuickModal')">&times;</button>
             </div>
-            <div id="seatReadOnlyDetails" style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; border: 1px solid #e2e8f0;"></div>
+            <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px; line-height: 1.5;" id="seatReadOnlyDetails"></div>
             <div class="form-group">
-                <label>Change Status</label>
+                <label>Change Seat Status</label>
                 <select id="quickModalNewStatus" class="form-control">
-                    <option value="vacant">Available (Vacant)</option>
-                    <option value="booked">Booked</option>
+                    <option value="vacant">Vacant (Available)</option>
                     <option value="waiting">On Hold (Waiting)</option>
+                    <option value="booked">Booked</option>
                 </select>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button type="button" class="btn-submit" onclick="applyQuickSeatStatusChange()">Update Status</button>
-                <button type="button" id="quickBtnNotify" class="btn-submit" style="background: #16a34a; display: none;" onclick="notifyQuickStudentWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp Notify</button>
+                <button type="button" class="btn-submit" id="quickBtnNotify" style="background: #25d366; display: none;" onclick="notifyQuickStudentWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp Allotment</button>
             </div>
         </div>
     </div>
 
+    <!-- Global Search Modal -->
     <div id="globalSearchModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>Search Member Across All Seats</h3>
-                <button class="modal-close" onclick="closeModal('globalSearchModal')">&times;</button>
+                <h3>Global Member Search</h3>
+                <button type="button" class="modal-close" onclick="closeModal('globalSearchModal')">&times;</button>
             </div>
             <div class="form-group">
-                <label>Enter Mobile No. or UID</label>
-                <input type="text" id="searchMemberInput" class="form-control" placeholder="Type mobile or UID..." oninput="searchMember()">
+                <label>Enter Mobile Number or UID</label>
+                <input type="text" id="searchMemberInput" class="form-control" placeholder="Search by mobile or UID...">
             </div>
-            <div id="adminSearchResult" style="margin-top: 15px; max-height: 300px; overflow-y: auto;"></div>
+            <button type="button" class="btn-submit" onclick="searchMember()">Search Live Bookings</button>
+            <div id="adminSearchResult" style="margin-top: 15px; max-height: 250px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- Fee Management Container -->
+    <div id="feeManagementContainer">
+        <header>
+            <div class="header-brand">
+                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
+                <span class="admin-portal-badge" style="background:#0284c7;"><i class="fa-solid fa-receipt"></i> Fee Deposit Portal</span>
+            </div>
+            <div class="nav-buttons">
+                <button type="button" class="nav-btn" style="background:#dc2626;" onclick="backToDashboardFromFee()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+        </header>
+        <div class="container" style="max-width: 800px;">
+            <div class="hall-section">
+                <div class="hall-title"><i class="fa-solid fa-file-invoice-dollar"></i> Fee Deposit &amp; Management Panel</div>
+                
+                <!-- Reprint Section -->
+                <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+                        <i class="fa-solid fa-print"></i> Reprint Receipt (Member Search &amp; History Months)
+                    </label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 220px; position: relative;">
+                            <input type="text" id="reprintQueryInput" class="form-control" placeholder="Search Member (Name / Mobile / UID)..." oninput="debouncedReprintSearch()">
+                            <div id="reprintSearchResults" class="search-results" style="position: absolute; width: 100%; z-index: 50;"></div>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <select id="reprintMonthSelect" class="form-control" onchange="handleReprintMonthChange()" disabled>
+                                <option value="">-- Pehle Member Search Karein --</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn-submit" style="width: auto; background: #0284c7;" onclick="generateFeeReceiptOnly(true)"><i class="fa-solid fa-print"></i> Reprint Receipt</button>
+                    </div>
+                </div>
+
+                <!-- Member Search Input for New Entry -->
+                <div class="form-group" style="position: relative;">
+                    <label><i class="fa-solid fa-user-plus"></i> नया फीस जमा करने के लिए सदस्य खोजें (मोबाइल नंबर या UID):</label>
+                    <input type="text" id="feeSearchInput" class="form-control" placeholder="Type Mobile Number, UID or Name..." oninput="debouncedFeeSearch()">
+                    <div id="feeSearchResults" class="search-results" style="position: absolute; width: 100%; z-index: 50;"></div>
+                </div>
+
+                <div id="selectedMemberSummary" style="margin: 15px 0; padding: 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">👤 Direct Entry Mode Active</div>
+                </div>
+
+                <div id="feeDetailsSection" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Shift</label>
+                            <select id="feeShift" class="form-control">
+                                <option value="Morning Shift (07:00 AM To 02:00 PM)">Morning Shift (07:00 AM To 02:00 PM)</option>
+                                <option value="Evening Shift (02:00 PM To 11:00 PM)">Evening Shift (02:00 PM To 11:00 PM)</option>
+                                <option value="Full Day Shift(07:00 AM To 11:00 PM)">Full Day Shift (07:00 AM To 11:00 PM)</option>
+                                <option value="Short Term Plan (For Min 15 Days)">Short Term Plan (For Min 15 Days)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fees For Month</label>
+                            <div style="display: flex; gap: 5px;">
+                                <select id="feeMonthSelect" class="form-control" onchange="updateCombinedFeeForMonth()">
+                                    <option value="January">January</option>
+                                    <option value="February">February</option>
+                                    <option value="March">March</option>
+                                    <option value="April">April</option>
+                                    <option value="May">May</option>
+                                    <option value="June">June</option>
+                                    <option value="July">July</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
+                                </select>
+                                <select id="feeYearSelect" class="form-control" onchange="updateCombinedFeeForMonth()" style="width: 100px;">
+                                    <option value="2025">2025</option>
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2027">2027</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="feeForMonth">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Payment Amount (₹)</label>
+                            <input type="number" id="feeAmount" class="form-control" placeholder="Enter amount" oninput="checkFormCompletion()">
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Remark / For</label>
+                            <select id="feeRemark" class="form-control">
+                                <option value="Fee Renewal">Fee Renewal</option>
+                                <option value="New Member">New Member</option>
+                                <option value="Advance Payment">Advance Payment</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Payment Mode</label>
+                            <select id="feePaymentMode" class="form-control" onchange="handlePaymentModeChange()">
+                                <option value="Cash">Cash</option>
+                                <option value="Online">Online</option>
+                                <option value="By QR">By QR</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="utrContainer" style="display: none;">
+                            <label>UTR Number / Transaction ID</label>
+                            <input type="text" id="feeUtr" class="form-control" placeholder="Enter UTR number" oninput="checkFormCompletion()">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Fees Pay Date</label>
+                            <input type="date" id="feePayDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Fees Expiry Date (Auto-Filled)</label>
+                            <input type="date" id="feeExpiryDate" class="form-control" onchange="calculateDueDays()">
+                        </div>
+                    </div>
+
+                    <div id="feeDueDaysDisplay" style="margin-bottom: 15px;"></div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn-submit" id="feeSubmitBtn" style="background: #16a34a; display: none;" onclick="handleFeeButtonAction()"><i class="fa-solid fa-sync"></i> Update Fee</button>
+                        <button type="button" class="btn-submit" style="background: #64748b;" onclick="clearFeeEntryForm()"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Tracker Container -->
+    <div id="feeTrackerContainer">
+        <header>
+            <div class="header-brand">
+                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
+                <span class="admin-portal-badge" style="background:#16a34a;"><i class="fa-solid fa-chart-line"></i> Fee Tracker Portal</span>
+            </div>
+            <div class="nav-buttons">
+                <button type="button" class="nav-btn" style="background:#dc2626;" onclick="backToDashboardFromTracker()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+        </header>
+        <div class="container" style="max-width: 900px;">
+            <div class="hall-section">
+                <div class="hall-title"><i class="fa-solid fa-history"></i> Member Fee History &amp; Tracker</div>
+                <div class="form-group" style="position: relative;">
+                    <label>सदस्य खोजें (मोबाइल नंबर, UID या नाम):</label>
+                    <input type="text" id="trackerQueryInput" class="form-control" placeholder="Type Mobile, UID or Name..." oninput="debouncedTrackerSearch()">
+                    <div id="trackerSearchResults" class="search-results" style="position: absolute; width: 100%; z-index: 50;"></div>
+                </div>
+
+                <div id="trackerMemberSummaryBox" style="display: none; margin: 15px 0; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;"></div>
+                <div id="trackerTableContainer" style="display: none; margin-top: 15px;"></div>
+            </div>
         </div>
     </div>
 </body>
