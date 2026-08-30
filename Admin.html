@@ -537,25 +537,50 @@
             feeSearchTimer = setTimeout(() => searchLibraryData(), 180);
         };
 
+        let feeSearchRequestId = 0;
+
         window.searchLibraryData = async function() {
-            const input = document.getElementById("feeSearchInput");
-            const resultsDiv = document.getElementById("feeSearchResults");
-            if (!input || !resultsDiv) return;
+    const input = document.getElementById("feeSearchInput");
+    const resultsDiv = document.getElementById("feeSearchResults");
+    const feeDetailsSection = document.getElementById("feeDetailsSection");
+    const memberSummary = document.getElementById("selectedMemberSummary");
+    if (!input || !resultsDiv) return;
 
-            const query = input.value.trim().toLowerCase();
+    const requestId = ++feeSearchRequestId;
+    const query = input.value.trim().toLowerCase();
 
-            if (query === "") {
-                resultsDiv.style.display = "none";
-                resultsDiv.innerHTML = "";
-                window.feeSearchMatchCache = [];
-                return;
-            }
+    // Search box blank hote hi purana result/member selection completely clear karein.
+    if (query === "") {
+        resultsDiv.style.display = "none";
+        resultsDiv.innerHTML = "";
+        window.feeSearchMatchCache = [];
+
+        if (feeDetailsSection) feeDetailsSection.style.display = "none";
+        if (memberSummary) {
+            memberSummary.innerHTML = '<div style="font-size:0.85rem;font-weight:600;color:#0f172a;">👤 Search Member First </div>';
+        }
+
+        feeSelectedMember = null;
+        feeReceiptMode = "new";
+        feeReceiptPrinted = false;
+        feeFlowState = 1;
+
+        // Purane async search ko ignore karne ke liye request id invalidate karein.
+        return;
+    }
 
             resultsDiv.style.display = "block";
             resultsDiv.innerHTML = "<span style='color:#64748b;font-size:12px;'>Member data load ho raha hai...</span>";
 
             if (!Array.isArray(feeLibraryDataObject) || feeLibraryDataObject.length === 0) {
                 await fetchFeeLibraryData(false);
+            }
+
+            // Agar user ne meanwhile search box clear/change kar diya hai,
+            // to is purane async result ko screen par dobara mat dikhayein.
+            if (requestId !== feeSearchRequestId ||
+                input.value.trim().toLowerCase() !== query) {
+                return;
             }
 
             const sourceRecords = [];
@@ -1207,6 +1232,7 @@
         };
 
         window.selectThisMember = function(name, mobile, uid, branch, sourceRecord) {
+            feeSearchRequestId++;
             feeSelectedMember = { name, mobile, uid, branch };
             feeFlowState = 1;
             feeReceiptMode = "new";
@@ -1580,54 +1606,40 @@
         };
 
         window.clearFeeEntryForm = function() {
-            ["feeSearchInput", "feeAmount", "feeUtr", "feePayDate", "feeExpiryDate"].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.value = "";
-            });
+const input = document.getElementById("feeSearchInput");
+    if (input) input.value = "";
+    
+    const resultsDiv = document.getElementById("feeSearchResults");
+    if (resultsDiv) {
+        resultsDiv.style.display = "none"; // Results hide
+        resultsDiv.innerHTML = "";         // Results clear
+    }
+    
+    const feeDetailsSection = document.getElementById("feeDetailsSection");
+    if (feeDetailsSection) feeDetailsSection.style.display = "none"; // Form hide
+    
+    // Form fields ko reset karna
+    const feeShift = document.getElementById("feeShift");
+    if (feeShift) feeShift.selectedIndex = 0;
 
-            document.getElementById("feeShift").selectedIndex = 0;
-            document.getElementById("feePaymentMode").selectedIndex = 0;
-            document.getElementById("feeRemark").selectedIndex = 0;
-            document.getElementById("selectedMemberSummary").innerHTML = "";
-            document.getElementById("feeSearchResults").style.display = "none";
-            document.getElementById("feeDetailsSection").style.display = "block";
-            document.getElementById("feeDueDaysDisplay").innerHTML = "";
+    const feePaymentMode = document.getElementById("feePaymentMode");
+    if (feePaymentMode) feePaymentMode.selectedIndex = 0;
 
-            feeSelectedMember = { name: "Direct Walk-in / Member", mobile: "", uid: "DIRECT", branch: activeBranch };
-            let summaryElem = document.getElementById("selectedMemberSummary");
-            if (summaryElem) {
-                summaryElem.innerHTML = `<div style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">👤 Direct Entry Mode Active</div>`;
-            }
+    const feeRemark = document.getElementById("feeRemark");
+    if (feeRemark) feeRemark.value = ""; // Agar yeh dropdown nahi text/other input hai toh value = "" safe hai
 
-            const submitBtn = document.getElementById("feeSubmitBtn");
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
-                submitBtn.style.background = "#16a34a";
-                submitBtn.disabled = false;
-                submitBtn.style.display = "none";
-            }
+    const memberSummary = document.getElementById("selectedMemberSummary");
+    if (memberSummary) {
+        memberSummary.innerHTML = '<div style="font-size:0.85rem;font-weight:600;color:#0f172a;">👤 Member search karein</div>';
+    }
 
-            feeFlowState = 1;
-            feeReceiptMode = "new";
-            feeReceiptPrinted = false;
-            feeSaveInProgress = false;
-            
-            let today = new Date().toISOString().split('T')[0];
-            let feePayDateElem = document.getElementById("feePayDate");
-            if(feePayDateElem) feePayDateElem.value = today;
-            
-            let dateObj = new Date();
-            let month = dateObj.toLocaleString('en-US', { month: 'long' });
-            let year = dateObj.getFullYear();
-            
-            let feeMonthSelect = document.getElementById("feeMonthSelect");
-            let feeYearSelect = document.getElementById("feeYearSelect");
-            if(feeMonthSelect) feeMonthSelect.value = month;
-            if(feeYearSelect) feeYearSelect.value = year;
-            updateCombinedFeeForMonth();
-            
-            handlePaymentModeChange();
-        };
+    if (typeof feeSearchRequestId !== "undefined") feeSearchRequestId++;
+
+    const dueDaysDisplay = document.getElementById("feeDueDaysDisplay");
+    if (dueDaysDisplay) dueDaysDisplay.innerHTML = "";
+    
+    feeSelectedMember = null;
+};
 
         window.switchBranch = function(branchKey) {
             activeBranch = branchKey;
