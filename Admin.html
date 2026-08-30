@@ -26,6 +26,7 @@
         let feeSaveInProgress = false;
         let feeReceiptMode = "new"; 
         let feeReceiptPrinted = false;
+        let feeTrackerBackTarget = "dashboard";
 
         let oldStudentsDataPromise = null;
 
@@ -239,36 +240,73 @@
         }
 
         window.openFeeManagementModal = function() {
-            document.getElementById('mainDashboardPortal').style.display = 'none';
-            document.getElementById('feeManagementContainer').style.display = 'block';
-            
-            document.getElementById("feeSearchInput").value = "";
-            document.getElementById("feeSearchResults").style.display = "none";
-            document.getElementById("feeDetailsSection").style.display = "block";
-            
-            document.getElementById("reprintQueryInput").value = "";
-            document.getElementById("reprintSearchResults").style.display = "none";
-            document.getElementById("reprintMonthSelect").innerHTML = '<option value="">-- First find Member --</option>';
-            document.getElementById("reprintMonthSelect").disabled = true;
+            // Always switch to the Fee Management screen first.
+            // Keep this block defensive so a missing optional element cannot
+            // stop the portal from opening.
+            const dashboard = document.getElementById('mainDashboardPortal');
+            const feeContainer = document.getElementById('feeManagementContainer');
 
-            feeSelectedMember = { name: "Direct Walk-in / Member", mobile: "", uid: "DIRECT", branch: activeBranch };
+            if (!feeContainer) {
+                console.error('Fee Management container not found.');
+                alert('Fee Management panel load nahi ho pa raha. HTML mein feeManagementContainer missing hai.');
+                return;
+            }
+
+            if (dashboard) dashboard.style.display = 'none';
+            feeContainer.style.display = 'block';
+            feeContainer.scrollTop = 0;
+
+            const setDisplay = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = value;
+            };
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value;
+            };
+
+            setValue('feeSearchInput', '');
+            setDisplay('feeSearchResults', 'none');
+            setDisplay('feeDetailsSection', 'block');
+            setValue('reprintQueryInput', '');
+            setDisplay('reprintSearchResults', 'none');
+
+            const reprintMonthSelect = document.getElementById('reprintMonthSelect');
+            if (reprintMonthSelect) {
+                reprintMonthSelect.innerHTML = '<option value="">-- First find Member --</option>';
+                reprintMonthSelect.disabled = true;
+            }
+
+            feeSelectedMember = { name: 'Direct Walk-in / Member', mobile: '', uid: 'DIRECT', branch: activeBranch };
             feeFlowState = 1;
-            feeReceiptMode = "new";
+            feeReceiptMode = 'new';
             feeReceiptPrinted = false;
-            
-            let submitBtn = document.getElementById("feeSubmitBtn");
+
+            const submitBtn = document.getElementById('feeSubmitBtn');
             if (submitBtn) {
                 submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
-                submitBtn.style.background = "#16a34a";
-                submitBtn.style.display = "block";
+                submitBtn.style.background = '#16a34a';
+                submitBtn.style.display = 'none';
+                submitBtn.disabled = false;
             }
-            let extraActionButtons = document.getElementById("feeExtraActionButtons");
-            if (extraActionButtons) extraActionButtons.style.display = "none";
 
-            Promise.all([fetchOldStudentsData(), fetchFeeLibraryData(), fetchSheetData(false, true)]);
-        }
+            const extraActionButtons = document.getElementById('feeExtraActionButtons');
+            if (extraActionButtons) extraActionButtons.style.display = 'none';
+
+            // Load Fee Updation data in the background. The panel is opened
+            // immediately, so a slow Google Apps Script response cannot make
+            // the Manage Fees button appear to do nothing.
+            Promise.all([
+                fetchOldStudentsData(),
+                fetchFeeLibraryData(true),
+                fetchSheetData(true, true)
+            ]).catch(err => console.warn('Fee Management background load:', err));
+        };
 
         window.openFeeTrackerModal = function() {
+            // Remember where the tracker was opened from so Back goes exactly one step back.
+            const feeContainer = document.getElementById('feeManagementContainer');
+            feeTrackerBackTarget = (feeContainer && feeContainer.style.display === 'block') ? "fee" : "dashboard";
             document.getElementById('mainDashboardPortal').style.display = 'none';
             document.getElementById('feeTrackerContainer').style.display = 'block';
             document.getElementById("trackerQueryInput").value = "";
@@ -284,8 +322,23 @@
         }
 
         window.backToDashboardFromTracker = function() {
-            document.getElementById('feeTrackerContainer').style.display = 'none';
-            document.getElementById('mainDashboardPortal').style.display = 'flex';
+            const tracker = document.getElementById('feeTrackerContainer');
+            const feeContainer = document.getElementById('feeManagementContainer');
+            const dashboard = document.getElementById('mainDashboardPortal');
+
+            if (tracker) tracker.style.display = 'none';
+
+            // Go one step back instead of ever showing the admin login overlay.
+            if (feeTrackerBackTarget === "fee" && feeContainer) {
+                if (dashboard) dashboard.style.display = 'none';
+                feeContainer.style.display = 'block';
+            } else if (dashboard) {
+                dashboard.style.display = 'flex';
+            }
+
+            // The login gate must remain closed after returning.
+            const gate = document.getElementById('adminGateOverlay');
+            if (gate && isAdminLoggedIn) gate.style.display = 'none';
         }
 
         window.handlePaymentModeChange = function() {
@@ -313,7 +366,9 @@
 
                 let isUtrValid = (modeVal === "Cash" || (modeVal !== "Cash" && utrVal !== ""));
 
-                if (monthVal !== "" && amountVal !== "" && expiryVal !== "" && isUtrValid) {
+                // Expiry may legitimately be blank in the existing Sheet data.
+                // Keep the field editable; the user can enter/update it before saving.
+                if (monthVal !== "" && amountVal !== "" && isUtrValid) {
                     submitBtn.style.display = "block";
                 } else {
                     submitBtn.style.display = "none";
@@ -346,6 +401,96 @@
 
         function normalizeSearchMobile(value) {
             return String(value ?? '').replace(/\D/g, '');
+        }
+
+        // Read a Fee Updation field safely from either an API object or a raw row.
+        // Fee Updation columns: B=Name, C=UID, D=Mobile, ... L=Pay Date, M=Expiry Date.
+        function getFeeHistoryField(record, field) {
+            if (record === null || record === undefined) return '';
+
+            const columnIndex = {
+                name: 1, uid: 2, mobile: 3, branch: 4, shift: 5,
+                month: 6, amount: 7, mode: 8, utr: 9, remark: 10,
+                payDate: 11, expiryDate: 12
+            };
+
+            if (Array.isArray(record)) {
+                const idx = columnIndex[field];
+                return idx !== undefined ? String(record[idx] ?? '').trim() : '';
+            }
+
+            if (typeof record !== 'object') return '';
+
+            const aliases = {
+                name: ['Member Name','Name','Student Name','StudentName'],
+                uid: ['UID Code','UID','uidCode','Member UID'],
+                mobile: ['Mobile Number','Mobile','Phone','Phone Number','mobileNumber'],
+                branch: ['Branch','Branch Name','branchName'],
+                shift: ['Shift'],
+                month: ['Fees For Month','Fees for month','Fee Month','Fees Month','feeForMonth'],
+                amount: ['Amount','Payment Amount','Fee Amount'],
+                mode: ['Mode','Payment Mode','PaymentMode'],
+                utr: ['UTR','UTR Number','Transaction Number','Transaction ID'],
+                remark: ['Payment For','Payment For / Remark','Remark','Payment Remark'],
+                payDate: ['Pay Date','Payment Date','Fees Pay Date','Date'],
+                expiryDate: ['Expiry Date','Fees Expiry Date','Expiry','Validity','ExpiryDate','FeesExpiryDate']
+            };
+
+            const wanted = new Set((aliases[field] || []).map(k => String(k).toLowerCase().replace(/[^a-z0-9]/g,'')));
+            for (const key of Object.keys(record)) {
+                const clean = String(key).toLowerCase().replace(/[^a-z0-9]/g,'');
+                if (wanted.has(clean)) {
+                    const value = record[key];
+                    if (value !== null && value !== undefined && String(value).trim() !== '') {
+                        return String(value).trim();
+                    }
+                }
+            }
+            return '';
+        }
+
+        // Converts Google Sheet/API date values to the value required by
+        // <input type="date">. The Fee Updation sheet uses DD-MM-YYYY.
+        function feeDateToInputValue(value) {
+            if (value === null || value === undefined || String(value).trim() === '') return '';
+            const raw = String(value).trim();
+
+            // Already in HTML date format.
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+            // Google/ISO date-time.
+            const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T/);
+            if (iso) return `${iso[1]}-${String(iso[2]).padStart(2,'0')}-${String(iso[3]).padStart(2,'0')}`;
+
+            // Fee Updation Sheet format: DD-MM-YYYY (also accept /).
+            let m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            if (m) {
+                const d = Number(m[1]);
+                const mo = Number(m[2]);
+                if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+                    return `${m[3]}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                }
+            }
+
+            // Last fallback for Date/serialized date values.
+            const parsed = new Date(raw);
+            if (!isNaN(parsed.getTime())) {
+                return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`;
+            }
+            return '';
+        }
+
+        // Find the latest NON-BLANK expiry for the selected member.
+        // This is important when the newest fee row has an empty expiry but an
+        // older row still contains the member's last valid expiry date.
+        function findLastMemberExpiryDate(historyRows) {
+            if (!Array.isArray(historyRows)) return '';
+            for (let i = historyRows.length - 1; i >= 0; i--) {
+                const raw = getFeeHistoryField(historyRows[i], 'expiryDate');
+                const normalized = feeDateToInputValue(raw);
+                if (normalized) return normalized;
+            }
+            return '';
         }
 
         function extractMemberRecords(source, output, visited) {
@@ -623,33 +768,35 @@
                 expiryDate: ["expirydate", "feesexpirydate", "expiry", "validity"]
             };
 
-            function readFeeField(record, field) {
-                if (record === null || record === undefined) return "";
-                if (Array.isArray(record)) {
-                    const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateL : field === "expiryDate" ? COL.expiryM : undefined;
-                    return idx !== undefined ? (record[idx] ?? "") : "";
-                }
-                if (typeof record !== "object") return "";
-                if (field === "month") {
-                    const exactMonthKeys = ["Fees For Month", "Fees for month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"];
-                    for (const key of exactMonthKeys) {
-                        if (Object.prototype.hasOwnProperty.call(record, key)) {
-                            const value = record[key];
-                            if (value !== null && value !== undefined && String(value).trim() !== "") return value;
-                        }
-                    }
-                }
-                const wanted = aliases[field] || [];
-                const wantedSet = new Set(wanted.map(keyNorm));
-                for (const key of Object.keys(record)) {
-                    if (wantedSet.has(keyNorm(key))) {
-                        const value = record[key];
-                        if (value !== null && value !== undefined && String(value).trim() !== "") return value;
-                    }
-                }
-                return "";
+       function readFeeField(record, field) {
+    if (record === null || record === undefined) return "";
+    if (Array.isArray(record)) {
+        const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateL : field === "expiryDate" ? COL.expiryM : undefined;
+        return idx !== undefined ? (record[idx] ?? "") : "";
+    }
+    if (typeof record !== "object") return "";
+    
+    // Agar field month hai, toh column G ke sabhi possible alternative keys check karein
+    if (field === "month") {
+        const exactMonthKeys = ["Fees For Month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"];
+        for (const key of exactMonthKeys) {
+            if (Object.prototype.hasOwnProperty.call(record, key)) {
+                const value = record[key];
+                if (value !== null && value !== undefined && String(value).trim() !== "") return value;
             }
+        }
+    }
 
+    const wanted = aliases[field] || [];
+    const wantedSet = new Set(wanted.map(keyNorm));
+    for (const key of Object.keys(record)) {
+        if (wantedSet.has(keyNorm(key))) {
+            const value = record[key];
+            if (value !== null && value !== undefined && String(value).trim() !== "") return value;
+        }
+    }
+    return "";
+}
             window.__readFeeReprintField = readFeeField;
 
             const targetUID = keyNorm(feeSelectedMember.uid);
@@ -751,13 +898,12 @@
             currentMemberFeeHistory.forEach((record, idx) => {
                 const rawMonth = readFeeField(record, "month");
                 const amount = readFeeField(record, "amount") || "0";
-                const formattedMonth = formatMonthYear(rawMonth);
+                // Yahan formatMonthYear hata diya gaya hai taaki Column G ka data bina kisi badlav ke seedhe dikhe
                 const paidOnRaw = readFeeField(record, "payDate");
                 const paidOn = paidOnRaw ? formatMonthYear(paidOnRaw) : "";
                 const paidOnText = paidOn ? ` | Paid On: ${escapeHtml(String(paidOn))}` : "";
-                optionsHtml += `<option value="${idx}">Fees For: ${escapeHtml(String(formattedMonth || rawMonth))} — Paid ₹${escapeHtml(String(amount))}${paidOnText}</option>`;
+                optionsHtml += `<option value="${idx}">Fees For: ${escapeHtml(String(rawMonth))} — Paid ₹${escapeHtml(String(amount))}${paidOnText}</option>`;
             });
-
             monthSelect.innerHTML = optionsHtml;
             monthSelect.disabled = false;
         };
@@ -1111,43 +1257,42 @@
                 });
             }
 
-            let matchedRecord = memberHistory[memberHistory.length - 1] || sourceRecord || {};
-            let expDate = "", fetchedAmount = "", fetchedShift = "", fetchedMode = "", fetchedRemark = "";
+            const matchedRecord = memberHistory[memberHistory.length - 1] || sourceRecord || {};
+            let fetchedAmount = getFeeHistoryField(matchedRecord, 'amount');
+            let fetchedShift = getFeeHistoryField(matchedRecord, 'shift');
+            let fetchedMode = getFeeHistoryField(matchedRecord, 'mode');
+            let fetchedRemark = getFeeHistoryField(matchedRecord, 'remark');
 
-            if (matchedRecord) {
-                for (let key in matchedRecord) {
-                    let kLower = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    if (kLower.includes('expirydate') || kLower.includes('expdate') || kLower.includes('validity')) {
-                        if (matchedRecord[key]) expDate = String(matchedRecord[key]).trim();
-                    }
-                    if (kLower.includes('amount')) {
-                        if (matchedRecord[key]) fetchedAmount = String(matchedRecord[key]).trim();
-                    }
-                    if (kLower.includes('shift')) {
-                        if (matchedRecord[key]) fetchedShift = String(matchedRecord[key]).trim();
-                    }
-                    if (kLower.includes('paymentmode') || kLower.includes('mode')) {
-                        if (matchedRecord[key]) fetchedMode = String(matchedRecord[key]).trim();
-                    }
-                    if (kLower.includes('paymentfor') || kLower.includes('remark')) {
-                        if (matchedRecord[key]) fetchedRemark = String(matchedRecord[key]).trim();
-                    }
-                }
-            }
-            
-            let feeExpInput = document.getElementById("feeExpiryDate");
+            // IMPORTANT: expiry comes ONLY from Fee Updation history.
+            // We search backwards for the latest non-empty M-column value.
+            // If no row has an expiry date, the field remains genuinely blank.
+            const expDate = findLastMemberExpiryDate(memberHistory);
+
+            const feeExpInput = document.getElementById('feeExpiryDate');
             if (feeExpInput) {
-                feeExpInput.value = expDate ? expDate.split('T')[0] : "";
+                feeExpInput.value = expDate || '';
                 if (typeof calculateDueDays === 'function') calculateDueDays();
             }
 
-            let currentFeeDate = new Date();
-            let currentMonthName = currentFeeDate.toLocaleString('en-US', { month: 'long' });
-            let currentYearVal = currentFeeDate.getFullYear();
-            
-            document.getElementById("feeMonthSelect").value = currentMonthName;
-            document.getElementById("feeYearSelect").value = currentYearVal;
-            updateCombinedFeeForMonth();
+            // IMPORTANT: Do not reset Fee For Month when a member is selected.
+            // The month selected by the operator must be preserved (e.g. September-2026).
+            // Only set the current month if the fee month has not been selected yet.
+            const feeMonthEl = document.getElementById("feeMonthSelect");
+            const feeYearEl = document.getElementById("feeYearSelect");
+            const feeCombinedEl = document.getElementById("feeForMonth");
+            if (feeMonthEl && feeYearEl && feeCombinedEl && !String(feeCombinedEl.value || '').trim()) {
+                const currentFeeDate = new Date();
+                const currentMonthName = currentFeeDate.toLocaleString('en-US', { month: 'long' });
+                const currentYearVal = currentFeeDate.getFullYear();
+                feeMonthEl.value = currentMonthName;
+                feeYearEl.value = currentYearVal;
+                updateCombinedFeeForMonth();
+            }
+
+            // updateCombinedFeeForMonth must never replace the member's last expiry.
+            const feeExpiryAfterMonth = document.getElementById('feeExpiryDate');
+            if (feeExpiryAfterMonth) feeExpiryAfterMonth.value = expDate || '';
+            if (typeof calculateDueDays === 'function') calculateDueDays();
 
             if (fetchedAmount) document.getElementById("feeAmount").value = fetchedAmount;
             if (fetchedShift) document.getElementById("feeShift").value = fetchedShift;
@@ -1442,21 +1587,38 @@
             }, 250);
         };
 
-        window.sendFeeWhatsAppNotification = function() {
-            if (!feeSelectedMember || !feeSelectedMember.mobile) {
-                alert("⚠️ Member mobile number is not available.");
-                return;
-            }
+      window.sendFeeWhatsAppNotification = function() {
+    if (!feeSelectedMember || !feeSelectedMember.mobile) {
+        alert("⚠️ Member mobile number is not available.");
+        return;
+    }
 
-            const feeMonth = document.getElementById("feeForMonth").value.trim();
-            const expiryDate = document.getElementById("feeExpiryDate").value;
-            const name = feeSelectedMember.name || "Member";
+    const feeMonth = document.getElementById("feeForMonth").value.trim();
+    const rawExpiryDate = document.getElementById("feeExpiryDate").value; // e.g., 2026-12-31
+    
+    // Yahan date ko YYYY-MM-DD se DD-MM-YYYY me badla ja raha hai
+    let formattedExpiryDate = rawExpiryDate;
+    if (rawExpiryDate && rawExpiryDate.includes("-")) {
+        const parts = rawExpiryDate.split("-");
+        if (parts.length === 3) {
+            formattedExpiryDate = `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+        }
+    }
 
-            const msg = `*Eminence Library - Fee Receipt Confirmation*\n\n*${name}*, आपकी Eminence Library की माह *${feeMonth}* की फीस प्राप्त हो गई है जिसकी वैधता *दिनांक : ${expiryDate}* तक है.\n\nThank you! -- Team Eminence Library`;
+    const name = feeSelectedMember.name || "Member";
+    const uid = feeSelectedMember.uid || "";
+    const mobileNumber = feeSelectedMember.mobile;
 
-            window.open(`https://wa.me/91${normalizeSearchMobile(feeSelectedMember.mobile)}?text=${encodeURIComponent(msg)}`, '_blank');
-            clearFeeEntryForm();
-        };
+    // Ab message me formattedExpiryDate ka use hoga
+    const whatsappMessage = `*${name} (UID: ${uid})* आपकी एमिनेंस लाइब्रेरी सदस्यता को दिनांक *${formattedExpiryDate}* तक आगे बढ़ा दिया गया है--धन्यवाद`;
+
+    const whatsappUrl = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+    
+    window.open(whatsappUrl, '_blank');
+
+    clearFeeEntryForm();
+};
+
 
         window.clearFeeEntryForm = function() {
             ["feeSearchInput", "feeAmount", "feeUtr", "feePayDate", "feeExpiryDate"].forEach(id => {
@@ -1945,7 +2107,7 @@
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="form-group">
-                                <label>Fees Expiry Date</label>
+                                <label>Fees Expiry Date <span style="font-size:11px;color:#64748b;font-weight:500;">(Last saved expiry auto-loads; blank if none)</span></label>
                                 <input type="date" id="feeExpiryDate" class="form-control" oninput="calculateDueDays()">
                             </div>
                             <div class="form-group">
@@ -1972,8 +2134,9 @@
 
                     <div id="feeDueDaysDisplay" style="margin-bottom: 12px;"></div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-top: 15px;">
-                        <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; width: 100%; margin-top: 0;" onclick="handleFeeButtonAction()"><i class="fa-solid fa-sync"></i> Update Fee</button>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px;">
+                        <button type="button" id="feeSubmitBtn" class="btn-submit" style="background: #16a34a; display: none; flex: 1; width: auto; margin-top: 0;" onclick="handleFeeButtonAction()"><i class="fa-solid fa-sync"></i> Update Fee</button>
+                        <button type="button" id="feeClearBtn" class="btn-submit" style="background: #64748b; display: block; flex: 1; width: auto; margin-top: 0;" onclick="clearFeeEntryForm()"><i class="fa-solid fa-rotate-left"></i> Clear Form</button>
                     </div>
                 </div>
             </div>
