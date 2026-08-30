@@ -1610,7 +1610,7 @@
     const mobileNumber = feeSelectedMember.mobile;
 
     // Ab message me formattedExpiryDate ka use hoga
-    const whatsappMessage = `*${name} (UID: ${uid})* आपकी एमिनेंस लाइब्रेरी सदस्यता को दिनांक *${formattedExpiryDate}* तक आगे बढ़ा दिया गया है--धन्यवाद`;
+    const whatsappMessage = `*${name} (${uid})* आपकी एमिनेंस लाइब्रेरी सदस्यता को दिनांक *${formattedExpiryDate}* तक आगे बढ़ा दिया गया है--धन्यवाद`;
 
     const whatsappUrl = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(whatsappMessage)}`;
     
