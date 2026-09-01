@@ -1,15 +1,33 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eminence Library - Fee Management CRM</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Eminence Library - Fee Management CRM
+    </title>
+
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    >
+
 
     <style>
+
         * {
             margin: 0;
             padding: 0;
@@ -17,417 +35,832 @@
             font-family: 'Inter', sans-serif;
         }
 
+
         body {
+
             background-color: #f4f7f6;
+
             color: #333;
+
             padding: 15px;
+
         }
+
 
         .container {
+
             max-width: 1450px;
+
             margin: 0 auto;
+
             background: #fff;
+
             padding: 20px;
+
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+
+            box-shadow:
+                0 4px 15px
+                rgba(0, 0, 0, 0.05);
+
         }
+
 
         .banner-header {
+
             background-color: #ff6600;
+
             padding: 12px 20px;
+
             border-radius: 8px;
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: 20px;
+
             flex-wrap: wrap;
+
             gap: 15px;
+
         }
+
 
         .banner-left {
+
             display: flex;
+
             align-items: center;
+
             gap: 15px;
+
         }
+
 
         .banner-logo {
+
             height: 45px;
+
             object-fit: contain;
+
         }
+
 
         .portal-badge {
+
             background-color: #0084d1;
+
             color: white;
+
             padding: 6px 14px;
+
             border-radius: 6px;
+
             font-size: 13px;
+
             font-weight: 600;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 6px;
+
         }
+
 
         .btn-back {
+
             background-color: #dc2626;
+
             color: white;
+
             border: none;
+
             padding: 8px 16px;
+
             border-radius: 20px;
+
             cursor: pointer;
+
             font-size: 13px;
+
             font-weight: 600;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 6px;
+
             text-decoration: none;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+
+            box-shadow:
+                0 2px 5px
+                rgba(0, 0, 0, 0.15);
+
         }
+
 
         .btn-back:hover {
+
             background-color: #b91c1c;
+
         }
+
 
         .header-bar {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: 15px;
+
             flex-wrap: wrap;
+
             gap: 10px;
+
         }
+
 
         h2 {
+
             color: #2c3e50;
+
             font-size: 22px;
+
             display: flex;
+
             align-items: center;
+
             gap: 10px;
+
         }
+
 
         .header-actions {
+
             display: flex;
+
             align-items: center;
+
             gap: 10px;
+
             flex-wrap: wrap;
+
         }
+
 
         .search-box {
+
             padding: 7px 12px;
+
             font-size: 13px;
+
             border: 1px solid #cbd5e1;
+
             border-radius: 6px;
+
             outline: none;
+
             width: 240px;
+
         }
+
 
         .search-box:focus {
+
             border-color: #27ae60;
+
         }
+
 
         .btn-refresh {
+
             background-color: #27ae60;
+
             color: white;
+
             border: none;
+
             padding: 7px 12px;
+
             border-radius: 6px;
+
             cursor: pointer;
+
             font-size: 13px;
+
             font-weight: 500;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 5px;
+
         }
+
 
         .btn-refresh:hover {
+
             background-color: #219653;
+
         }
+
 
         .btn-bulk-whatsapp {
+
             background-color: #25D366;
+
             color: white;
+
             border: none;
+
             padding: 7px 12px;
+
             border-radius: 6px;
+
             cursor: pointer;
+
             font-size: 13px;
+
             font-weight: 600;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 6px;
+
         }
+
 
         .btn-bulk-whatsapp:hover {
+
             background-color: #20ba5a;
+
         }
+
 
         .table-responsive {
+
             overflow-x: auto;
+
             max-height: 550px;
+
             overflow-y: auto;
+
         }
+
 
         table {
+
             width: 100%;
+
             border-collapse: collapse;
+
             margin-top: 5px;
+
             font-size: 12px;
+
         }
 
-        th, td {
+
+        th,
+        td {
+
             padding: 4px 6px;
+
             text-align: center;
+
             border: 1px solid #e2e8f0;
+
         }
+
 
         th {
+
             background-color: #f8fafc;
+
             color: #475569;
+
             font-weight: 600;
+
             text-transform: uppercase;
+
             font-size: 11px;
+
             letter-spacing: 0.5px;
+
             position: sticky;
+
             top: 0;
+
             z-index: 10;
+
         }
+
 
         table th:nth-child(1),
         table td:nth-child(1) {
+
             width: 130px;
+
             max-width: 130px;
+
             white-space: nowrap;
+
             overflow: hidden;
+
             text-overflow: ellipsis;
+
             text-align: left;
+
         }
+
 
         table td:nth-child(2) {
+
             text-align: center;
+
             color: #0066cc;
+
             font-weight: bold;
+
         }
+
 
         .expired-bg {
+
             background-color: #ef4444 !important;
+
             color: white !important;
+
             font-weight: bold;
+
         }
+
 
         .expiring-soon-bg {
+
             background-color: #f59e0b !important;
+
             color: white !important;
+
             font-weight: bold;
+
         }
+
 
         .btn-action-expired {
+
             background-color: #fee2e2;
+
             color: #dc2626;
+
             border: 1px solid #fca5a5;
+
             padding: 3px 8px;
+
             border-radius: 20px;
+
             cursor: pointer;
+
             font-size: 11px;
+
             font-weight: 600;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 5px;
+
             transition: all 0.2s ease;
+
         }
+
 
         .btn-action-expired:hover {
+
             background-color: #dc2626;
+
             color: white;
+
         }
+
 
         .btn-action-warning {
+
             background-color: #fef3c7;
+
             color: #d97706;
+
             border: 1px solid #fde68a;
+
             padding: 3px 8px;
+
             border-radius: 20px;
+
             cursor: pointer;
+
             font-size: 11px;
+
             font-weight: 600;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 5px;
+
         }
+
 
         .btn-action-warning:hover {
+
             background-color: #d97706;
+
             color: white;
+
         }
 
-        /* NEW INACTIVE BUTTON */
+
+        /* =====================================================
+           INACTIVE BUTTON
+           ONLY FOR EXPIRED MEMBERS
+           ===================================================== */
+
         .btn-inactive {
+
             background-color: #64748b;
+
             color: white;
+
             border: none;
+
             padding: 3px 8px;
+
             border-radius: 20px;
+
             cursor: pointer;
+
             font-size: 11px;
+
             font-weight: 600;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 5px;
+
             margin-left: 5px;
+
             transition: all 0.2s ease;
+
         }
+
 
         .btn-inactive:hover {
+
             background-color: #334155;
+
         }
 
+
         .active-badge {
+
             background-color: #dcfce7;
+
             color: #16a34a;
+
             border: 1px solid #bbf7d0;
+
             padding: 3px 8px;
+
             border-radius: 20px;
+
             font-size: 11px;
+
             font-weight: 600;
+
             display: inline-flex;
+
             align-items: center;
+
             gap: 5px;
+
         }
+
 
         .loading,
         .error {
+
             text-align: center;
+
             padding: 20px;
+
             color: #64748b;
+
             font-size: 13px;
+
         }
 
+
         .error {
+
             color: #ef4444;
+
         }
+
+
+        .action-container {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            gap: 5px;
+
+            flex-wrap: wrap;
+
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
+
 <div class="container">
 
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
     <div class="banner-header">
+
+
         <div class="banner-left">
-            <img src="logo.png" alt="Eminence Library Logo" class="banner-logo">
+
+
+            <img
+                src="logo.png"
+                alt="Eminence Library Logo"
+                class="banner-logo"
+            >
+
 
             <span class="portal-badge">
+
                 <i class="fa-solid fa-file-invoice-dollar"></i>
+
                 FEE MANAGEMENT PORTAL
+
             </span>
+
+
         </div>
 
-        <button class="btn-back" onclick="window.history.back()">
-            <i class="fa-solid fa-arrow-left"></i> BACK
+
+        <button
+            class="btn-back"
+            onclick="window.history.back()"
+        >
+
+            <i class="fa-solid fa-arrow-left"></i>
+
+            BACK
+
         </button>
+
+
     </div>
 
 
+
+    <!-- =====================================================
+         TITLE + ACTIONS
+         ===================================================== -->
+
     <div class="header-bar">
 
+
         <h2>
+
             <i class="fa-solid fa-users-gear"></i>
+
             Eminence Library - Fee Tracker
+
         </h2>
+
 
         <div class="header-actions">
 
-            <button class="btn-bulk-whatsapp" onclick="sendBulkWhatsApp()">
+
+            <button
+                class="btn-bulk-whatsapp"
+                onclick="sendBulkWhatsApp()"
+            >
+
                 <i class="fa-brands fa-whatsapp"></i>
+
                 Send Bulk Alerts
+
             </button>
+
 
             <input
                 type="text"
                 id="searchInput"
                 class="search-box"
                 placeholder="Filter by Branch, Name, Reg No..."
-                onkeyup="filterTable()"
+                oninput="filterTable()"
             >
 
-            <button class="btn-refresh" onclick="fetchSheetData()">
+
+            <button
+                class="btn-refresh"
+                onclick="fetchSheetData()"
+            >
+
                 <i class="fa-solid fa-rotate"></i>
+
                 Refresh
+
             </button>
 
+
         </div>
+
+
     </div>
 
+
+
+    <!-- =====================================================
+         TABLE
+         ===================================================== -->
 
     <div class="table-responsive">
 
+
         <table>
 
+
             <thead>
+
                 <tr>
-                    <th>Branch Name</th>
-                    <th>Reg No.</th>
-                    <th>Name</th>
-                    <th>Mobile Number</th>
-                    <th>Fees Expiry Date</th>
-                    <th>Days Left for Expiry</th>
-                    <th>Status / Action</th>
+
+                    <th>
+                        Branch Name
+                    </th>
+
+                    <th>
+                        Reg No.
+                    </th>
+
+                    <th>
+                        Name
+                    </th>
+
+                    <th>
+                        Mobile Number
+                    </th>
+
+                    <th>
+                        Fees Expiry Date
+                    </th>
+
+                    <th>
+                        Days Left for Expiry
+                    </th>
+
+                    <th>
+                        Status / Action
+                    </th>
+
                 </tr>
+
             </thead>
+
 
             <tbody id="memberTableBody">
 
+
                 <tr>
-                    <td colspan="7" class="loading">
+
+                    <td
+                        colspan="7"
+                        class="loading"
+                    >
+
                         Loading data from Google Sheets...
+
                     </td>
+
                 </tr>
+
 
             </tbody>
 
+
         </table>
 
+
     </div>
+
 
 </div>
 
 
+
 <script>
 
-const sheetApiUrl =
-"https://script.google.com/macros/s/AKfycbzmypQ7dQXAGFk6RJjLmxLPMr9NwB9fn-B2ZhC5V1LdQCi10D4u2mxXfHl5I-h9gTst/exec";
 
+/* =========================================================
+   GOOGLE APPS SCRIPT URL
+   ========================================================= */
+
+const sheetApiUrl =
+    "https://script.google.com/macros/s/AKfycbyqA5l6vaVQJVrDjtYugZbfLwPCjGTc68y4Dewrp9QDwXJUpfgixE-PKSjMWDmH8iFS/exec";
+
+
+/* =========================================================
+   GLOBAL DATA
+   ========================================================= */
 
 let globalMembersData = [];
 
 
 /* =========================================================
-   INACTIVE MEMBERS STORAGE
+   INACTIVE STORAGE
    ========================================================= */
 
-const INACTIVE_STORAGE_KEY = "eminence_fee_tracker_inactive_members";
+const INACTIVE_STORAGE_KEY =
+    "eminence_fee_tracker_inactive_members_v2";
 
+
+/*
+ * Get inactive member keys.
+ */
 
 function getInactiveMembers() {
 
     try {
 
         const saved =
-            localStorage.getItem(INACTIVE_STORAGE_KEY);
+            localStorage.getItem(
+                INACTIVE_STORAGE_KEY
+            );
 
-        if (!saved) return [];
 
-        const parsed = JSON.parse(saved);
+        if (!saved) {
 
-        return Array.isArray(parsed) ? parsed : [];
+            return [];
+
+        }
+
+
+        const parsed =
+            JSON.parse(saved);
+
+
+        return Array.isArray(parsed)
+            ? parsed
+            : [];
+
 
     } catch (error) {
 
-        console.error("Inactive storage error:", error);
+        console.error(
+            "Inactive storage error:",
+            error
+        );
 
         return [];
 
     }
+
 }
 
+
+/*
+ * Save inactive members.
+ */
 
 function saveInactiveMembers(list) {
 
@@ -438,9 +871,13 @@ function saveInactiveMembers(list) {
             JSON.stringify(list)
         );
 
+
     } catch (error) {
 
-        console.error("Unable to save inactive member:", error);
+        console.error(
+            "Unable to save inactive member:",
+            error
+        );
 
     }
 
@@ -448,57 +885,116 @@ function saveInactiveMembers(list) {
 
 
 /* =========================================================
-   MEMBER UNIQUE KEY
+   MEMBER KEY
    ========================================================= */
 
 function getMemberKey(member) {
 
+
     const uid =
         String(
+
             member["UID Code"] ||
+
             member["Reg No."] ||
+
             member["RegNo"] ||
+
             member["UID"] ||
+
             ""
+
         )
         .trim()
         .toLowerCase();
+
 
     const mobile =
         String(
+
             member["Mobile Number"] ||
+
             member["Mobile"] ||
+
             member["Phone"] ||
+
             ""
+
         )
         .replace(/\D/g, "");
 
+
+    /*
+     * UID is preferred.
+     */
+
     if (uid) {
+
         return "UID_" + uid;
+
     }
 
+
+    /*
+     * Mobile fallback.
+     */
+
     if (mobile) {
+
         return "MOBILE_" + mobile;
+
     }
+
+
+    /*
+     * Name fallback.
+     */
 
     const name =
         String(
+
             member["Member Name"] ||
+
             member["Name"] ||
+
             ""
+
         )
         .trim()
         .toLowerCase();
 
-    return "NAME_" + name;
+
+    if (name) {
+
+        return "NAME_" + name;
+
+    }
+
+
+    return "";
+
 }
 
 
+/* =========================================================
+   CHECK INACTIVE
+   ========================================================= */
+
 function isMemberInactive(member) {
 
-    const key = getMemberKey(member);
+    const key =
+        getMemberKey(member);
 
-    return getInactiveMembers().includes(key);
+
+    if (!key) {
+
+        return false;
+
+    }
+
+
+    return getInactiveMembers()
+        .includes(key);
 
 }
 
@@ -509,36 +1005,99 @@ function isMemberInactive(member) {
 
 function markMemberInactive(member) {
 
-    const key = getMemberKey(member);
 
-    if (!key) return;
+    /*
+     * Safety check.
+     *
+     * Inactive can ONLY be applied to expired member.
+     */
 
-    let inactiveMembers = getInactiveMembers();
+    if (!member) {
 
-    if (!inactiveMembers.includes(key)) {
-
-        inactiveMembers.push(key);
-
-        saveInactiveMembers(inactiveMembers);
+        return;
 
     }
 
+
+    const days =
+        member.calculatedDays !== undefined
+
+            ? Number(
+                member.calculatedDays
+            )
+
+            : getDaysDifference(member);
+
+
     /*
-       IMPORTANT:
-       सिर्फ एक ही message.
-       कोई confirm() नहीं.
-    */
+     * VERY IMPORTANT
+     *
+     * If member is not expired,
+     * do absolutely nothing.
+     */
+
+    if (
+        isNaN(days) ||
+        days >= 0
+    ) {
+
+        return;
+
+    }
+
+
+    const key =
+        getMemberKey(member);
+
+
+    if (!key) {
+
+        return;
+
+    }
+
+
+    let inactiveMembers =
+        getInactiveMembers();
+
+
+    /*
+     * Already inactive
+     */
+
+    if (
+        inactiveMembers.includes(key)
+    ) {
+
+        return;
+
+    }
+
+
+    inactiveMembers.push(key);
+
+
+    saveInactiveMembers(
+        inactiveMembers
+    );
+
+
+    /*
+     * ONLY ONE MESSAGE.
+     */
 
     alert("Member inactive");
 
+
     /*
-       उसी समय row को hide करने के लिए
-       data से member remove नहीं कर रहे,
-       बल्कि दोबारा render कर रहे हैं।
-    */
+     * Immediately remove row.
+     */
 
     const searchQuery =
-        document.getElementById("searchInput").value || "";
+        document.getElementById(
+            "searchInput"
+        ).value || "";
+
 
     processAndRenderTable(
         globalMembersData,
@@ -554,68 +1113,274 @@ function markMemberInactive(member) {
 
 async function fetchSheetData() {
 
+
     const tbody =
-        document.getElementById("memberTableBody");
+        document.getElementById(
+            "memberTableBody"
+        );
+
 
     tbody.innerHTML = `
+
         <tr>
-            <td colspan="7" class="loading">
+
+            <td
+                colspan="7"
+                class="loading"
+            >
+
                 <i class="fa-solid fa-spinner fa-spin"></i>
+
                 Fetching data...
+
             </td>
+
         </tr>
+
     `;
+
 
     try {
 
+
+        const url =
+            sheetApiUrl +
+            "?t=" +
+            Date.now();
+
+
         const response =
-            await fetch(sheetApiUrl);
+            await fetch(
+                url,
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
 
         const data =
             await response.json();
 
-        globalMembersData =
-            Array.isArray(data)
-                ? data
-                : (data.history || []);
+
+        let rows = [];
+
+
+        if (Array.isArray(data)) {
+
+            rows = data;
+
+        }
+
+        else if (
+            data &&
+            typeof data === "object"
+        ) {
+
+            if (
+                Array.isArray(
+                    data.history
+                )
+            ) {
+
+                rows =
+                    data.history;
+
+            }
+
+            else if (
+                Array.isArray(
+                    data.data
+                )
+            ) {
+
+                rows =
+                    data.data;
+
+            }
+
+            else if (
+                Array.isArray(
+                    data.records
+                )
+            ) {
+
+                rows =
+                    data.records;
+
+            }
+
+            else if (
+                Array.isArray(
+                    data.rows
+                )
+            ) {
+
+                rows =
+                    data.rows;
+
+            }
+
+        }
+
 
         /*
-           Days Left को data में calculate करके
-           save कर रहे हैं ताकि Bulk भी यही value use करे.
-        */
+         * Calculate Days Left again on frontend.
+         *
+         * This protects us if another API version
+         * returns a stale Days Left value.
+         */
 
         globalMembersData =
-            globalMembersData.map(member => {
+            rows
+                .filter(
+                    member =>
+                        member &&
+                        typeof member === "object"
+                )
+                .map(
+                    member => {
 
-                return {
-                    ...member,
-                    calculatedDays:
-                        getDaysDifference(member)
-                };
+                        return {
 
-            });
+                            ...member,
+
+                            calculatedDays:
+                                getDaysDifference(
+                                    member
+                                )
+
+                        };
+
+                    }
+                );
+
 
         processAndRenderTable(
             globalMembersData
         );
 
+
     } catch (error) {
+
 
         console.error(
             "Error fetching data:",
             error
         );
 
+
         tbody.innerHTML = `
+
             <tr>
-                <td colspan="7" class="error">
-                    Failed to load data.
-                    Please check your Apps Script deployment or CORS settings.
+
+                <td
+                    colspan="7"
+                    class="error"
+                >
+
+                    Failed to load data from Google Sheets.
+
+                    <br>
+
+                    ${escapeHtml(
+                        error.message
+                    )}
+
                 </td>
+
             </tr>
+
         `;
 
     }
+
+}
+
+
+/* =========================================================
+   GET VALUE
+   ========================================================= */
+
+function getMemberValue(
+    member,
+    possibleKeys
+) {
+
+
+    for (
+        const key of possibleKeys
+    ) {
+
+
+        if (
+            member[key] !== undefined &&
+            member[key] !== null &&
+            String(
+                member[key]
+            ).trim() !== ""
+        ) {
+
+            return member[key];
+
+        }
+
+    }
+
+
+    /*
+     * Case-insensitive fallback.
+     */
+
+    const allKeys =
+        Object.keys(member);
+
+
+    for (
+        const wanted of possibleKeys
+    ) {
+
+
+        const wantedClean =
+            String(wanted)
+                .trim()
+                .toLowerCase();
+
+
+        const matchingKey =
+            allKeys.find(
+                key =>
+                    String(key)
+                        .trim()
+                        .toLowerCase() ===
+                    wantedClean
+            );
+
+
+        if (
+            matchingKey &&
+            member[matchingKey] !== undefined &&
+            member[matchingKey] !== null
+        ) {
+
+            return member[matchingKey];
+
+        }
+
+    }
+
+
+    return "";
 
 }
 
@@ -626,72 +1391,293 @@ async function fetchSheetData() {
 
 function formatDisplayDate(dateStr) {
 
-    if (!dateStr) return "";
+
+    if (!dateStr) {
+
+        return "";
+
+    }
+
 
     const str =
         String(dateStr).trim();
 
+
     /*
-       अगर Google Sheet से पहले से DD-MM-YYYY
-       आ रहा है तो बिल्कुल वैसा ही रखें.
-    */
+     * DD-MM-YYYY
+     */
 
     if (
-        /^\d{2}-\d{2}-\d{4}$/.test(str)
+        /^\d{2}-\d{2}-\d{4}$/
+            .test(str)
     ) {
 
         return str;
 
     }
 
+
     /*
-       अगर YYYY-MM-DD है
-       तो DD-MM-YYYY में convert करें.
-    */
+     * DD/MM/YYYY
+     */
 
     let match =
         str.match(
-            /^(\d{4})-(\d{2})-(\d{2})$/
+            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
         );
+
 
     if (match) {
 
         return (
-            match[3] +
+
+            String(match[1])
+                .padStart(2, "0")
+
+            +
+
             "-" +
-            match[2] +
+
+            String(match[2])
+                .padStart(2, "0")
+
+            +
+
             "-" +
-            match[1]
+
+            match[3]
+
         );
 
     }
 
-    /*
-       ISO date को सीधे Date object में डालने से
-       timezone की वजह से एक दिन कम होने की problem
-       हो सकती है.
 
-       इसलिए ISO के date part को directly निकाल रहे हैं.
-    */
+    /*
+     * YYYY-MM-DD
+     */
 
     match =
         str.match(
-            /^(\d{4})-(\d{2})-(\d{2})T/
+            /^(\d{4})-(\d{1,2})-(\d{1,2})$/
         );
+
 
     if (match) {
 
         return (
-            match[3] +
+
+            String(match[3])
+                .padStart(2, "0")
+
+            +
+
             "-" +
-            match[2] +
+
+            String(match[2])
+                .padStart(2, "0")
+
+            +
+
             "-" +
+
             match[1]
+
         );
 
     }
 
-    return str.split("T")[0];
+
+    /*
+     * ISO timestamp.
+     *
+     * Do NOT use new Date() here first.
+     * This avoids timezone date shifting.
+     */
+
+    match =
+        str.match(
+            /^(\d{4})-(\d{1,2})-(\d{1,2})T/
+        );
+
+
+    if (match) {
+
+        return (
+
+            String(match[3])
+                .padStart(2, "0")
+
+            +
+
+            "-" +
+
+            String(match[2])
+                .padStart(2, "0")
+
+            +
+
+            "-" +
+
+            match[1]
+
+        );
+
+    }
+
+
+    /*
+     * Last fallback.
+     */
+
+    const date =
+        new Date(str);
+
+
+    if (
+        !isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return (
+
+            String(
+                date.getDate()
+            )
+            .padStart(2, "0")
+
+            +
+
+            "-" +
+
+            String(
+                date.getMonth() + 1
+            )
+            .padStart(2, "0")
+
+            +
+
+            "-" +
+
+            date.getFullYear()
+
+        );
+
+    }
+
+
+    return str;
+
+}
+
+
+/* =========================================================
+   PARSE DATE WITHOUT TIMEZONE PROBLEM
+   ========================================================= */
+
+function parseExpiryDate(value) {
+
+
+    if (
+        value === null ||
+        value === undefined ||
+        String(value).trim() === ""
+    ) {
+
+        return null;
+
+    }
+
+
+    const str =
+        String(value).trim();
+
+
+    /*
+     * DD-MM-YYYY
+     */
+
+    let match =
+        str.match(
+            /^(\d{1,2})-(\d{1,2})-(\d{4})$/
+        );
+
+
+    if (match) {
+
+        return new Date(
+            Number(match[3]),
+            Number(match[2]) - 1,
+            Number(match[1])
+        );
+
+    }
+
+
+    /*
+     * DD/MM/YYYY
+     */
+
+    match =
+        str.match(
+            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+        );
+
+
+    if (match) {
+
+        return new Date(
+            Number(match[3]),
+            Number(match[2]) - 1,
+            Number(match[1])
+        );
+
+    }
+
+
+    /*
+     * YYYY-MM-DD
+     */
+
+    match =
+        str.match(
+            /^(\d{4})-(\d{1,2})-(\d{1,2})$/
+        );
+
+
+    if (match) {
+
+        return new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3])
+        );
+
+    }
+
+
+    /*
+     * ISO date
+     */
+
+    match =
+        str.match(
+            /^(\d{4})-(\d{1,2})-(\d{1,2})T/
+        );
+
+
+    if (match) {
+
+        return new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3])
+        );
+
+    }
+
+
+    return null;
 
 }
 
@@ -702,21 +1688,102 @@ function formatDisplayDate(dateStr) {
 
 function getDaysDifference(member) {
 
+
+    /*
+     * FIRST: calculate directly from Expiry Date.
+     *
+     * We intentionally do NOT trust an old "Days Left"
+     * column because it can become stale.
+     */
+
+    const expiryRaw =
+        getMemberValue(
+            member,
+            [
+                "Expiry Date",
+                "expiryDate",
+                "Fees Expiry Date",
+                "Fees_Expiry_Date",
+                "Expiry"
+            ]
+        );
+
+
+    if (expiryRaw) {
+
+
+        const expiryDate =
+            parseExpiryDate(
+                expiryRaw
+            );
+
+
+        if (expiryDate) {
+
+
+            const now =
+                new Date();
+
+
+            /*
+             * Today at local midnight.
+             */
+
+            const today =
+                new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate()
+                );
+
+
+            const expiry =
+                new Date(
+                    expiryDate.getFullYear(),
+                    expiryDate.getMonth(),
+                    expiryDate.getDate()
+                );
+
+
+            const difference =
+                expiry.getTime() -
+                today.getTime();
+
+
+            return Math.round(
+                difference /
+                (
+                    1000 *
+                    60 *
+                    60 *
+                    24
+                )
+            );
+
+        }
+
+    }
+
+
+    /*
+     * Fallback only if expiry date is missing.
+     */
+
     const daysVal =
-        member["Days Left"] ||
-        member["Days_Left"] ||
-        member["daysLeft"] ||
-        member[
-            Object.keys(member).find(
-                k =>
-                    k.trim().toLowerCase() ===
-                    "days left"
-            )
-        ];
+        getMemberValue(
+            member,
+            [
+                "Days Left",
+                "Days_Left",
+                "daysLeft"
+            ]
+        );
+
 
     if (
-        daysVal !== undefined &&
         daysVal !== "" &&
+        daysVal !== null &&
+        daysVal !== undefined &&
         !isNaN(daysVal)
     ) {
 
@@ -727,7 +1794,47 @@ function getDaysDifference(member) {
 
     }
 
-    return 9999;
+
+    return NaN;
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
+function escapeHtml(value) {
+
+
+    return String(
+        value ?? ""
+    )
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
@@ -741,126 +1848,201 @@ function processAndRenderTable(
     searchQuery = ""
 ) {
 
+
     const tbody =
         document.getElementById(
             "memberTableBody"
         );
 
+
     tbody.innerHTML = "";
 
 
     if (
-        !rawMembers ||
+        !Array.isArray(rawMembers) ||
         rawMembers.length === 0
     ) {
 
+
         tbody.innerHTML = `
+
             <tr>
-                <td colspan="7"
-                    style="text-align:center;">
+
+                <td
+                    colspan="7"
+                    style="text-align:center;"
+                >
+
                     No members found in sheet.
+
                 </td>
+
             </tr>
+
         `;
+
 
         return;
 
     }
 
 
-    let processedMembers =
-        rawMembers.map(member => {
-
-            const diffDays =
-                member.calculatedDays !== undefined
-                    ? member.calculatedDays
-                    : getDaysDifference(member);
-
-            return {
-                ...member,
-                calculatedDays: diffDays
-            };
-
-        });
-
-
     /*
-       INACTIVE MEMBERS को table से remove करें.
-    */
+     * Prepare members.
+     */
 
-    processedMembers =
-        processedMembers.filter(
-            member => !isMemberInactive(member)
+    let processedMembers =
+        rawMembers.map(
+            member => {
+
+                return {
+
+                    ...member,
+
+                    calculatedDays:
+                        getDaysDifference(
+                            member
+                        )
+
+                };
+
+            }
         );
 
 
-    /* SEARCH */
+    /*
+     * REMOVE INACTIVE MEMBERS
+     */
 
-    if (searchQuery) {
+    processedMembers =
+        processedMembers.filter(
+            member =>
+                !isMemberInactive(member)
+        );
 
-        const query =
-            searchQuery
-                .toLowerCase()
-                .trim();
+
+    /*
+     * SEARCH
+     */
+
+    const query =
+        String(
+            searchQuery || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    if (query) {
+
 
         processedMembers =
-            processedMembers.filter(m => {
+            processedMembers.filter(
+                member => {
 
-                const keys =
-                    Object.keys(m);
 
-                const branchName =
-                    String(
-                        m["Branch"] ||
-                        m["Branch Name"] ||
-                        (
-                            keys.length > 4
-                                ? m[keys[4]]
-                                : ""
-                        ) ||
-                        ""
-                    ).toLowerCase();
+                    const branchName =
+                        String(
+                            getMemberValue(
+                                member,
+                                [
+                                    "Branch",
+                                    "Branch Name"
+                                ]
+                            )
+                        )
+                        .toLowerCase();
 
-                const regNo =
-                    String(
-                        m["UID Code"] ||
-                        m["Reg No."] ||
-                        m["RegNo"] ||
-                        ""
-                    ).toLowerCase();
 
-                const name =
-                    String(
-                        m["Member Name"] ||
-                        m["Name"] ||
-                        ""
-                    ).toLowerCase();
+                    const regNo =
+                        String(
+                            getMemberValue(
+                                member,
+                                [
+                                    "UID Code",
+                                    "Reg No.",
+                                    "RegNo",
+                                    "Registration No"
+                                ]
+                            )
+                        )
+                        .toLowerCase();
 
-                const mobile =
-                    String(
-                        m["Mobile Number"] ||
-                        m["Mobile"] ||
-                        ""
-                    ).toLowerCase();
 
-                return (
-                    branchName.includes(query) ||
-                    regNo.includes(query) ||
-                    name.includes(query) ||
-                    mobile.includes(query)
-                );
+                    const name =
+                        String(
+                            getMemberValue(
+                                member,
+                                [
+                                    "Member Name",
+                                    "Name",
+                                    "Student Name"
+                                ]
+                            )
+                        )
+                        .toLowerCase();
 
-            });
+
+                    const mobile =
+                        String(
+                            getMemberValue(
+                                member,
+                                [
+                                    "Mobile Number",
+                                    "Mobile",
+                                    "Phone"
+                                ]
+                            )
+                        )
+                        .toLowerCase();
+
+
+                    return (
+
+                        branchName.includes(query) ||
+
+                        regNo.includes(query) ||
+
+                        name.includes(query) ||
+
+                        mobile.includes(query)
+
+                    );
+
+                }
+            );
 
     }
 
 
-    /* SORT */
+    /*
+     * SORT
+     *
+     * Expired first.
+     */
 
     processedMembers.sort(
-        (a, b) =>
-            a.calculatedDays -
-            b.calculatedDays
+        (a, b) => {
+
+            const da =
+                isNaN(
+                    a.calculatedDays
+                )
+                    ? 999999
+                    : a.calculatedDays;
+
+
+            const db =
+                isNaN(
+                    b.calculatedDays
+                )
+                    ? 999999
+                    : b.calculatedDays;
+
+
+            return da - db;
+
+        }
     );
 
 
@@ -868,252 +2050,439 @@ function processAndRenderTable(
         processedMembers.length === 0
     ) {
 
+
         tbody.innerHTML = `
+
             <tr>
-                <td colspan="7"
-                    style="text-align:center;">
+
+                <td
+                    colspan="7"
+                    style="text-align:center;"
+                >
+
                     No matching members found.
+
                 </td>
+
             </tr>
+
         `;
+
 
         return;
 
     }
 
 
-    /* CREATE ROWS */
+    /*
+     * CREATE ROWS
+     */
 
-    processedMembers.forEach(member => {
-
-        const keys =
-            Object.keys(member);
-
-        const branchName =
-            member["Branch"] ||
-            member["Branch Name"] ||
-            (
-                keys.length > 4
-                    ? member[keys[4]]
-                    : ""
-            ) ||
-            "";
-
-        const regNo =
-            member["UID Code"] ||
-            member["Reg No."] ||
-            member["RegNo"] ||
-            "";
-
-        const name =
-            member["Member Name"] ||
-            member["Name"] ||
-            "";
-
-        const mobile =
-            String(
-                member["Mobile Number"] ||
-                member["Mobile"] ||
-                ""
-            ).trim();
+    processedMembers.forEach(
+        member => {
 
 
-        const expiryRaw =
-            member["expiryDate"] ||
-            member["Expiry Date"] ||
-            member["Fees Expiry Date"] ||
-            member["Fees_Expiry_Date"] ||
-            "";
+            const branchName =
+                getMemberValue(
+                    member,
+                    [
+                        "Branch",
+                        "Branch Name"
+                    ]
+                );
 
 
-        if (!expiryRaw) return;
+            const regNo =
+                getMemberValue(
+                    member,
+                    [
+                        "UID Code",
+                        "Reg No.",
+                        "RegNo",
+                        "Registration No"
+                    ]
+                );
 
 
-        const expiryFormatted =
-            formatDisplayDate(
-                expiryRaw
-            );
+            const name =
+                getMemberValue(
+                    member,
+                    [
+                        "Member Name",
+                        "Name",
+                        "Student Name"
+                    ]
+                );
 
 
-        const diffDays =
-            member.calculatedDays;
+            const mobile =
+                String(
+                    getMemberValue(
+                        member,
+                        [
+                            "Mobile Number",
+                            "Mobile",
+                            "Phone"
+                        ]
+                    )
+                ).trim();
 
 
-        let daysClass = "";
-
-        let statusActionHTML = "";
-
-
-        const cleanMobile =
-            mobile.replace(
-                /\D/g,
-                ""
-            );
-
-
-        /*
-           HTML attribute में special characters
-           से problem न हो इसलिए values safely encode करें.
-        */
-
-        const safeName =
-            String(name)
-                .replace(/\\/g, "\\\\")
-                .replace(/'/g, "\\'");
-
-        const safeRegNo =
-            String(regNo)
-                .replace(/\\/g, "\\\\")
-                .replace(/'/g, "\\'");
-
-        const memberKey =
-            getMemberKey(member);
+            const expiryRaw =
+                getMemberValue(
+                    member,
+                    [
+                        "Expiry Date",
+                        "expiryDate",
+                        "Fees Expiry Date",
+                        "Fees_Expiry_Date",
+                        "Expiry"
+                    ]
+                );
 
 
-        /*
-           EXPIRED
-        */
+            if (!expiryRaw) {
 
-        if (diffDays < 0) {
+                return;
 
-            daysClass =
-                "expired-bg";
-
-            statusActionHTML = `
-
-                <button
-                    class="btn-action-expired"
-                    onclick="sendWhatsApp(
-                        '${cleanMobile}',
-                        '${safeName}',
-                        '${safeRegNo}',
-                        '${expiryFormatted}',
-                        ${diffDays}
-                    )">
-
-                    <i class="fa-brands fa-whatsapp"></i>
-                    Send Alert
-
-                </button>
+            }
 
 
-                <button
-                    class="btn-inactive"
-                    onclick="markMemberInactive(
-                        globalMembersData.find(
-                            m => getMemberKey(m) === '${memberKey.replace(/'/g, "\\'")}'
-                        )
-                    )">
-
-                    <i class="fa-solid fa-user-slash"></i>
-                    INACTIVE
-
-                </button>
-
-            `;
-
-        }
+            const expiryFormatted =
+                formatDisplayDate(
+                    expiryRaw
+                );
 
 
-        /*
-           EXPIRING SOON
-        */
-
-        else if (
-            diffDays >= 0 &&
-            diffDays <= 2
-        ) {
-
-            daysClass =
-                "expiring-soon-bg";
-
-            statusActionHTML = `
-
-                <button
-                    class="btn-action-warning"
-                    onclick="sendWhatsApp(
-                        '${cleanMobile}',
-                        '${safeName}',
-                        '${safeRegNo}',
-                        '${expiryFormatted}',
-                        ${diffDays}
-                    )">
-
-                    <i class="fa-brands fa-whatsapp"></i>
-                    Send Alert
-
-                </button>
-
-            `;
-
-        }
+            const diffDays =
+                member.calculatedDays;
 
 
-        /*
-           ACTIVE
-        */
+            let daysClass = "";
 
-        else {
-
-            statusActionHTML = `
-
-                <span class="active-badge">
-
-                    <i class="fa-solid fa-circle-check"></i>
-
-                    Subscription Active
-
-                </span>
-
-            `;
-
-        }
+            let statusActionHTML = "";
 
 
-        const row = `
+            /*
+             * MOBILE
+             */
 
-            <tr>
+            const cleanMobile =
+                mobile.replace(
+                    /\D/g,
+                    ""
+                );
+
+
+            /*
+             * =================================================
+             * EXPIRED
+             * =================================================
+             *
+             * ONLY HERE:
+             *
+             * Send Alert
+             * +
+             * Inactive
+             */
+
+            if (
+                !isNaN(diffDays) &&
+                diffDays < 0
+            ) {
+
+
+                daysClass =
+                    "expired-bg";
+
+
+                statusActionHTML = `
+
+                    <div
+                        class="action-container"
+                    >
+
+
+                        <button
+                            class="btn-action-expired"
+                            onclick="sendWhatsAppByMember(this)"
+                            data-mobile="${escapeHtml(cleanMobile)}"
+                            data-name="${escapeHtml(name)}"
+                            data-reg="${escapeHtml(regNo)}"
+                            data-expiry="${escapeHtml(expiryFormatted)}"
+                            data-days="${diffDays}"
+                        >
+
+                            <i
+                                class="fa-brands fa-whatsapp"
+                            ></i>
+
+                            Send Alert
+
+                        </button>
+
+
+                        <button
+                            class="btn-inactive"
+                            onclick="inactiveFromButton(this)"
+                            data-member-key="${escapeHtml(getMemberKey(member))}"
+                        >
+
+                            <i
+                                class="fa-solid fa-user-slash"
+                            ></i>
+
+                            INACTIVE
+
+                        </button>
+
+
+                    </div>
+
+                `;
+
+            }
+
+
+            /*
+             * =================================================
+             * EXPIRING TODAY / 1 / 2 DAYS
+             * =================================================
+             *
+             * NO INACTIVE BUTTON
+             */
+
+            else if (
+                !isNaN(diffDays) &&
+                diffDays >= 0 &&
+                diffDays <= 2
+            ) {
+
+
+                daysClass =
+                    "expiring-soon-bg";
+
+
+                statusActionHTML = `
+
+                    <button
+                        class="btn-action-warning"
+                        onclick="sendWhatsAppByMember(this)"
+                        data-mobile="${escapeHtml(cleanMobile)}"
+                        data-name="${escapeHtml(name)}"
+                        data-reg="${escapeHtml(regNo)}"
+                        data-expiry="${escapeHtml(expiryFormatted)}"
+                        data-days="${diffDays}"
+                    >
+
+                        <i
+                            class="fa-brands fa-whatsapp"
+                        ></i>
+
+                        Send Alert
+
+                    </button>
+
+                `;
+
+            }
+
+
+            /*
+             * =================================================
+             * ACTIVE
+             * =================================================
+             */
+
+            else {
+
+
+                statusActionHTML = `
+
+                    <span
+                        class="active-badge"
+                    >
+
+                        <i
+                            class="fa-solid fa-circle-check"
+                        ></i>
+
+                        Subscription Active
+
+                    </span>
+
+                `;
+
+            }
+
+
+            /*
+             * CREATE ROW
+             */
+
+            const row =
+                document.createElement(
+                    "tr"
+                );
+
+
+            row.innerHTML = `
 
                 <td>
-                    <b>${branchName}</b>
+                    <b>
+                        ${escapeHtml(branchName)}
+                    </b>
                 </td>
 
-                <td>
-                    ${regNo}
-                </td>
 
                 <td>
-                    <b>${name}</b>
+                    ${escapeHtml(regNo)}
                 </td>
 
-                <td>
-                    ${mobile}
-                </td>
 
                 <td>
-                    ${expiryFormatted}
+                    <b>
+                        ${escapeHtml(name)}
+                    </b>
                 </td>
+
+
+                <td>
+                    ${escapeHtml(mobile)}
+                </td>
+
+
+                <td>
+                    ${escapeHtml(expiryFormatted)}
+                </td>
+
 
                 <td class="${daysClass}">
+
                     ${
                         isNaN(diffDays)
                             ? "N/A"
                             : diffDays
                     }
+
                 </td>
+
 
                 <td>
                     ${statusActionHTML}
+                </td>
+
+            `;
+
+
+            tbody.appendChild(
+                row
+            );
+
+        }
+    );
+
+
+    /*
+     * Check if rows were actually added.
+     */
+
+    if (
+        tbody.children.length === 0
+    ) {
+
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="7"
+                    style="text-align:center;"
+                >
+
+                    No matching members found.
+
                 </td>
 
             </tr>
 
         `;
 
+    }
 
-        tbody.innerHTML += row;
+}
 
-    });
+
+/* =========================================================
+   INACTIVE BUTTON HANDLER
+   ========================================================= */
+
+function inactiveFromButton(button) {
+
+
+    const memberKey =
+        button.dataset.memberKey;
+
+
+    if (!memberKey) {
+
+        return;
+
+    }
+
+
+    /*
+     * Find original member.
+     */
+
+    const member =
+        globalMembersData.find(
+            m =>
+                getMemberKey(m) ===
+                memberKey
+        );
+
+
+    if (!member) {
+
+        return;
+
+    }
+
+
+    /*
+     * IMPORTANT:
+     *
+     * We again verify that member is expired.
+     */
+
+    const days =
+        getDaysDifference(
+            member
+        );
+
+
+    if (
+        isNaN(days) ||
+        days >= 0
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * Mark inactive.
+     */
+
+    markMemberInactive(
+        {
+            ...member,
+            calculatedDays: days
+        }
+    );
 
 }
 
@@ -1124,14 +2493,58 @@ function processAndRenderTable(
 
 function filterTable() {
 
+
     const query =
         document.getElementById(
             "searchInput"
         ).value;
 
+
     processAndRenderTable(
         globalMembersData,
         query
+    );
+
+}
+
+
+/* =========================================================
+   SINGLE WHATSAPP
+   ========================================================= */
+
+function sendWhatsAppByMember(
+    button
+) {
+
+
+    const mobile =
+        button.dataset.mobile || "";
+
+
+    const name =
+        button.dataset.name || "Member";
+
+
+    const regNo =
+        button.dataset.reg || "";
+
+
+    const expiryDate =
+        button.dataset.expiry || "";
+
+
+    const days =
+        Number(
+            button.dataset.days
+        );
+
+
+    sendWhatsApp(
+        mobile,
+        name,
+        regNo,
+        expiryDate,
+        days
     );
 
 }
@@ -1149,11 +2562,14 @@ function sendWhatsApp(
     days
 ) {
 
+
     if (!mobile) {
+
 
         alert(
             "Mobile number is missing or invalid!"
         );
+
 
         return;
 
@@ -1163,12 +2579,19 @@ function sendWhatsApp(
     let message = "";
 
 
-    if (days < 0) {
+    if (
+        Number(days) < 0
+    ) {
+
 
         message =
             `${name} (${regNo}) आप की Eminence Library फीस दिनांक ${expiryDate} को पूरी हो चुकी है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
 
-    } else {
+    }
+
+
+    else {
+
 
         message =
             `${name} (${regNo}) आप की Eminence Library फीस दिनांक ${expiryDate} को पूरी हो रही है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
@@ -1177,7 +2600,11 @@ function sendWhatsApp(
 
 
     let formattedMobile =
-        mobile;
+        String(mobile)
+            .replace(
+                /\D/g,
+                ""
+            );
 
 
     if (
@@ -1210,14 +2637,17 @@ function sendWhatsApp(
 
 function sendBulkWhatsApp() {
 
+
     if (
         !globalMembersData ||
         globalMembersData.length === 0
     ) {
 
+
         alert(
             "डेटा लोड नहीं हुआ है या कोई डेटा उपलब्ध नहीं है!"
         );
+
 
         return;
 
@@ -1225,16 +2655,15 @@ function sendBulkWhatsApp() {
 
 
     /*
-       पहले inactive members को निकालें.
-    */
+     * ONLY expired OR expiring within 2 days.
+     *
+     * Inactive members are automatically excluded.
+     */
 
     const targetMembers =
         globalMembersData.filter(
             member => {
 
-                /*
-                   INACTIVE MEMBER = कभी bulk में नहीं आएगा
-                */
 
                 if (
                     isMemberInactive(member)
@@ -1246,12 +2675,15 @@ function sendBulkWhatsApp() {
 
 
                 const days =
-                    member.calculatedDays !== undefined
-                        ? member.calculatedDays
-                        : getDaysDifference(member);
+                    getDaysDifference(
+                        member
+                    );
 
 
-                return days <= 2;
+                return (
+                    !isNaN(days) &&
+                    days <= 2
+                );
 
             }
         );
@@ -1261,9 +2693,11 @@ function sendBulkWhatsApp() {
         targetMembers.length === 0
     ) {
 
+
         alert(
             "कोई भी ऐसा मेंबर नहीं है जिसकी फीस एक्सपायर हुई हो या नज़दीक हो!"
         );
+
 
         return;
 
@@ -1272,42 +2706,76 @@ function sendBulkWhatsApp() {
 
     const confirmSend =
         confirm(
+
             `कुल ${targetMembers.length} सदस्यों की फीस एक्सपायर या समाप्त होने वाली है। क्या आप इन्हें एक-एक करके WhatsApp मैसेज भेजना चाहते हैं?`
+
         );
 
 
-    if (!confirmSend) return;
+    if (!confirmSend) {
 
+        return;
+
+    }
+
+
+    /*
+     * WhatsApp tabs.
+     */
 
     targetMembers.forEach(
-        (member, index) => {
+        (
+            member,
+            index
+        ) => {
+
 
             const name =
-                member["Member Name"] ||
-                member["Name"] ||
-                "Member";
+                getMemberValue(
+                    member,
+                    [
+                        "Member Name",
+                        "Name",
+                        "Student Name"
+                    ]
+                ) || "Member";
 
 
             const regNo =
-                member["UID Code"] ||
-                member["Reg No."] ||
-                member["RegNo"] ||
-                "";
+                getMemberValue(
+                    member,
+                    [
+                        "UID Code",
+                        "Reg No.",
+                        "RegNo"
+                    ]
+                );
 
 
             const mobile =
                 String(
-                    member["Mobile Number"] ||
-                    member["Mobile"] ||
-                    ""
+                    getMemberValue(
+                        member,
+                        [
+                            "Mobile Number",
+                            "Mobile",
+                            "Phone"
+                        ]
+                    )
                 ).trim();
 
 
             const expiryRaw =
-                member["expiryDate"] ||
-                member["Expiry Date"] ||
-                member["Fees Expiry Date"] ||
-                "";
+                getMemberValue(
+                    member,
+                    [
+                        "Expiry Date",
+                        "expiryDate",
+                        "Fees Expiry Date",
+                        "Fees_Expiry_Date",
+                        "Expiry"
+                    ]
+                );
 
 
             const expiryDate =
@@ -1317,12 +2785,16 @@ function sendBulkWhatsApp() {
 
 
             const days =
-                member.calculatedDays !== undefined
-                    ? member.calculatedDays
-                    : getDaysDifference(member);
+                getDaysDifference(
+                    member
+                );
 
 
-            if (!mobile) return;
+            if (!mobile) {
+
+                return;
+
+            }
 
 
             let cleanMobile =
@@ -1347,12 +2819,19 @@ function sendBulkWhatsApp() {
             let message = "";
 
 
-            if (days < 0) {
+            if (
+                days < 0
+            ) {
+
 
                 message =
                     `*${name} (${regNo})* आप की Eminence Library फीस दिनांक *${expiryDate}* को पूरी हो चुकी है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
 
-            } else {
+            }
+
+
+            else {
+
 
                 message =
                     `*${name} (${regNo})* आप की Eminence Library फीस दिनांक *${expiryDate}* को पूरी हो रही है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
@@ -1363,13 +2842,16 @@ function sendBulkWhatsApp() {
             setTimeout(
                 () => {
 
+
                     const whatsappUrl =
                         `https://api.whatsapp.com/send?phone=${cleanMobile}&text=${encodeURIComponent(message)}`;
+
 
                     window.open(
                         whatsappUrl,
                         "_blank"
                     );
+
 
                 },
                 index * 1000
@@ -1385,11 +2867,19 @@ function sendBulkWhatsApp() {
    PAGE LOAD
    ========================================================= */
 
-window.onload =
-    fetchSheetData;
+window.addEventListener(
+    "load",
+    function() {
+
+        fetchSheetData();
+
+    }
+);
+
 
 </script>
 
+
 </body>
+
 </html>
-```
