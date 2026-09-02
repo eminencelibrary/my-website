@@ -3,2882 +3,882 @@
 
 <head>
 
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Eminence Library - Fee Management CRM
-    </title>
-
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    >
-
-
-    <style>
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
-
-        body {
-
-            background-color: #f4f7f6;
-
-            color: #333;
-
-            padding: 15px;
-
-        }
-
-
-        .container {
-
-            max-width: 1450px;
-
-            margin: 0 auto;
-
-            background: #fff;
-
-            padding: 20px;
-
-            border-radius: 12px;
-
-            box-shadow:
-                0 4px 15px
-                rgba(0, 0, 0, 0.05);
-
-        }
-
-
-        .banner-header {
-
-            background-color: #ff6600;
-
-            padding: 12px 20px;
-
-            border-radius: 8px;
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            margin-bottom: 20px;
-
-            flex-wrap: wrap;
-
-            gap: 15px;
-
-        }
-
-
-        .banner-left {
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 15px;
-
-        }
-
-
-        .banner-logo {
-
-            height: 45px;
-
-            object-fit: contain;
-
-        }
-
-
-        .portal-badge {
-
-            background-color: #0084d1;
-
-            color: white;
-
-            padding: 6px 14px;
-
-            border-radius: 6px;
-
-            font-size: 13px;
-
-            font-weight: 600;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 6px;
-
-        }
-
-
-        .btn-back {
-
-            background-color: #dc2626;
-
-            color: white;
-
-            border: none;
-
-            padding: 8px 16px;
-
-            border-radius: 20px;
-
-            cursor: pointer;
-
-            font-size: 13px;
-
-            font-weight: 600;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 6px;
-
-            text-decoration: none;
-
-            box-shadow:
-                0 2px 5px
-                rgba(0, 0, 0, 0.15);
-
-        }
-
-
-        .btn-back:hover {
-
-            background-color: #b91c1c;
-
-        }
-
-
-        .header-bar {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            margin-bottom: 15px;
-
-            flex-wrap: wrap;
-
-            gap: 10px;
-
-        }
-
-
-        h2 {
-
-            color: #2c3e50;
-
-            font-size: 22px;
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 10px;
-
-        }
-
-
-        .header-actions {
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 10px;
-
-            flex-wrap: wrap;
-
-        }
-
-
-        .search-box {
-
-            padding: 7px 12px;
-
-            font-size: 13px;
-
-            border: 1px solid #cbd5e1;
-
-            border-radius: 6px;
-
-            outline: none;
-
-            width: 240px;
-
-        }
-
-
-        .search-box:focus {
-
-            border-color: #27ae60;
-
-        }
-
-
-        .btn-refresh {
-
-            background-color: #27ae60;
-
-            color: white;
-
-            border: none;
-
-            padding: 7px 12px;
-
-            border-radius: 6px;
-
-            cursor: pointer;
-
-            font-size: 13px;
-
-            font-weight: 500;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 5px;
-
-        }
-
-
-        .btn-refresh:hover {
-
-            background-color: #219653;
-
-        }
-
-
-        .btn-bulk-whatsapp {
-
-            background-color: #25D366;
-
-            color: white;
-
-            border: none;
-
-            padding: 7px 12px;
-
-            border-radius: 6px;
-
-            cursor: pointer;
-
-            font-size: 13px;
-
-            font-weight: 600;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 6px;
-
-        }
-
-
-        .btn-bulk-whatsapp:hover {
-
-            background-color: #20ba5a;
-
-        }
-
-
-        .table-responsive {
-
-            overflow-x: auto;
-
-            max-height: 550px;
-
-            overflow-y: auto;
-
-        }
-
-
-        table {
-
-            width: 100%;
-
-            border-collapse: collapse;
-
-            margin-top: 5px;
-
-            font-size: 12px;
-
-        }
-
-
-        th,
-        td {
-
-            padding: 4px 6px;
-
-            text-align: center;
-
-            border: 1px solid #e2e8f0;
-
-        }
-
-
-        th {
-
-            background-color: #f8fafc;
-
-            color: #475569;
-
-            font-weight: 600;
-
-            text-transform: uppercase;
-
-            font-size: 11px;
-
-            letter-spacing: 0.5px;
-
-            position: sticky;
-
-            top: 0;
-
-            z-index: 10;
-
-        }
-
-
-        table th:nth-child(1),
-        table td:nth-child(1) {
-
-            width: 130px;
-
-            max-width: 130px;
-
-            white-space: nowrap;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-            text-align: left;
-
-        }
-
-
-        table td:nth-child(2) {
-
-            text-align: center;
-
-            color: #0066cc;
-
-            font-weight: bold;
-
-        }
-
-
-        .expired-bg {
-
-            background-color: #ef4444 !important;
-
-            color: white !important;
-
-            font-weight: bold;
-
-        }
-
-
-        .expiring-soon-bg {
-
-            background-color: #f59e0b !important;
-
-            color: white !important;
-
-            font-weight: bold;
-
-        }
-
-
-        .btn-action-expired {
-
-            background-color: #fee2e2;
-
-            color: #dc2626;
-
-            border: 1px solid #fca5a5;
-
-            padding: 3px 8px;
-
-            border-radius: 20px;
-
-            cursor: pointer;
-
-            font-size: 11px;
-
-            font-weight: 600;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 5px;
-
-            transition: all 0.2s ease;
-
-        }
-
-
-        .btn-action-expired:hover {
-
-            background-color: #dc2626;
-
-            color: white;
-
-        }
-
-
-        .btn-action-warning {
-
-            background-color: #fef3c7;
-
-            color: #d97706;
-
-            border: 1px solid #fde68a;
-
-            padding: 3px 8px;
-
-            border-radius: 20px;
-
-            cursor: pointer;
-
-            font-size: 11px;
-
-            font-weight: 600;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 5px;
-
-        }
-
-
-        .btn-action-warning:hover {
-
-            background-color: #d97706;
-
-            color: white;
-
-        }
-
-
-        /* =====================================================
-           INACTIVE BUTTON
-           ONLY FOR EXPIRED MEMBERS
-           ===================================================== */
-
-        .btn-inactive {
-
-            background-color: #64748b;
-
-            color: white;
-
-            border: none;
-
-            padding: 3px 8px;
-
-            border-radius: 20px;
-
-            cursor: pointer;
-
-            font-size: 11px;
-
-            font-weight: 600;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 5px;
-
-            margin-left: 5px;
-
-            transition: all 0.2s ease;
-
-        }
-
-
-        .btn-inactive:hover {
-
-            background-color: #334155;
-
-        }
-
-
-        .active-badge {
-
-            background-color: #dcfce7;
-
-            color: #16a34a;
-
-            border: 1px solid #bbf7d0;
-
-            padding: 3px 8px;
-
-            border-radius: 20px;
-
-            font-size: 11px;
-
-            font-weight: 600;
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 5px;
-
-        }
-
-
-        .loading,
-        .error {
-
-            text-align: center;
-
-            padding: 20px;
-
-            color: #64748b;
-
-            font-size: 13px;
-
-        }
-
-
-        .error {
-
-            color: #ef4444;
-
-        }
-
-
-        .action-container {
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 5px;
-
-            flex-wrap: wrap;
-
-        }
-
-    </style>
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Eminence Library - Fee Tracker</title>
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+>
+
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: #f4f6f9;
+    color: #333;
+}
+
+
+/* =====================================================
+    HEADER
+===================================================== */
+
+.header {
+    background: #ff6600;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,.1);
+}
+
+.logo-area {
+    font-weight: 700;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.badge {
+    background: #0044cc;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.back-btn {
+    background: #cc0000;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.back-btn:hover {
+    background: #a80000;
+}
+
+
+/* =====================================================
+    MAIN
+===================================================== */
+
+.container {
+    max-width: 1400px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.title-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+
+/* =====================================================
+    BUTTONS
+===================================================== */
+
+.btn-whatsapp {
+    background: #25d366;
+    color: white;
+    border: none;
+    padding: 9px 15px;
+    border-radius: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: .2s;
+}
+
+.btn-whatsapp:hover {
+    background: #1ebe5d;
+    transform: translateY(-1px);
+}
+
+.btn-refresh {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 9px 15px;
+    border-radius: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.btn-refresh:hover {
+    background: #218838;
+}
+
+.btn-refresh:disabled {
+    opacity: .7;
+    cursor: wait;
+}
+
+
+/* =====================================================
+    SEARCH
+===================================================== */
+
+.search-box {
+    padding: 9px 14px;
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    font-size: 14px;
+    outline: none;
+}
+
+.search-box:focus {
+    border-color: #ff6600;
+    box-shadow: 0 0 0 2px rgba(255,102,0,.1);
+}
+
+
+/* =====================================================
+    TABLE
+===================================================== */
+
+.table-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+th {
+    background: #f8f9fa;
+    color: #444;
+    padding: 12px 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 2px solid #dee2e6;
+}
+
+td {
+    padding: 7px 6px;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+
+/* =====================================================
+    COLUMN WIDTHS
+===================================================== */
+
+th:nth-child(1), td:nth-child(1) { width: 110px; }
+th:nth-child(2), td:nth-child(2) { width: 90px; }
+th:nth-child(3), td:nth-child(3) { width: 190px; text-align: left !important; }
+th:nth-child(4), td:nth-child(4) { width: 105px; text-align: center !important; }
+th:nth-child(5), td:nth-child(5) { width: 90px; text-align: center !important; }
+th:nth-child(6), td:nth-child(6) { width: 105px; text-align: center !important; }
+th:nth-child(7), td:nth-child(7) { width: 65px; min-width: 65px; max-width: 65px; text-align: center !important; }
+th:nth-child(8), td:nth-child(8) { width: 150px; text-align: center !important; }
+
+td:nth-child(1), td:nth-child(2), td:nth-child(3) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =====================================================
+    DAYS
+===================================================== */
+
+.text-red {
+    color: #d9534f;
+    font-weight: 700;
+}
+
+.text-orange {
+    color: #f0ad4e;
+    font-weight: 700;
+}
+
+.text-green {
+    color: #198754;
+    font-weight: 700;
+    background: #e8f5e9;
+    padding: 3px 7px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+
+/* =====================================================
+    ACTION WRAPPER
+===================================================== */
+
+.action-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+
+/* =====================================================
+    SMALL WHATSAPP BUTTON
+===================================================== */
+
+.whatsapp-notify-btn {
+    background: #25d366;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    transition: all .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+
+.whatsapp-notify-btn:hover {
+    background: #1ebe5d;
+    transform: translateY(-1px);
+}
+
+.whatsapp-notify-btn i {
+    font-size: 12px;
+}
+
+
+/* =====================================================
+    INACTIVE BUTTON
+===================================================== */
+
+.inactive-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: .2s;
+}
+
+.inactive-btn:hover {
+    background: #b02a37;
+    transform: translateY(-1px);
+}
+
+.inactive-btn:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+
+/* =====================================================
+    MOBILE
+===================================================== */
+
+@media(max-width:768px) {
+    .header { padding: 12px 15px; }
+    .logo-area { font-size: 15px; }
+    .badge { display: none; }
+    .actions { width: 100%; }
+    .search-box { width: 100%; }
+    .actions button { flex: 1; }
+    .table-container { overflow-x: auto; }
+    table { min-width: 900px; }
+}
+/* Header & Banner Style */
+.header { 
+    background: linear-gradient(135deg, #ff6600, #ff8533); 
+    padding: 15px 30px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    color: white; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+    border-bottom: 3px solid #e55c00;
+}
+
+.logo-area { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+}
+
+/* Logo Image Styling */
+.header-logo {
+    height: 75px; /* Logo ki height apni zarurat ke hisab se kam/zyada kar sakte hain */
+    width: auto;
+    object-fit: contain;
+    border-radius: 0px;
+    background: white; /* Agar transparent PNG hai aur background dark lage toh white theek rahega */
+    padding: 2px;
+}
+
+.logo-text-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-title {
+    font-weight: 700; 
+    font-size: 20px; 
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.badge { 
+    background: #0044cc; 
+    padding: 3px 10px; 
+    border-radius: 4px; 
+    font-size: 11px; 
+    font-weight: 500;
+    width: fit-content;
+    margin-top: 2px;
+}
+
+.back-btn { 
+    background: #cc0000; 
+    color: white; 
+    border: none; 
+    padding: 8px 18px; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: 0.2s;
+}
+.back-btn:hover { background: #a80000; }
+
+@media(max-width:768px) {
+    .header { padding: 10px 15px; }
+    .logo-title { font-size: 15px; }
+    .header-logo { height: 35px; }
+    .badge { display: none; } /* Mobile screen par extra space bachane ke liye */
+}
+
+</style>
 
 </head>
 
-
 <body>
 
-
+<!-- =====================================================
+     HEADER
+===================================================== -->
+<div class="header">
+    <div class="logo-area">
+        <!-- Yahan apni PNG logo ka path ya URL daal dein -->
+        <img src="logo.png" alt="Eminence Library Logo" class="header-logo">
+        
+        <div class="logo-text-container"
+        <span class="badge">FEE MANAGEMENT PORTAL</span>
+        </div>
+    </div>
+    <button class="back-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> BACK</button>
+</div>
+<!-- =====================================================
+     MAIN
+===================================================== -->
 <div class="container">
 
-
-    <!-- =====================================================
-         HEADER
-         ===================================================== -->
-
-    <div class="banner-header">
-
-
-        <div class="banner-left">
-
-
-            <img
-                src="logo.png"
-                alt="Eminence Library Logo"
-                class="banner-logo"
-            >
-
-
-            <span class="portal-badge">
-
-                <i class="fa-solid fa-file-invoice-dollar"></i>
-
-                FEE MANAGEMENT PORTAL
-
-            </span>
-
-
-        </div>
-
-
-        <button
-            class="btn-back"
-            onclick="window.history.back()"
-        >
-
-            <i class="fa-solid fa-arrow-left"></i>
-
-            BACK
-
-        </button>
-
-
-    </div>
-
-
-
-    <!-- =====================================================
-         TITLE + ACTIONS
-         ===================================================== -->
-
-    <div class="header-bar">
-
-
-        <h2>
-
-            <i class="fa-solid fa-users-gear"></i>
-
+    <div class="toolbar">
+        <div class="title-area">
+            <i class="fa-solid fa-users-gear" style="color:#ff6600;"></i>
             Eminence Library - Fee Tracker
-
-        </h2>
-
-
-        <div class="header-actions">
-
-
-            <button
-                class="btn-bulk-whatsapp"
-                onclick="sendBulkWhatsApp()"
-            >
-
-                <i class="fa-brands fa-whatsapp"></i>
-
-                Send Bulk Alerts
-
-            </button>
-
-
-            <input
-                type="text"
-                id="searchInput"
-                class="search-box"
-                placeholder="Filter by Branch, Name, Reg No..."
-                oninput="filterTable()"
-            >
-
-
-            <button
-                class="btn-refresh"
-                onclick="fetchSheetData()"
-            >
-
-                <i class="fa-solid fa-rotate"></i>
-
-                Refresh
-
-            </button>
-
-
         </div>
 
+        <div class="actions">
+            <button class="btn-whatsapp" onclick="generateBulkWhatsApp()">
+                <i class="fa-brands fa-whatsapp"></i> Bulk Alerts
+            </button>
 
+            <input type="text" id="searchInput" class="search-box" placeholder="Filter by Branch, Name, Reg No..." oninput="filterTable()">
+
+            <button id="refreshBtn" class="btn-refresh" onclick="loadData(true)">
+                <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
+        </div>
     </div>
 
-
-
-    <!-- =====================================================
+    <!-- =================================================
          TABLE
-         ===================================================== -->
-
-    <div class="table-responsive">
-
-
+    ================================================= -->
+    <div class="table-container">
         <table>
-
-
             <thead>
-
                 <tr>
-
-                    <th>
-                        Branch Name
-                    </th>
-
-                    <th>
-                        Reg No.
-                    </th>
-
-                    <th>
-                        Name
-                    </th>
-
-                    <th>
-                        Mobile Number
-                    </th>
-
-                    <th>
-                        Fees Expiry Date
-                    </th>
-
-                    <th>
-                        Days Left for Expiry
-                    </th>
-
-                    <th>
-                        Status / Action
-                    </th>
-
+                    <th>Branch Name</th>
+                    <th>Reg No.</th>
+                    <th>Name</th>
+                    <th>Mobile Number</th>
+                    <th>Date</th>
+                    <th>Last Expiry Date</th>
+                    <th>Days Left</th>
+                    <th>Notify / Action</th>
                 </tr>
-
             </thead>
 
-
-            <tbody id="memberTableBody">
-
-
+            <tbody id="tableBody">
                 <tr>
-
-                    <td
-                        colspan="7"
-                        class="loading"
-                    >
-
-                        Loading data from Google Sheets...
-
+                    <td colspan="8" style="text-align:center;padding:20px;">
+                        Loading data from Google Sheet...
                     </td>
-
                 </tr>
-
-
             </tbody>
-
-
         </table>
-
-
     </div>
-
 
 </div>
 
-
+<!-- =====================================================
+    CUSTOM CONFIRMATION MODAL
+===================================================== -->
+<div id="customModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+    <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); font-family: 'Poppins', sans-serif;">
+        <div style="font-size: 40px; color: #ff6600; margin-bottom: 15px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 10px;">Bulk Alert Confirmation</h3>
+        <p id="modalMessage" style="font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.5;"></p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="modalNoBtn" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1;">No (Cancel)</button>
+            <button id="modalYesBtn" style="background: #25d366; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1;">Yes (Proceed)</button>
+        </div>
+    </div>
+</div>
 
 <script>
 
+// =========================================================
+// CONFIG (DO ALAG-ALAG GOOGLE APPS SCRIPT URLS)
+// =========================================================
 
-/* =========================================================
-   GOOGLE APPS SCRIPT URL
-   ========================================================= */
+// Data fetch karne wali script ka URL
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydTaBhTq__3VJDvUgGWcSeU9aLBHnhUDYq_J5R3vjtlGWUQZODnujt1UGLx9BEFG8z/exec";
 
-const sheetApiUrl =
-    "https://script.google.com/macros/s/AKfycbyqA5l6vaVQJVrDjtYugZbfLwPCjGTc68y4Dewrp9QDwXJUpfgixE-PKSjMWDmH8iFS/exec";
+// Inactive member update karne wali alag script ka URL (Yahan apna naya URL daalein)
+const INACTIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzS_MQAI9hrcM-DnL8t24-1LRdkDNdC-jdoPPe2Q4wMDqn7eYLDwXJsNJAr-BQ45tVd/exec";
 
+window.allData = [];
 
-/* =========================================================
-   GLOBAL DATA
-   ========================================================= */
+// =========================================================
+// LOAD DATA
+// =========================================================
 
-let globalMembersData = [];
+function loadData(isRefresh = false) {
+    const tbody = document.getElementById("tableBody");
+    const refreshBtn = document.getElementById("refreshBtn");
 
-
-/* =========================================================
-   INACTIVE STORAGE
-   ========================================================= */
-
-const INACTIVE_STORAGE_KEY =
-    "eminence_fee_tracker_inactive_members_v2";
-
-
-/*
- * Get inactive member keys.
- */
-
-function getInactiveMembers() {
-
-    try {
-
-        const saved =
-            localStorage.getItem(
-                INACTIVE_STORAGE_KEY
-            );
-
-
-        if (!saved) {
-
-            return [];
-
-        }
-
-
-        const parsed =
-            JSON.parse(saved);
-
-
-        return Array.isArray(parsed)
-            ? parsed
-            : [];
-
-
-    } catch (error) {
-
-        console.error(
-            "Inactive storage error:",
-            error
-        );
-
-        return [];
-
+    if (isRefresh) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Refreshing...';
     }
-
-}
-
-
-/*
- * Save inactive members.
- */
-
-function saveInactiveMembers(list) {
-
-    try {
-
-        localStorage.setItem(
-            INACTIVE_STORAGE_KEY,
-            JSON.stringify(list)
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Unable to save inactive member:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   MEMBER KEY
-   ========================================================= */
-
-function getMemberKey(member) {
-
-
-    const uid =
-        String(
-
-            member["UID Code"] ||
-
-            member["Reg No."] ||
-
-            member["RegNo"] ||
-
-            member["UID"] ||
-
-            ""
-
-        )
-        .trim()
-        .toLowerCase();
-
-
-    const mobile =
-        String(
-
-            member["Mobile Number"] ||
-
-            member["Mobile"] ||
-
-            member["Phone"] ||
-
-            ""
-
-        )
-        .replace(/\D/g, "");
-
-
-    /*
-     * UID is preferred.
-     */
-
-    if (uid) {
-
-        return "UID_" + uid;
-
-    }
-
-
-    /*
-     * Mobile fallback.
-     */
-
-    if (mobile) {
-
-        return "MOBILE_" + mobile;
-
-    }
-
-
-    /*
-     * Name fallback.
-     */
-
-    const name =
-        String(
-
-            member["Member Name"] ||
-
-            member["Name"] ||
-
-            ""
-
-        )
-        .trim()
-        .toLowerCase();
-
-
-    if (name) {
-
-        return "NAME_" + name;
-
-    }
-
-
-    return "";
-
-}
-
-
-/* =========================================================
-   CHECK INACTIVE
-   ========================================================= */
-
-function isMemberInactive(member) {
-
-    const key =
-        getMemberKey(member);
-
-
-    if (!key) {
-
-        return false;
-
-    }
-
-
-    return getInactiveMembers()
-        .includes(key);
-
-}
-
-
-/* =========================================================
-   MARK MEMBER INACTIVE
-   ========================================================= */
-
-function markMemberInactive(member) {
-
-
-    /*
-     * Safety check.
-     *
-     * Inactive can ONLY be applied to expired member.
-     */
-
-    if (!member) {
-
-        return;
-
-    }
-
-
-    const days =
-        member.calculatedDays !== undefined
-
-            ? Number(
-                member.calculatedDays
-            )
-
-            : getDaysDifference(member);
-
-
-    /*
-     * VERY IMPORTANT
-     *
-     * If member is not expired,
-     * do absolutely nothing.
-     */
-
-    if (
-        isNaN(days) ||
-        days >= 0
-    ) {
-
-        return;
-
-    }
-
-
-    const key =
-        getMemberKey(member);
-
-
-    if (!key) {
-
-        return;
-
-    }
-
-
-    let inactiveMembers =
-        getInactiveMembers();
-
-
-    /*
-     * Already inactive
-     */
-
-    if (
-        inactiveMembers.includes(key)
-    ) {
-
-        return;
-
-    }
-
-
-    inactiveMembers.push(key);
-
-
-    saveInactiveMembers(
-        inactiveMembers
-    );
-
-
-    /*
-     * ONLY ONE MESSAGE.
-     */
-
-    alert("Member inactive");
-
-
-    /*
-     * Immediately remove row.
-     */
-
-    const searchQuery =
-        document.getElementById(
-            "searchInput"
-        ).value || "";
-
-
-    processAndRenderTable(
-        globalMembersData,
-        searchQuery
-    );
-
-}
-
-
-/* =========================================================
-   FETCH SHEET DATA
-   ========================================================= */
-
-async function fetchSheetData() {
-
-
-    const tbody =
-        document.getElementById(
-            "memberTableBody"
-        );
-
 
     tbody.innerHTML = `
-
         <tr>
-
-            <td
-                colspan="7"
-                class="loading"
-            >
-
-                <i class="fa-solid fa-spinner fa-spin"></i>
-
-                Fetching data...
-
+            <td colspan="8" style="text-align:center;padding:20px;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading fresh data...
             </td>
-
         </tr>
-
     `;
 
+    const url = WEB_APP_URL + "?action=getMembers&t=" + Date.now();
 
-    try {
-
-
-        const url =
-            sheetApiUrl +
-            "?t=" +
-            Date.now();
-
-
-        const response =
-            await fetch(
-                url,
-                {
-                    method: "GET",
-                    cache: "no-store"
-                }
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "HTTP " +
-                response.status
-            );
-
+    fetch(url, { method: "GET", cache: "no-store" })
+    .then(function(response) {
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        return response.json();
+    })
+    .then(function(data) {
+        if (data && !Array.isArray(data)) {
+            if (data.status === "error") throw new Error(data.message || "Google Sheet API error.");
+            throw new Error("Invalid API response.");
         }
 
+        window.allData = Array.isArray(data) ? data : [];
 
-        const data =
-            await response.json();
+        window.allData.sort(function(a, b) {
+            let daysA = Number(a.daysLeft);
+            let daysB = Number(b.daysLeft);
+            if (isNaN(daysA)) daysA = Infinity;
+            if (isNaN(daysB)) daysB = Infinity;
+            return daysA - daysB;
+        });
 
-
-        let rows = [];
-
-
-        if (Array.isArray(data)) {
-
-            rows = data;
-
-        }
-
-        else if (
-            data &&
-            typeof data === "object"
-        ) {
-
-            if (
-                Array.isArray(
-                    data.history
-                )
-            ) {
-
-                rows =
-                    data.history;
-
-            }
-
-            else if (
-                Array.isArray(
-                    data.data
-                )
-            ) {
-
-                rows =
-                    data.data;
-
-            }
-
-            else if (
-                Array.isArray(
-                    data.records
-                )
-            ) {
-
-                rows =
-                    data.records;
-
-            }
-
-            else if (
-                Array.isArray(
-                    data.rows
-                )
-            ) {
-
-                rows =
-                    data.rows;
-
-            }
-
-        }
-
-
-        /*
-         * Calculate Days Left again on frontend.
-         *
-         * This protects us if another API version
-         * returns a stale Days Left value.
-         */
-
-        globalMembersData =
-            rows
-                .filter(
-                    member =>
-                        member &&
-                        typeof member === "object"
-                )
-                .map(
-                    member => {
-
-                        return {
-
-                            ...member,
-
-                            calculatedDays:
-                                getDaysDifference(
-                                    member
-                                )
-
-                        };
-
-                    }
-                );
-
-
-        processAndRenderTable(
-            globalMembersData
-        );
-
-
-    } catch (error) {
-
-
-        console.error(
-            "Error fetching data:",
-            error
-        );
-
-
+        displayTable(window.allData);
+    })
+    .catch(function(error) {
+        console.error("Fee Tracker error:", error);
         tbody.innerHTML = `
-
             <tr>
-
-                <td
-                    colspan="7"
-                    class="error"
-                >
-
-                    Failed to load data from Google Sheets.
-
-                    <br>
-
-                    ${escapeHtml(
-                        error.message
-                    )}
-
+                <td colspan="8" style="text-align:center;color:#dc3545;padding:25px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i><br>
+                    <b>Error loading data</b><br>
+                    <small>${escapeHtml(error.message)}</small>
                 </td>
-
             </tr>
-
         `;
-
-    }
-
-}
-
-
-/* =========================================================
-   GET VALUE
-   ========================================================= */
-
-function getMemberValue(
-    member,
-    possibleKeys
-) {
-
-
-    for (
-        const key of possibleKeys
-    ) {
-
-
-        if (
-            member[key] !== undefined &&
-            member[key] !== null &&
-            String(
-                member[key]
-            ).trim() !== ""
-        ) {
-
-            return member[key];
-
+    })
+    .finally(function() {
+        if (isRefresh) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Refresh';
         }
-
-    }
-
-
-    /*
-     * Case-insensitive fallback.
-     */
-
-    const allKeys =
-        Object.keys(member);
-
-
-    for (
-        const wanted of possibleKeys
-    ) {
-
-
-        const wantedClean =
-            String(wanted)
-                .trim()
-                .toLowerCase();
-
-
-        const matchingKey =
-            allKeys.find(
-                key =>
-                    String(key)
-                        .trim()
-                        .toLowerCase() ===
-                    wantedClean
-            );
-
-
-        if (
-            matchingKey &&
-            member[matchingKey] !== undefined &&
-            member[matchingKey] !== null
-        ) {
-
-            return member[matchingKey];
-
-        }
-
-    }
-
-
-    return "";
-
+    });
 }
 
-
-/* =========================================================
-   DATE FORMAT
-   ========================================================= */
-
-function formatDisplayDate(dateStr) {
-
-
-    if (!dateStr) {
-
-        return "";
-
-    }
-
-
-    const str =
-        String(dateStr).trim();
-
-
-    /*
-     * DD-MM-YYYY
-     */
-
-    if (
-        /^\d{2}-\d{2}-\d{4}$/
-            .test(str)
-    ) {
-
-        return str;
-
-    }
-
-
-    /*
-     * DD/MM/YYYY
-     */
-
-    let match =
-        str.match(
-            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
-        );
-
-
-    if (match) {
-
-        return (
-
-            String(match[1])
-                .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            String(match[2])
-                .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            match[3]
-
-        );
-
-    }
-
-
-    /*
-     * YYYY-MM-DD
-     */
-
-    match =
-        str.match(
-            /^(\d{4})-(\d{1,2})-(\d{1,2})$/
-        );
-
-
-    if (match) {
-
-        return (
-
-            String(match[3])
-                .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            String(match[2])
-                .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            match[1]
-
-        );
-
-    }
-
-
-    /*
-     * ISO timestamp.
-     *
-     * Do NOT use new Date() here first.
-     * This avoids timezone date shifting.
-     */
-
-    match =
-        str.match(
-            /^(\d{4})-(\d{1,2})-(\d{1,2})T/
-        );
-
-
-    if (match) {
-
-        return (
-
-            String(match[3])
-                .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            String(match[2])
-                .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            match[1]
-
-        );
-
-    }
-
-
-    /*
-     * Last fallback.
-     */
-
-    const date =
-        new Date(str);
-
-
-    if (
-        !isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return (
-
-            String(
-                date.getDate()
-            )
-            .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            String(
-                date.getMonth() + 1
-            )
-            .padStart(2, "0")
-
-            +
-
-            "-" +
-
-            date.getFullYear()
-
-        );
-
-    }
-
-
-    return str;
-
-}
-
-
-/* =========================================================
-   PARSE DATE WITHOUT TIMEZONE PROBLEM
-   ========================================================= */
-
-function parseExpiryDate(value) {
-
-
-    if (
-        value === null ||
-        value === undefined ||
-        String(value).trim() === ""
-    ) {
-
-        return null;
-
-    }
-
-
-    const str =
-        String(value).trim();
-
-
-    /*
-     * DD-MM-YYYY
-     */
-
-    let match =
-        str.match(
-            /^(\d{1,2})-(\d{1,2})-(\d{4})$/
-        );
-
-
-    if (match) {
-
-        return new Date(
-            Number(match[3]),
-            Number(match[2]) - 1,
-            Number(match[1])
-        );
-
-    }
-
-
-    /*
-     * DD/MM/YYYY
-     */
-
-    match =
-        str.match(
-            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
-        );
-
-
-    if (match) {
-
-        return new Date(
-            Number(match[3]),
-            Number(match[2]) - 1,
-            Number(match[1])
-        );
-
-    }
-
-
-    /*
-     * YYYY-MM-DD
-     */
-
-    match =
-        str.match(
-            /^(\d{4})-(\d{1,2})-(\d{1,2})$/
-        );
-
-
-    if (match) {
-
-        return new Date(
-            Number(match[1]),
-            Number(match[2]) - 1,
-            Number(match[3])
-        );
-
-    }
-
-
-    /*
-     * ISO date
-     */
-
-    match =
-        str.match(
-            /^(\d{4})-(\d{1,2})-(\d{1,2})T/
-        );
-
-
-    if (match) {
-
-        return new Date(
-            Number(match[1]),
-            Number(match[2]) - 1,
-            Number(match[3])
-        );
-
-    }
-
-
-    return null;
-
-}
-
-
-/* =========================================================
-   DAYS DIFFERENCE
-   ========================================================= */
-
-function getDaysDifference(member) {
-
-
-    /*
-     * FIRST: calculate directly from Expiry Date.
-     *
-     * We intentionally do NOT trust an old "Days Left"
-     * column because it can become stale.
-     */
-
-    const expiryRaw =
-        getMemberValue(
-            member,
-            [
-                "Expiry Date",
-                "expiryDate",
-                "Fees Expiry Date",
-                "Fees_Expiry_Date",
-                "Expiry"
-            ]
-        );
-
-
-    if (expiryRaw) {
-
-
-        const expiryDate =
-            parseExpiryDate(
-                expiryRaw
-            );
-
-
-        if (expiryDate) {
-
-
-            const now =
-                new Date();
-
-
-            /*
-             * Today at local midnight.
-             */
-
-            const today =
-                new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate()
-                );
-
-
-            const expiry =
-                new Date(
-                    expiryDate.getFullYear(),
-                    expiryDate.getMonth(),
-                    expiryDate.getDate()
-                );
-
-
-            const difference =
-                expiry.getTime() -
-                today.getTime();
-
-
-            return Math.round(
-                difference /
-                (
-                    1000 *
-                    60 *
-                    60 *
-                    24
-                )
-            );
-
-        }
-
-    }
-
-
-    /*
-     * Fallback only if expiry date is missing.
-     */
-
-    const daysVal =
-        getMemberValue(
-            member,
-            [
-                "Days Left",
-                "Days_Left",
-                "daysLeft"
-            ]
-        );
-
-
-    if (
-        daysVal !== "" &&
-        daysVal !== null &&
-        daysVal !== undefined &&
-        !isNaN(daysVal)
-    ) {
-
-        return parseInt(
-            daysVal,
-            10
-        );
-
-    }
-
-
-    return NaN;
-
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-   ========================================================= */
-
-function escapeHtml(value) {
-
-
-    return String(
-        value ?? ""
-    )
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-/* =========================================================
-   RENDER TABLE
-   ========================================================= */
-
-function processAndRenderTable(
-    rawMembers,
-    searchQuery = ""
-) {
-
-
-    const tbody =
-        document.getElementById(
-            "memberTableBody"
-        );
-
-
+// =========================================================
+// DISPLAY TABLE
+// =========================================================
+
+function displayTable(data) {
+    const tbody = document.getElementById("tableBody");
     tbody.innerHTML = "";
 
-
-    if (
-        !Array.isArray(rawMembers) ||
-        rawMembers.length === 0
-    ) {
-
-
+    if (!data || !data.length) {
         tbody.innerHTML = `
-
             <tr>
-
-                <td
-                    colspan="7"
-                    style="text-align:center;"
-                >
-
-                    No members found in sheet.
-
+                <td colspan="8" style="text-align:center;padding:25px;color:#777;">
+                    <i class="fa-solid fa-users-slash"></i><br>No active records found.
                 </td>
-
             </tr>
-
         `;
-
-
         return;
-
     }
 
+    data.forEach(function(row, index) {
+        const days = Number(row.daysLeft);
+        const name = row.name || "Member";
+        const uid = row.uid ? `(${row.uid})` : "";
+        const expiry = row.expiryDate || "";
+        const mobile = normalizeMobile(row.mobile);
 
-    /*
-     * Prepare members.
-     */
+        let daysHtml = "";
+        let rawMessage = "";
 
-    let processedMembers =
-        rawMembers.map(
-            member => {
-
-                return {
-
-                    ...member,
-
-                    calculatedDays:
-                        getDaysDifference(
-                            member
-                        )
-
-                };
-
-            }
-        );
-
-
-    /*
-     * REMOVE INACTIVE MEMBERS
-     */
-
-    processedMembers =
-        processedMembers.filter(
-            member =>
-                !isMemberInactive(member)
-        );
-
-
-    /*
-     * SEARCH
-     */
-
-    const query =
-        String(
-            searchQuery || ""
-        )
-        .trim()
-        .toLowerCase();
-
-
-    if (query) {
-
-
-        processedMembers =
-            processedMembers.filter(
-                member => {
-
-
-                    const branchName =
-                        String(
-                            getMemberValue(
-                                member,
-                                [
-                                    "Branch",
-                                    "Branch Name"
-                                ]
-                            )
-                        )
-                        .toLowerCase();
-
-
-                    const regNo =
-                        String(
-                            getMemberValue(
-                                member,
-                                [
-                                    "UID Code",
-                                    "Reg No.",
-                                    "RegNo",
-                                    "Registration No"
-                                ]
-                            )
-                        )
-                        .toLowerCase();
-
-
-                    const name =
-                        String(
-                            getMemberValue(
-                                member,
-                                [
-                                    "Member Name",
-                                    "Name",
-                                    "Student Name"
-                                ]
-                            )
-                        )
-                        .toLowerCase();
-
-
-                    const mobile =
-                        String(
-                            getMemberValue(
-                                member,
-                                [
-                                    "Mobile Number",
-                                    "Mobile",
-                                    "Phone"
-                                ]
-                            )
-                        )
-                        .toLowerCase();
-
-
-                    return (
-
-                        branchName.includes(query) ||
-
-                        regNo.includes(query) ||
-
-                        name.includes(query) ||
-
-                        mobile.includes(query)
-
-                    );
-
-                }
-            );
-
-    }
-
-
-    /*
-     * SORT
-     *
-     * Expired first.
-     */
-
-    processedMembers.sort(
-        (a, b) => {
-
-            const da =
-                isNaN(
-                    a.calculatedDays
-                )
-                    ? 999999
-                    : a.calculatedDays;
-
-
-            const db =
-                isNaN(
-                    b.calculatedDays
-                )
-                    ? 999999
-                    : b.calculatedDays;
-
-
-            return da - db;
-
+        if (!isNaN(days) && days < 0) {
+            daysHtml = `<span class="text-red">${days}</span>`;
+            rawMessage = `*${name} ${uid}* आप की Eminence Library फीस दिनांक *${expiry}* को पूरी हो चुकी है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
         }
-    );
+        else if (!isNaN(days) && days >= 0 && days <= 2) {
+            daysHtml = `<span class="text-orange">${days}</span>`;
+            rawMessage = `*${name} ${uid}* आप की Eminence Library फीस दिनांक *${expiry}* को पूरी हो रही है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
+        }
+        else {
+            daysHtml = `<span class="text-green">${isNaN(days) ? "-" : days}</span>`;
+        }
 
+        let action = "-";
 
-    if (
-        processedMembers.length === 0
-    ) {
-
-
-        tbody.innerHTML = `
-
-            <tr>
-
-                <td
-                    colspan="7"
-                    style="text-align:center;"
-                >
-
-                    No matching members found.
-
-                </td>
-
-            </tr>
-
-        `;
-
-
-        return;
-
-    }
-
-
-    /*
-     * CREATE ROWS
-     */
-
-    processedMembers.forEach(
-        member => {
-
-
-            const branchName =
-                getMemberValue(
-                    member,
-                    [
-                        "Branch",
-                        "Branch Name"
-                    ]
-                );
-
-
-            const regNo =
-                getMemberValue(
-                    member,
-                    [
-                        "UID Code",
-                        "Reg No.",
-                        "RegNo",
-                        "Registration No"
-                    ]
-                );
-
-
-            const name =
-                getMemberValue(
-                    member,
-                    [
-                        "Member Name",
-                        "Name",
-                        "Student Name"
-                    ]
-                );
-
-
-            const mobile =
-                String(
-                    getMemberValue(
-                        member,
-                        [
-                            "Mobile Number",
-                            "Mobile",
-                            "Phone"
-                        ]
-                    )
-                ).trim();
-
-
-            const expiryRaw =
-                getMemberValue(
-                    member,
-                    [
-                        "Expiry Date",
-                        "expiryDate",
-                        "Fees Expiry Date",
-                        "Fees_Expiry_Date",
-                        "Expiry"
-                    ]
-                );
-
-
-            if (!expiryRaw) {
-
-                return;
-
-            }
-
-
-            const expiryFormatted =
-                formatDisplayDate(
-                    expiryRaw
-                );
-
-
-            const diffDays =
-                member.calculatedDays;
-
-
-            let daysClass = "";
-
-            let statusActionHTML = "";
-
-
-            /*
-             * MOBILE
-             */
-
-            const cleanMobile =
-                mobile.replace(
-                    /\D/g,
-                    ""
-                );
-
-
-            /*
-             * =================================================
-             * EXPIRED
-             * =================================================
-             *
-             * ONLY HERE:
-             *
-             * Send Alert
-             * +
-             * Inactive
-             */
-
-            if (
-                !isNaN(diffDays) &&
-                diffDays < 0
-            ) {
-
-
-                daysClass =
-                    "expired-bg";
-
-
-                statusActionHTML = `
-
-                    <div
-                        class="action-container"
-                    >
-
-
-                        <button
-                            class="btn-action-expired"
-                            onclick="sendWhatsAppByMember(this)"
-                            data-mobile="${escapeHtml(cleanMobile)}"
-                            data-name="${escapeHtml(name)}"
-                            data-reg="${escapeHtml(regNo)}"
-                            data-expiry="${escapeHtml(expiryFormatted)}"
-                            data-days="${diffDays}"
-                        >
-
-                            <i
-                                class="fa-brands fa-whatsapp"
-                            ></i>
-
-                            Send Alert
-
-                        </button>
-
-
-                        <button
-                            class="btn-inactive"
-                            onclick="inactiveFromButton(this)"
-                            data-member-key="${escapeHtml(getMemberKey(member))}"
-                        >
-
-                            <i
-                                class="fa-solid fa-user-slash"
-                            ></i>
-
-                            INACTIVE
-
-                        </button>
-
-
-                    </div>
-
+        if (!isNaN(days) && days < 0) {
+            let whatsapp = "";
+            if (mobile.length >= 10) {
+                whatsapp = `
+                    <a href="${createWhatsAppLink(mobile, rawMessage)}" target="_blank" rel="noopener" class="whatsapp-notify-btn">
+                        <i class="fa-brands fa-whatsapp"></i> Send
+                    </a>
                 `;
-
             }
-
-
-            /*
-             * =================================================
-             * EXPIRING TODAY / 1 / 2 DAYS
-             * =================================================
-             *
-             * NO INACTIVE BUTTON
-             */
-
-            else if (
-                !isNaN(diffDays) &&
-                diffDays >= 0 &&
-                diffDays <= 2
-            ) {
-
-
-                daysClass =
-                    "expiring-soon-bg";
-
-
-                statusActionHTML = `
-
-                    <button
-                        class="btn-action-warning"
-                        onclick="sendWhatsAppByMember(this)"
-                        data-mobile="${escapeHtml(cleanMobile)}"
-                        data-name="${escapeHtml(name)}"
-                        data-reg="${escapeHtml(regNo)}"
-                        data-expiry="${escapeHtml(expiryFormatted)}"
-                        data-days="${diffDays}"
-                    >
-
-                        <i
-                            class="fa-brands fa-whatsapp"
-                        ></i>
-
-                        Send Alert
-
+            action = `
+                <div class="action-wrapper">
+                    ${whatsapp}
+                    <button class="inactive-btn" onclick="makeInactive(${index}, this)">
+                        <i class="fa-solid fa-user-slash"></i> Inactive
                     </button>
-
-                `;
-
-            }
-
-
-            /*
-             * =================================================
-             * ACTIVE
-             * =================================================
-             */
-
-            else {
-
-
-                statusActionHTML = `
-
-                    <span
-                        class="active-badge"
-                    >
-
-                        <i
-                            class="fa-solid fa-circle-check"
-                        ></i>
-
-                        Subscription Active
-
-                    </span>
-
-                `;
-
-            }
-
-
-            /*
-             * CREATE ROW
-             */
-
-            const row =
-                document.createElement(
-                    "tr"
-                );
-
-
-            row.innerHTML = `
-
-                <td>
-                    <b>
-                        ${escapeHtml(branchName)}
-                    </b>
-                </td>
-
-
-                <td>
-                    ${escapeHtml(regNo)}
-                </td>
-
-
-                <td>
-                    <b>
-                        ${escapeHtml(name)}
-                    </b>
-                </td>
-
-
-                <td>
-                    ${escapeHtml(mobile)}
-                </td>
-
-
-                <td>
-                    ${escapeHtml(expiryFormatted)}
-                </td>
-
-
-                <td class="${daysClass}">
-
-                    ${
-                        isNaN(diffDays)
-                            ? "N/A"
-                            : diffDays
-                    }
-
-                </td>
-
-
-                <td>
-                    ${statusActionHTML}
-                </td>
-
+                </div>
             `;
-
-
-            tbody.appendChild(
-                row
-            );
-
         }
-    );
+        else if (!isNaN(days) && days >= 0 && days <= 2 && mobile.length >= 10) {
+            action = `
+                <a href="${createWhatsAppLink(mobile, rawMessage)}" target="_blank" rel="noopener" class="whatsapp-notify-btn">
+                    <i class="fa-brands fa-whatsapp"></i> Send
+                </a>
+            `;
+        }
 
-
-    /*
-     * Check if rows were actually added.
-     */
-
-    if (
-        tbody.children.length === 0
-    ) {
-
-
-        tbody.innerHTML = `
-
-            <tr>
-
-                <td
-                    colspan="7"
-                    style="text-align:center;"
-                >
-
-                    No matching members found.
-
-                </td>
-
-            </tr>
-
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td title="${escapeHtml(row.branch || "-")}">${escapeHtml(row.branch || "-")}</td>
+            <td title="${escapeHtml(row.uid || "-")}">${escapeHtml(row.uid || "-")}</td>
+            <td title="${escapeHtml(row.name || "-")}"><b>${escapeHtml(row.name || "-")}</b></td>
+            <td>${escapeHtml(row.mobile || "-")}</td>
+            <td>${escapeHtml(row.date || "-")}</td>
+            <td>${escapeHtml(row.expiryDate || "-")}</td>
+            <td>${daysHtml}</td>
+            <td>${action}</td>
         `;
-
-    }
-
+        tbody.appendChild(tr);
+    });
 }
 
+// =========================================================
+// WHATSAPP LINK & UTILS
+// =========================================================
 
-/* =========================================================
-   INACTIVE BUTTON HANDLER
-   ========================================================= */
+function createWhatsAppLink(mobile, message) {
+    const clean = normalizeMobile(mobile);
+    return "https://wa.me/91" + clean + "?text=" + encodeURIComponent(message);
+}
 
-function inactiveFromButton(button) {
-
-
-    const memberKey =
-        button.dataset.memberKey;
-
-
-    if (!memberKey) {
-
-        return;
-
+function normalizeMobile(value) {
+    let mobile = String(value || "").replace(/\D/g, "");
+    if (mobile.length === 12 && mobile.startsWith("91")) {
+        mobile = mobile.substring(2);
     }
+    if (mobile.length > 10) {
+        mobile = mobile.slice(-10);
+    }
+    return mobile;
+}
 
+// =========================================================
+// INACTIVE (USING SEPARATE SCRIPT URL)
+// =========================================================
 
-    /*
-     * Find original member.
-     */
-
-    const member =
-        globalMembersData.find(
-            m =>
-                getMemberKey(m) ===
-                memberKey
-        );
-
-
+function makeInactive(index, button) {
+    const member = window.allData[index];
     if (!member) {
-
+        alert("Member data not found.");
         return;
-
     }
 
-
-    /*
-     * IMPORTANT:
-     *
-     * We again verify that member is expired.
-     */
-
-    const days =
-        getDaysDifference(
-            member
-        );
-
-
-    if (
-        isNaN(days) ||
-        days >= 0
-    ) {
-
+    const days = Number(member.daysLeft);
+    if (isNaN(days) || days >= 0) {
+        alert("Only expired members can be made inactive.");
         return;
-
     }
 
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
-    /*
-     * Mark inactive.
-     */
-
-    markMemberInactive(
-        {
-            ...member,
-            calculatedDays: days
+    fetch(INACTIVE_WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+            action: "inactiveMember",
+            name: member.name || "",
+            uid: member.uid || "",
+            mobile: member.mobile || "",
+            branch: member.branch || "",
+            expiryDate: member.expiryDate || ""
+        })
+    })
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(result) {
+        if (!result || result.status !== "success") {
+            throw new Error(result && result.message ? result.message : "Unable to make inactive.");
         }
-    );
 
+        window.allData = window.allData.filter(function(item) {
+            return !sameMember(item, member);
+        });
+
+        displayTable(getFilteredData());
+        alert("Member inactive");
+    })
+    .catch(function(error) {
+        console.error("Inactive error:", error);
+        button.disabled = false;
+        button.innerHTML = '<i class="fa-solid fa-user-slash"></i> Inactive';
+        alert("Member inactive nahi hua.\n" + error.message);
+    });
 }
 
+function sameMember(a, b) {
+    const uidA = String(a.uid || "").trim().toUpperCase();
+    const uidB = String(b.uid || "").trim().toUpperCase();
+    if (uidA && uidB && uidA === uidB) return true;
 
-/* =========================================================
-   SEARCH
-   ========================================================= */
+    const mobA = normalizeMobile(a.mobile);
+    const mobB = normalizeMobile(b.mobile);
+    return (mobA && mobB && mobA === mobB);
+}
+
+// =========================================================
+// FILTER
+// =========================================================
 
 function filterTable() {
-
-
-    const query =
-        document.getElementById(
-            "searchInput"
-        ).value;
-
-
-    processAndRenderTable(
-        globalMembersData,
-        query
-    );
-
+    displayTable(getFilteredData());
 }
 
+function getFilteredData() {
+    const input = document.getElementById("searchInput");
+    const query = input ? input.value.trim().toLowerCase() : "";
 
-/* =========================================================
-   SINGLE WHATSAPP
-   ========================================================= */
+    if (!query) return window.allData;
 
-function sendWhatsAppByMember(
-    button
-) {
-
-
-    const mobile =
-        button.dataset.mobile || "";
-
-
-    const name =
-        button.dataset.name || "Member";
-
-
-    const regNo =
-        button.dataset.reg || "";
-
-
-    const expiryDate =
-        button.dataset.expiry || "";
-
-
-    const days =
-        Number(
-            button.dataset.days
+    return window.allData.filter(function(row) {
+        return (
+            String(row.branch || "").toLowerCase().includes(query) ||
+            String(row.name || "").toLowerCase().includes(query) ||
+            String(row.uid || "").toLowerCase().includes(query) ||
+            String(row.mobile || "").toLowerCase().includes(query)
         );
-
-
-    sendWhatsApp(
-        mobile,
-        name,
-        regNo,
-        expiryDate,
-        days
-    );
-
+    });
 }
 
+// =========================================================
+// CUSTOM MODAL HELPER
+// =========================================================
 
-/* =========================================================
-   SINGLE WHATSAPP
-   ========================================================= */
+function showCustomConfirm(message, onYes) {
+    const modal = document.getElementById('customModal');
+    const msgEl = document.getElementById('modalMessage');
+    const yesBtn = document.getElementById('modalYesBtn');
+    const noBtn = document.getElementById('modalNoBtn');
 
-function sendWhatsApp(
-    mobile,
-    name,
-    regNo,
-    expiryDate,
-    days
-) {
+    msgEl.innerText = message;
+    modal.style.display = 'flex';
 
+    const newYesBtn = yesBtn.cloneNode(true);
+    const newNoBtn = noBtn.cloneNode(true);
+    yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+    noBtn.parentNode.replaceChild(newNoBtn, noBtn);
 
-    if (!mobile) {
+    newYesBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+        onYes();
+    });
 
-
-        alert(
-            "Mobile number is missing or invalid!"
-        );
-
-
-        return;
-
-    }
-
-
-    let message = "";
-
-
-    if (
-        Number(days) < 0
-    ) {
-
-
-        message =
-            `${name} (${regNo}) आप की Eminence Library फीस दिनांक ${expiryDate} को पूरी हो चुकी है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
-
-    }
-
-
-    else {
-
-
-        message =
-            `${name} (${regNo}) आप की Eminence Library फीस दिनांक ${expiryDate} को पूरी हो रही है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
-
-    }
-
-
-    let formattedMobile =
-        String(mobile)
-            .replace(
-                /\D/g,
-                ""
-            );
-
-
-    if (
-        !formattedMobile.startsWith("91") &&
-        formattedMobile.length === 10
-    ) {
-
-        formattedMobile =
-            "91" +
-            formattedMobile;
-
-    }
-
-
-    const whatsappUrl =
-        `https://api.whatsapp.com/send?phone=${formattedMobile}&text=${encodeURIComponent(message)}`;
-
-
-    window.open(
-        whatsappUrl,
-        "_blank"
-    );
-
+    newNoBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
 }
 
+// =========================================================
+// BULK WHATSAPP (WITH CUSTOM MODAL)
+// =========================================================
 
-/* =========================================================
-   BULK WHATSAPP
-   ========================================================= */
+function generateBulkWhatsApp() {
+    const members = window.allData.filter(function(row) {
+        const days = Number(row.daysLeft);
+        const mobile = normalizeMobile(row.mobile);
+        return (!isNaN(days) && days <= 2 && mobile.length >= 10);
+    });
 
-function sendBulkWhatsApp() {
-
-
-    if (
-        !globalMembersData ||
-        globalMembersData.length === 0
-    ) {
-
-
-        alert(
-            "डेटा लोड नहीं हुआ है या कोई डेटा उपलब्ध नहीं है!"
-        );
-
-
+    if (!members.length) {
+        alert("Bulk WhatsApp ke liye koi member nahi mila.");
         return;
-
     }
 
+    const confirmMessage = `${members.length} members ke WhatsApp chats naye tabs mein khulne wale hain. Kya aap taiyar hain?`;
 
-    /*
-     * ONLY expired OR expiring within 2 days.
-     *
-     * Inactive members are automatically excluded.
-     */
+    showCustomConfirm(confirmMessage, function() {
+        members.forEach(function(member, index) {
+            const days = Number(member.daysLeft);
+            const mobile = normalizeMobile(member.mobile);
+            const uid = member.uid ? `(${member.uid})` : "";
+            let message;
 
-    const targetMembers =
-        globalMembersData.filter(
-            member => {
-
-
-                if (
-                    isMemberInactive(member)
-                ) {
-
-                    return false;
-
-                }
-
-
-                const days =
-                    getDaysDifference(
-                        member
-                    );
-
-
-                return (
-                    !isNaN(days) &&
-                    days <= 2
-                );
-
-            }
-        );
-
-
-    if (
-        targetMembers.length === 0
-    ) {
-
-
-        alert(
-            "कोई भी ऐसा मेंबर नहीं है जिसकी फीस एक्सपायर हुई हो या नज़दीक हो!"
-        );
-
-
-        return;
-
-    }
-
-
-    const confirmSend =
-        confirm(
-
-            `कुल ${targetMembers.length} सदस्यों की फीस एक्सपायर या समाप्त होने वाली है। क्या आप इन्हें एक-एक करके WhatsApp मैसेज भेजना चाहते हैं?`
-
-        );
-
-
-    if (!confirmSend) {
-
-        return;
-
-    }
-
-
-    /*
-     * WhatsApp tabs.
-     */
-
-    targetMembers.forEach(
-        (
-            member,
-            index
-        ) => {
-
-
-            const name =
-                getMemberValue(
-                    member,
-                    [
-                        "Member Name",
-                        "Name",
-                        "Student Name"
-                    ]
-                ) || "Member";
-
-
-            const regNo =
-                getMemberValue(
-                    member,
-                    [
-                        "UID Code",
-                        "Reg No.",
-                        "RegNo"
-                    ]
-                );
-
-
-            const mobile =
-                String(
-                    getMemberValue(
-                        member,
-                        [
-                            "Mobile Number",
-                            "Mobile",
-                            "Phone"
-                        ]
-                    )
-                ).trim();
-
-
-            const expiryRaw =
-                getMemberValue(
-                    member,
-                    [
-                        "Expiry Date",
-                        "expiryDate",
-                        "Fees Expiry Date",
-                        "Fees_Expiry_Date",
-                        "Expiry"
-                    ]
-                );
-
-
-            const expiryDate =
-                formatDisplayDate(
-                    expiryRaw
-                );
-
-
-            const days =
-                getDaysDifference(
-                    member
-                );
-
-
-            if (!mobile) {
-
-                return;
-
+            if (days < 0) {
+                message = `*${member.name || "Member"} ${uid}* आप की Eminence Library फीस दिनांक *${member.expiryDate || ""}* को पूरी हो चुकी है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
+            } else {
+                message = `*${member.name || "Member"} ${uid}* आप की Eminence Library फीस दिनांक *${member.expiryDate || ""}* को पूरी हो रही है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
             }
 
+            const link = createWhatsAppLink(mobile, message);
 
-            let cleanMobile =
-                mobile.replace(
-                    /\D/g,
-                    ""
-                );
-
-
-            if (
-                !cleanMobile.startsWith("91") &&
-                cleanMobile.length === 10
-            ) {
-
-                cleanMobile =
-                    "91" +
-                    cleanMobile;
-
-            }
-
-
-            let message = "";
-
-
-            if (
-                days < 0
-            ) {
-
-
-                message =
-                    `*${name} (${regNo})* आप की Eminence Library फीस दिनांक *${expiryDate}* को पूरी हो चुकी है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
-
-            }
-
-
-            else {
-
-
-                message =
-                    `*${name} (${regNo})* आप की Eminence Library फीस दिनांक *${expiryDate}* को पूरी हो रही है, कृपया अपनी लाइब्रेरी फीस का भुगतान समय पर करें- धन्यवाद`;
-
-            }
-
-
-            setTimeout(
-                () => {
-
-
-                    const whatsappUrl =
-                        `https://api.whatsapp.com/send?phone=${cleanMobile}&text=${encodeURIComponent(message)}`;
-
-
-                    window.open(
-                        whatsappUrl,
-                        "_blank"
-                    );
-
-
-                },
-                index * 1000
-            );
-
-        }
-    );
-
+            setTimeout(function() {
+                window.open(link, "_blank");
+            }, index * 500);
+        });
+    });
 }
 
+// =========================================================
+// ESCAPE HTML & BACK
+// =========================================================
 
-/* =========================================================
-   PAGE LOAD
-   ========================================================= */
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
-window.addEventListener(
-    "load",
-    function() {
-
-        fetchSheetData();
-
+function goBack() {
+    if (window.history.length > 1) {
+        window.history.back();
+        return;
     }
-);
+    alert("Back page available nahi hai.");
+}
 
+// =========================================================
+// INITIAL LOAD
+// =========================================================
+
+window.addEventListener("load", function() {
+    loadData(false);
+});
 
 </script>
-
 
 </body>
 
