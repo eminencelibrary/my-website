@@ -2,28 +2,13 @@
 <html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fee Tracker</title>
-
-<link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
->
-
-<link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -36,34 +21,47 @@ body {
     color: #333;
 }
 
-
 /* =====================================================
-    HEADER
+    HEADER & BANNER STYLE
 ===================================================== */
-
 .header {
-    background: #ff6600;
+    background: linear-gradient(135deg, #ff6600, #ff8533);
     padding: 15px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    border-bottom: 3px solid #e55c00;
 }
 
 .logo-area {
-    font-weight: 700;
-    font-size: 20px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+}
+
+.header-logo {
+    height: 75px;
+    width: auto;
+    object-fit: contain;
+    background: white;
+    padding: 2px;
+}
+
+.logo-text-container {
+    display: flex;
+    flex-direction: column;
 }
 
 .badge {
     background: #0044cc;
-    padding: 5px 12px;
+    padding: 4px 10px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    width: fit-content;
+    margin-top: 2px;
 }
 
 .back-btn {
@@ -74,17 +72,16 @@ body {
     border-radius: 5px;
     cursor: pointer;
     font-weight: 600;
+    transition: 0.2s;
 }
 
 .back-btn:hover {
     background: #a80000;
 }
 
-
 /* =====================================================
     MAIN
 ===================================================== */
-
 .container {
     max-width: 1400px;
     margin: 30px auto;
@@ -115,11 +112,9 @@ body {
     flex-wrap: wrap;
 }
 
-
 /* =====================================================
     BUTTONS
 ===================================================== */
-
 .btn-whatsapp {
     background: #25d366;
     color: white;
@@ -161,11 +156,9 @@ body {
     cursor: wait;
 }
 
-
 /* =====================================================
     SEARCH
 ===================================================== */
-
 .search-box {
     padding: 9px 14px;
     width: 300px;
@@ -180,11 +173,9 @@ body {
     box-shadow: 0 0 0 2px rgba(255,102,0,.1);
 }
 
-
 /* =====================================================
     TABLE
 ===================================================== */
-
 .table-container {
     background: white;
     border-radius: 10px;
@@ -214,12 +205,10 @@ td {
     vertical-align: middle;
 }
 
-
 /* =====================================================
     COLUMN WIDTHS
 ===================================================== */
-
-th:nth-child(1), td:nth-child(1) { width: 110px; }
+th:nth-child(1), td:nth-child(1) { width: 90px; }
 th:nth-child(2), td:nth-child(2) { width: 90px; }
 th:nth-child(3), td:nth-child(3) { width: 190px; text-align: left !important; }
 th:nth-child(4), td:nth-child(4) { width: 105px; text-align: center !important; }
@@ -234,11 +223,9 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     text-overflow: ellipsis;
 }
 
-
 /* =====================================================
     DAYS
 ===================================================== */
-
 .text-red {
     color: #d9534f;
     font-weight: 700;
@@ -258,11 +245,9 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     display: inline-block;
 }
 
-
 /* =====================================================
-    ACTION WRAPPER
+    ACTION WRAPPER & BUTTONS
 ===================================================== */
-
 .action-wrapper {
     display: flex;
     align-items: center;
@@ -270,11 +255,6 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     gap: 5px;
     flex-wrap: wrap;
 }
-
-
-/* =====================================================
-    SMALL WHATSAPP BUTTON
-===================================================== */
 
 .whatsapp-notify-btn {
     background: #25d366;
@@ -302,11 +282,6 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     font-size: 12px;
 }
 
-
-/* =====================================================
-    INACTIVE BUTTON
-===================================================== */
-
 .inactive-btn {
     background: #dc3545;
     color: white;
@@ -332,14 +307,13 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     cursor: wait;
 }
 
-
 /* =====================================================
-    MOBILE
+    MOBILE RESPONSIVE
 ===================================================== */
-
 @media(max-width:768px) {
-    .header { padding: 12px 15px; }
-    .logo-area { font-size: 15px; }
+    .header { padding: 10px 15px; }
+    .logo-title { font-size: 15px; }
+    .header-logo { height: 35px; }
     .badge { display: none; }
     .actions { width: 100%; }
     .search-box { width: 100%; }
@@ -347,77 +321,7 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     .table-container { overflow-x: auto; }
     table { min-width: 900px; }
 }
-/* Header & Banner Style */
-.header { 
-    background: linear-gradient(135deg, #ff6600, #ff8533); 
-    padding: 15px 30px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    color: white; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
-    border-bottom: 3px solid #e55c00;
-}
-
-.logo-area { 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; 
-}
-
-/* Logo Image Styling */
-.header-logo {
-    height: 75px; /* Logo ki height apni zarurat ke hisab se kam/zyada kar sakte hain */
-    width: auto;
-    object-fit: contain;
-    border-radius: 0px;
-    background: white; /* Agar transparent PNG hai aur background dark lage toh white theek rahega */
-    padding: 2px;
-}
-
-.logo-text-container {
-    display: flex;
-    flex-direction: column;
-}
-
-.logo-title {
-    font-weight: 700; 
-    font-size: 20px; 
-    letter-spacing: 0.5px;
-    line-height: 1.2;
-}
-
-.badge { 
-    background: #0044cc; 
-    padding: 3px 10px; 
-    border-radius: 4px; 
-    font-size: 11px; 
-    font-weight: 500;
-    width: fit-content;
-    margin-top: 2px;
-}
-
-.back-btn { 
-    background: #cc0000; 
-    color: white; 
-    border: none; 
-    padding: 8px 18px; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    font-weight: 600; 
-    transition: 0.2s;
-}
-.back-btn:hover { background: #a80000; }
-
-@media(max-width:768px) {
-    .header { padding: 10px 15px; }
-    .logo-title { font-size: 15px; }
-    .header-logo { height: 35px; }
-    .badge { display: none; } /* Mobile screen par extra space bachane ke liye */
-}
-
 </style>
-
 </head>
 
 <body>
@@ -427,20 +331,18 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 ===================================================== -->
 <div class="header">
     <div class="logo-area">
-        <!-- Yahan apni PNG logo ka path ya URL daal dein -->
         <img src="logo.png" alt="Eminence Library Logo" class="header-logo">
-        
-        <div class="logo-text-container"
-        <span class="badge">FEE MANAGEMENT PORTAL</span>
+        <div class="logo-text-container">
+            <span class="badge">FEE MANAGEMENT PORTAL</span>
         </div>
     </div>
     <button class="back-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> BACK</button>
 </div>
+
 <!-- =====================================================
      MAIN
 ===================================================== -->
 <div class="container">
-
     <div class="toolbar">
         <div class="title-area">
             <i class="fa-solid fa-users-gear" style="color:#ff6600;"></i>
@@ -451,9 +353,7 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
             <button class="btn-whatsapp" onclick="generateBulkWhatsApp()">
                 <i class="fa-brands fa-whatsapp"></i> Bulk Alerts
             </button>
-
             <input type="text" id="searchInput" class="search-box" placeholder="Filter by Branch, Name, Reg No..." oninput="filterTable()">
-
             <button id="refreshBtn" class="btn-refresh" onclick="loadData(true)">
                 <i class="fa-solid fa-rotate"></i> Refresh
             </button>
@@ -477,7 +377,6 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
                     <th>Notify / Action</th>
                 </tr>
             </thead>
-
             <tbody id="tableBody">
                 <tr>
                     <td colspan="8" style="text-align:center;padding:20px;">
@@ -487,7 +386,6 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
             </tbody>
         </table>
     </div>
-
 </div>
 
 <!-- =====================================================
@@ -508,22 +406,10 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 </div>
 
 <script>
-
-// =========================================================
-// CONFIG (DO ALAG-ALAG GOOGLE APPS SCRIPT URLS)
-// =========================================================
-
-// Data fetch karne wali script ka URL
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydTaBhTq__3VJDvUgGWcSeU9aLBHnhUDYq_J5R3vjtlGWUQZODnujt1UGLx9BEFG8z/exec";
-
-// Inactive member update karne wali alag script ka URL (Yahan apna naya URL daalein)
-const INACTIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzS_MQAI9hrcM-DnL8t24-1LRdkDNdC-jdoPPe2Q4wMDqn7eYLDwXJsNJAr-BQ45tVd/exec";
+const INACTIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyevfLj9kN07KG-dAw3TdLPI6nheUedgisMsdRZGn-xaeqtkDZ4NAqU6gjNf_xx2Eco/exec";
 
 window.allData = [];
-
-// =========================================================
-// LOAD DATA
-// =========================================================
 
 function loadData(isRefresh = false) {
     const tbody = document.getElementById("tableBody");
@@ -586,10 +472,6 @@ function loadData(isRefresh = false) {
         }
     });
 }
-
-// =========================================================
-// DISPLAY TABLE
-// =========================================================
 
 function displayTable(data) {
     const tbody = document.getElementById("tableBody");
@@ -671,10 +553,6 @@ function displayTable(data) {
     });
 }
 
-// =========================================================
-// WHATSAPP LINK & UTILS
-// =========================================================
-
 function createWhatsAppLink(mobile, message) {
     const clean = normalizeMobile(mobile);
     return "https://wa.me/91" + clean + "?text=" + encodeURIComponent(message);
@@ -690,10 +568,6 @@ function normalizeMobile(value) {
     }
     return mobile;
 }
-
-// =========================================================
-// INACTIVE (USING SEPARATE SCRIPT URL)
-// =========================================================
 
 function makeInactive(index, button) {
     const member = window.allData[index];
@@ -756,10 +630,6 @@ function sameMember(a, b) {
     return (mobA && mobB && mobA === mobB);
 }
 
-// =========================================================
-// FILTER
-// =========================================================
-
 function filterTable() {
     displayTable(getFilteredData());
 }
@@ -779,10 +649,6 @@ function getFilteredData() {
         );
     });
 }
-
-// =========================================================
-// CUSTOM MODAL HELPER
-// =========================================================
 
 function showCustomConfirm(message, onYes) {
     const modal = document.getElementById('customModal');
@@ -807,10 +673,6 @@ function showCustomConfirm(message, onYes) {
         modal.style.display = 'none';
     });
 }
-
-// =========================================================
-// BULK WHATSAPP (WITH CUSTOM MODAL)
-// =========================================================
 
 function generateBulkWhatsApp() {
     const members = window.allData.filter(function(row) {
@@ -848,10 +710,6 @@ function generateBulkWhatsApp() {
     });
 }
 
-// =========================================================
-// ESCAPE HTML & BACK
-// =========================================================
-
 function escapeHtml(value) {
     if (value === null || value === undefined) return "";
     return String(value)
@@ -863,23 +721,13 @@ function escapeHtml(value) {
 }
 
 function goBack() {
-    if (window.history.length > 1) {
-        window.history.back();
-        return;
-    }
-    alert("Back page available nahi hai.");
+    window.location.href = "admin.html";
 }
-
-// =========================================================
-// INITIAL LOAD
-// =========================================================
 
 window.addEventListener("load", function() {
     loadData(false);
 });
-
 </script>
 
 </body>
-
 </html>
