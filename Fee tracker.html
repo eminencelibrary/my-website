@@ -582,6 +582,35 @@ function makeInactive(index, button) {
         return;
     }
 
+    const mobile = normalizeMobile(member.mobile);
+
+    if (mobile.length < 10) {
+        alert("Is member ka valid mobile number nahi mila, isliye WhatsApp message nahi bheja ja sakta.");
+        return;
+    }
+
+    /*
+     * WhatsApp popup ko click ke turant baad open kiya ja raha hai.
+     * Isse browser popup blocker ke chances kam hote hain.
+     * Successful inactive hone ke baad isi window me message open hoga.
+     */
+    const whatsappPopup = window.open("about:blank", "_blank");
+
+    if (!whatsappPopup) {
+        alert("WhatsApp popup open nahi ho saka. Please browser me pop-ups allow karein.");
+        return;
+    }
+
+    whatsappPopup.document.write(`
+        <html>
+        <head><title>Opening WhatsApp...</title></head>
+        <body style="font-family:Arial,sans-serif;text-align:center;padding:40px;">
+            <h3>Member को Inactive किया जा रहा है ...</h3>
+        </body>
+        </html>
+    `);
+    whatsappPopup.document.close();
+
     button.disabled = true;
     button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
@@ -605,15 +634,39 @@ function makeInactive(index, button) {
             throw new Error(result && result.message ? result.message : "Unable to make inactive.");
         }
 
+        // 1. Pehle table se member turant remove hoga.
         window.allData = window.allData.filter(function(item) {
             return !sameMember(item, member);
         });
 
         displayTable(getFilteredData());
-        alert("Member inactive");
+
+        // 2. Inactive confirmation WhatsApp message.
+        const memberName = String(member.name || "Member").trim();
+        const memberUid = String(member.uid || "").trim();
+
+        const memberIdentity = memberUid
+            ? `*${memberName} (${memberUid})*`
+            : `*${memberName}*`;
+
+        const inactiveMessage =
+            `${memberIdentity} आपकी Eminence Library में सदस्यता को *Inactive* कर दिया गया है। ` +
+            `आप भविष्य में कभी भी अपनी सदस्यता को *Active* कर सकते हैं। ` +
+            `Eminence Library में आने, पढ़ने और अध्ययन करने के लिए आपका धन्यवाद! ` +
+            `आते रहिएगा!`;
+
+        // 3. Usi popup me WhatsApp chat/message open hoga.
+        whatsappPopup.location.href = createWhatsAppLink(mobile, inactiveMessage);
+
     })
     .catch(function(error) {
         console.error("Inactive error:", error);
+
+        // Agar inactive process fail ho gaya to WhatsApp popup band kar denge.
+        try {
+            whatsappPopup.close();
+        } catch (e) {}
+
         button.disabled = false;
         button.innerHTML = '<i class="fa-solid fa-user-slash"></i> Inactive';
         alert("Member inactive nahi hua.\n" + error.message);
@@ -721,7 +774,7 @@ function escapeHtml(value) {
 }
 
 function goBack() {
-    window.location.href = "Admin.html";
+    window.location.href = "admin.html";
 }
 
 window.addEventListener("load", function() {
