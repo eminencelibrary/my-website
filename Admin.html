@@ -1448,7 +1448,7 @@
                 let result = await saveResponse.json();
 
                 if (result && (result.status === "success" || result.result === "success" || result.success)) {
-                    alert("✅ Fee data successfully updated in Google Sheet!");
+                    alert("✅ Fee Update successfully !");
                     fetchFeeLibraryData(true).catch(() => {});
                     
                     feeFlowState = 2;
@@ -1505,60 +1505,63 @@
             const today = new Date();
             const receiptHeaderDate = `${String(today.getDate()).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(2, "0")}-${today.getFullYear()}`;
 
-            receiptWindow.document.write(`
-                <html>
-                <head>
-                    <title>Fee Receipt - Eminence Library</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-                    <style>
-                        body { font-family: 'Poppins', sans-serif; padding: 25px; color: #334155; }
-                        .receipt-box { max-width: 650px; margin: 0 auto; border: 2px solid #cbd5e1; padding: 25px; border-radius: 12px; background: #fff; }
-                        .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
-                        .logo-title { display: flex; align-items: center; gap: 15px; }
-                        .logo-img { width: 65px; height: 65px; object-fit: contain; border-radius: 50%; border: 1px solid #cbd5e1; }
-                        .title-text h2 { margin: 0; font-family: 'Abhaya Libre', serif; font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
-                        .title-text h2 .eminence-part { color: #ff6600; }
-                        .title-text h2 .library-part { color: #000000; }
-                        .title-text p { margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b; }
-                        .details-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-                        .details-table td { padding: 8px 10px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; }
-                        .details-table td.label { font-weight: 600; color: #475569; width: 40%; }
-                        .note { text-align: left; margin: 8px 0 18px 0; font-size: 0.76rem; line-height: 1.45; color: #475569; font-weight: 600; }
-                        .footer { text-align: center; margin-top: 8px; font-size: 0.8rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="receipt-box">
-                        <div class="header">
-                            <div class="logo-title">
-                                <img src="logo2.png" alt="Logo" class="logo-img">
-                                <div class="title-text">
-                                    <h2><span class="eminence-part">Eminence</span> <span class="library-part">Library</span></h2>
-                                    <p>${receiptTitle}</p>
-                                </div>
-                            </div>
-                            <div style="text-align:right;font-size:0.85rem;color:#64748b;"><b>Date:</b> ${safe(receiptHeaderDate)}</div>
+receiptWindow.document.write(`
+        <html>
+        <head>
+            <title>${safe(feeSelectedMember.uid)}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+            <style>
+                body { font-family: 'Poppins', sans-serif; padding: 25px; color: #334155; }
+                .receipt-box { max-width: 650px; margin: 0 auto; border: 2px solid #cbd5e1; padding: 25px; border-radius: 12px; background: #fff; }
+                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
+                .logo-title { display: flex; align-items: center; gap: 15px; }
+                .logo-img { width: 65px; height: 65px; object-fit: contain; border-radius: 50%; border: 1px solid #cbd5e1; }
+                .title-text h2 { margin: 0; font-family: 'Abhaya Libre', serif; font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+                .title-text h2 .eminence-part { color: #ff6600; }
+                .title-text h2 .library-part { color: #000000; }
+                .title-text p { margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b; }
+                .details-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+                .details-table td { padding: 8px 10px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; }
+                .details-table td.label { font-weight: 600; color: #475569; width: 40%; }
+                .note { text-align: left; margin: 8px 0 18px 0; font-size: 0.76rem; line-height: 1.45; color: #475569; font-weight: 600; }
+                .footer { text-align: center; margin-top: 8px; font-size: 0.8rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-box">
+                <div class="header">
+                    <div class="logo-title">
+                        <img src="logo2.png" alt="Logo" class="logo-img">
+                        <div class="title-text">
+                            <h2><span class="eminence-part">Eminence</span> <span class="library-part">Library</span></h2>
+                            <p>${receiptTitle}</p>
                         </div>
-                        <table class="details-table">
-                            <tr><td class="label">Student Name:</td><td><b>${safe(feeSelectedMember.name)}</b></td></tr>
-                            <tr><td class="label">UID:</td><td>${safe(feeSelectedMember.uid)}</td></tr>
-                            <tr><td class="label">Mobile Number:</td><td>${safe(feeSelectedMember.mobile)}</td></tr>
-                            <tr><td class="label">Branch:</td><td>${safe(feeSelectedMember.branch)}</td></tr>
-                            <tr><td class="label">Fees For Month:</td><td><b style="color:#0284c7;">${safe(feeMonth)}</b></td></tr>
-                            <tr><td class="label">Shift:</td><td>${safe(shift)}</td></tr>
-                            <tr><td class="label">Payment Amount:</td><td><b style="color:#16a34a;">₹${safe(amount)}</b></td></tr>
-                            <tr><td class="label">Payment Mode:</td><td>${safe(mode)}</td></tr>
-                            ${(mode === "Online" || mode === "By QR") ? `<tr><td class="label">UTR Number:</td><td><b>${safe(utr)}</b></td></tr>` : ''}
-                            <tr><td class="label">Payment For:</td><td><b style="color:#c2410c;">${safe(remark)}</b></td></tr>
-                            <tr><td class="label">Fees Pay Date:</td><td>${safe(payDate)}</td></tr>
-                            <tr><td class="label">Fees Expiry Date:</td><td><b style="color:#dc2626;">${safe(expiryDate)}</b></td></tr>
-                        </table>
-                        <div class="note">Note: The above fees are non-refundable, non-transferable &amp; non adjustable</div>
-                        <div class="footer"><p>Thank you for studying with Eminence Library! -- Team Eminence</p></div>
                     </div>
-                </body>
-                </html>
-            `);
+                    <div style="text-align:right;font-size:0.85rem;color:#64748b;"><b>Date:</b> ${safe(receiptHeaderDate)}</div>
+                </div>
+                <table class="details-table">
+                    <tr><td class="label">Student Name:</td><td><b>${safe(feeSelectedMember.name)}</b></td></tr>
+                    <tr><td class="label">UID:</td><td>${safe(feeSelectedMember.uid)}</td></tr>
+                    <tr><td class="label">Mobile Number:</td><td>${safe(feeSelectedMember.mobile)}</td></tr>
+                    <tr><td class="label">Branch:</td><td>${safe(feeSelectedMember.branch)}</td></tr>
+                    <tr><td class="label">Fees For Month:</td><td><b style="color:#0284c7;">${safe(feeMonth)}</b></td></tr>
+                    <tr><td class="label">Shift:</td><td>${safe(shift)}</td></tr>
+                    <tr><td class="label">Payment Amount:</td><td><b style="color:#16a34a;">₹${safe(amount)}</b></td></tr>
+                    <tr><td class="label">Payment Mode:</td><td>${safe(mode)}</td></tr>
+                    ${(mode === "Online" || mode === "By QR") ? `<tr><td class="label">UTR Number:</td><td><b>${safe(utr)}</b></td></tr>` : ''}
+                    <tr><td class="label">Payment For:</td><td><b style="color:#c2410c;">${safe(remark)}</b></td></tr>
+                    <tr><td class="label">Fees Pay Date:</td><td>${safe(payDate)}</td></tr>
+                    <tr><td class="label">Fees Expiry Date:</td><td><b style="color:#dc2626;">${safe(expiryDate)}</b></td></tr>
+                </table>
+                <div class="note">Note: The above fees are non-refundable, non-transferable &amp; non adjustable</div>
+                <div class="footer"><p>Thank you for studying with Eminence Library! -- Team Eminence</p></div>
+            </div>
+        </body>
+        </html>
+    `);
+
+
+           
             receiptWindow.document.close();
 
             if (!isReprint) {
