@@ -134,6 +134,25 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-activate {
+    background: #0044cc;
+    color: white;
+    border: none;
+    padding: 9px 15px;
+    border-radius: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: .2s;
+}
+
+.btn-activate:hover {
+    background: #003399;
+    transform: translateY(-1px);
+}
+
 .btn-refresh {
     background: #28a745;
     color: white;
@@ -161,7 +180,7 @@ body {
 ===================================================== */
 .search-box {
     padding: 9px 14px;
-    width: 300px;
+    width: 250px;
     border: 1px solid #ccc;
     border-radius: 7px;
     font-size: 14px;
@@ -278,10 +297,6 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     transform: translateY(-1px);
 }
 
-.whatsapp-notify-btn i {
-    font-size: 12px;
-}
-
 .inactive-btn {
     background: #dc3545;
     color: white;
@@ -302,9 +317,104 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
     transform: translateY(-1px);
 }
 
-.inactive-btn:disabled {
+.active-action-btn {
+    background: #0044cc;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: .2s;
+}
+
+.active-action-btn:hover {
+    background: #003399;
+}
+
+.active-action-btn:disabled {
     opacity: .6;
     cursor: wait;
+}
+
+/* =====================================================
+    MODAL STYLE FOR MEMBER ACTIVATION
+===================================================== */
+.activation-modal {
+    display: none;
+    position: fixed;
+    z-index: 9998;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.activation-modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 95%;
+    max-width: 1000px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.modal-header h3 {
+    font-size: 16px;
+    color: #333;
+}
+
+.close-modal-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.activation-table-container {
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.small-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.small-table th {
+    background: #f1f3f5;
+    padding: 8px 6px;
+    font-size: 11px;
+    text-align: left;
+}
+
+.small-table td {
+    padding: 6px;
+    font-size: 11px;
+    border-bottom: 1px solid #eee;
 }
 
 /* =====================================================
@@ -312,7 +422,6 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 ===================================================== */
 @media(max-width:768px) {
     .header { padding: 10px 15px; }
-    .logo-title { font-size: 15px; }
     .header-logo { height: 35px; }
     .badge { display: none; }
     .actions { width: 100%; }
@@ -327,7 +436,7 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 <body>
 
 <!-- =====================================================
-     HEADER
+    HEADER
 ===================================================== -->
 <div class="header">
     <div class="logo-area">
@@ -340,7 +449,7 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 </div>
 
 <!-- =====================================================
-     MAIN
+    MAIN
 ===================================================== -->
 <div class="container">
     <div class="toolbar">
@@ -350,6 +459,9 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
         </div>
 
         <div class="actions">
+            <button class="btn-activate" onclick="openActivationModal()">
+                <i class="fa-solid fa-user-check"></i> Member Activation
+            </button>
             <button class="btn-whatsapp" onclick="generateBulkWhatsApp()">
                 <i class="fa-brands fa-whatsapp"></i> Bulk Alerts
             </button>
@@ -362,7 +474,7 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 
     <!-- =================================================
          TABLE
-    ================================================= -->
+    ================================================ -->
     <div class="table-container">
         <table>
             <thead>
@@ -389,10 +501,46 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 </div>
 
 <!-- =====================================================
+    MEMBER ACTIVATION MODAL (POPUP)
+===================================================== -->
+<div id="activationModal" class="activation-modal">
+    <div class="activation-modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-check" style="color:#0044cc;"></i> Member Activation List</h3>
+            <button class="close-modal-btn" onclick="closeActivationModal()">Close</button>
+        </div>
+        
+        <!-- Search Box Added Here -->
+        <div style="margin-bottom: 12px;">
+            <input type="text" id="activationSearchInput" class="search-box" placeholder="Search by Branch, Name, Reg No, Mobile..." style="width: 100%;" oninput="filterActivationTable()">
+        </div>
+
+        <div class="activation-table-container">
+            <table class="small-table">
+                <thead>
+                    <tr>
+                        <th>Branch</th>
+                        <th>Reg No.</th>
+                        <th>Name</th>
+                        <th>Mobile</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="activationTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align:center;padding:20px;">Loading master records...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
     CUSTOM CONFIRMATION MODAL
 ===================================================== -->
 <div id="customModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
-    <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); font-family: 'Poppins', sans-serif;">
+    <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
         <div style="font-size: 40px; color: #ff6600; margin-bottom: 15px;">
             <i class="fa-solid fa-triangle-exclamation"></i>
         </div>
@@ -409,7 +557,11 @@ td:nth-child(1), td:nth-child(2), td:nth-child(3) {
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydTaBhTq__3VJDvUgGWcSeU9aLBHnhUDYq_J5R3vjtlGWUQZODnujt1UGLx9BEFG8z/exec";
 const INACTIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyevfLj9kN07KG-dAw3TdLPI6nheUedgisMsdRZGn-xaeqtkDZ4NAqU6gjNf_xx2Eco/exec";
 
+const GET_ACTIVATION_URL = "https://script.google.com/macros/s/AKfycbzYaqXrLJqAxLFeNDNo41aDGiOM5w1lJ-sifCYph_ETvN3h4pLDSxDXG4VNYHTM9D9T/exec";
+const POST_ACTIVATION_URL = "https://script.google.com/macros/s/AKfycbxyTxqHWQQVA6aTOSVA2Ino5AVJ-cak4G502ddDfd3uJUeGfG2s2GLH9QdJGHq06fxk/exec";
+
 window.allData = [];
+window.activationData = [];
 
 function loadData(isRefresh = false) {
     const tbody = document.getElementById("tableBody");
@@ -589,11 +741,6 @@ function makeInactive(index, button) {
         return;
     }
 
-    /*
-     * WhatsApp popup ko click ke turant baad open kiya ja raha hai.
-     * Isse browser popup blocker ke chances kam hote hain.
-     * Successful inactive hone ke baad isi window me message open hoga.
-     */
     const whatsappPopup = window.open("about:blank", "_blank");
 
     if (!whatsappPopup) {
@@ -634,35 +781,22 @@ function makeInactive(index, button) {
             throw new Error(result && result.message ? result.message : "Unable to make inactive.");
         }
 
-        // 1. Pehle table se member turant remove hoga.
         window.allData = window.allData.filter(function(item) {
             return !sameMember(item, member);
         });
 
         displayTable(getFilteredData());
 
-        // 2. Inactive confirmation WhatsApp message.
         const memberName = String(member.name || "Member").trim();
         const memberUid = String(member.uid || "").trim();
+        const memberIdentity = memberUid ? `*${memberName} (${memberUid})*` : `*${memberName}*`;
 
-        const memberIdentity = memberUid
-            ? `*${memberName} (${memberUid})*`
-            : `*${memberName}*`;
+        const inactiveMessage = `${memberIdentity} आपकी Eminence Library में सदस्यता को *Inactive* कर दिया गया है। आप भविष्य में कभी भी अपनी सदस्यता को *Active* कर सकते हैं। धन्यवाद!`;
 
-        const inactiveMessage =
-            `${memberIdentity} आपकी Eminence Library में सदस्यता को *Inactive* कर दिया गया है। ` +
-            `आप भविष्य में कभी भी अपनी सदस्यता को *Active* कर सकते हैं। ` +
-            `Eminence Library में आने, पढ़ने और अध्ययन करने के लिए आपका धन्यवाद! ` +
-            `आते रहिएगा!`;
-
-        // 3. Usi popup me WhatsApp chat/message open hoga.
         whatsappPopup.location.href = createWhatsAppLink(mobile, inactiveMessage);
-
     })
     .catch(function(error) {
         console.error("Inactive error:", error);
-
-        // Agar inactive process fail ho gaya to WhatsApp popup band kar denge.
         try {
             whatsappPopup.close();
         } catch (e) {}
@@ -739,7 +873,7 @@ function generateBulkWhatsApp() {
         return;
     }
 
-    const confirmMessage = `${members.length} members ke WhatsApp chats naye tabs mein khulne wale hain. Kya aap taiyar hain?`;
+    const confirmMessage = `${members.length} members के WhatsApp chats naye tabs mein khulne wale hain. Kya aap taiyar hain?`;
 
     showCustomConfirm(confirmMessage, function() {
         members.forEach(function(member, index) {
@@ -763,6 +897,169 @@ function generateBulkWhatsApp() {
     });
 }
 
+/* =====================================================
+    MEMBER ACTIVATION LOGIC
+===================================================== */
+function openActivationModal() {
+    const modal = document.getElementById("activationModal");
+    modal.style.display = "flex";
+    
+    // Search box clear karein jab modal khule
+    const searchInput = document.getElementById("activationSearchInput");
+    if (searchInput) searchInput.value = "";
+
+    fetchActivationData();
+}
+
+function closeActivationModal() {
+    const modal = document.getElementById("activationModal");
+    modal.style.display = "none";
+}
+
+function fetchActivationData() {
+    const tbody = document.getElementById("activationTableBody");
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading master records...</td></tr>`;
+
+    const url = GET_ACTIVATION_URL + "?action=getInactiveMembers&t=" + Date.now();
+
+    fetch(url, { method: "GET", cache: "no-store" })
+    .then(function(response) {
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        return response.json();
+    })
+    .then(function(data) {
+        window.activationData = Array.isArray(data) ? data : [];
+        displayActivationTable(window.activationData);
+    })
+    .catch(function(error) {
+        console.error("Activation data error:", error);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc3545;padding:20px;">Error loading data: ${escapeHtml(error.message)}</td></tr>`;
+    });
+}
+
+function displayActivationTable(data) {
+    const tbody = document.getElementById("activationTableBody");
+    tbody.innerHTML = "";
+
+    if (!data || !data.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:#777;">No records found for activation.</td></tr>`;
+        return;
+    }
+
+    data.forEach(function(row, index) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${escapeHtml(row.branch || "-")}</td>
+            <td>${escapeHtml(row.uid || "-")}</td>
+            <td><b>${escapeHtml(row.name || "-")}</b></td>
+            <td>${escapeHtml(row.mobile || "-")}</td>
+            <td>
+                <button class="active-action-btn" onclick="makeActive(${index}, this)">
+                    <i class="fa-solid fa-user-check"></i> Active
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Search Filter Function for Activation Modal
+function filterActivationTable() {
+    const input = document.getElementById("activationSearchInput");
+    const query = input ? input.value.trim().toLowerCase() : "";
+
+    if (!query) {
+        displayActivationTable(window.activationData);
+        return;
+    }
+
+    const filtered = window.activationData.filter(function(row) {
+        return (
+            String(row.branch || "").toLowerCase().includes(query) ||
+            String(row.name || "").toLowerCase().includes(query) ||
+            String(row.uid || "").toLowerCase().includes(query) ||
+            String(row.mobile || "").toLowerCase().includes(query)
+        );
+    });
+
+    displayActivationTable(filtered);
+}
+
+function makeActive(index, button) {
+    const activeSearchInput = document.getElementById("activationSearchInput");
+    const query = activeSearchInput ? activeSearchInput.value.trim().toLowerCase() : "";
+    
+    let member = null;
+    let originalIndex = index;
+
+    if (query && window.activationData) {
+        const filtered = window.activationData.filter(function(row) {
+            return (
+                String(row.branch || "").toLowerCase().includes(query) ||
+                String(row.name || "").toLowerCase().includes(query) ||
+                String(row.uid || "").toLowerCase().includes(query) ||
+                String(row.mobile || "").toLowerCase().includes(query)
+            );
+        });
+        member = filtered[index];
+        if (member) {
+            originalIndex = window.activationData.findIndex(m => 
+                (m.uid && m.uid === member.uid) || (m.mobile && m.mobile === member.mobile)
+            );
+        }
+    } else if (window.activationData) {
+        member = window.activationData[index];
+    }
+
+    if (!member) {
+        alert("Member data not found.");
+        return;
+    }
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Activating...';
+
+    fetch(POST_ACTIVATION_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+            action: "activeMember",
+            name: member.name || "",
+            uid: member.uid || "",
+            mobile: member.mobile || "",
+            branch: member.branch || "",
+            shift: member.shift || "Full Day Shift",
+            expiryDate: member.expiryDate || ""
+        })
+    })
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(result) {
+        if (!result || result.status !== "success") {
+            throw new Error(result && result.message ? result.message : "Unable to activate member.");
+        }
+
+        alert("Member successfully active kar diya gaya hai aur Fee Updation sheet me save ho gaya hai!");
+        
+        if (originalIndex !== -1 && window.activationData) {
+            window.activationData.splice(originalIndex, 1);
+        }
+        
+        if (typeof filterActivationTable === "function") {
+            filterActivationTable();
+        }
+        if (typeof loadData === "function") {
+            loadData(false);
+        }
+    })
+    .catch(function(error) {
+        console.error("Activation error:", error);
+        button.disabled = false;
+        button.innerHTML = '<i class="fa-solid fa-user-check"></i> Active';
+        alert("Activation failed.\n" + error.message);
+    });
+}
 function escapeHtml(value) {
     if (value === null || value === undefined) return "";
     return String(value)
