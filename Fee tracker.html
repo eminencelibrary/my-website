@@ -558,7 +558,7 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydTaBhTq__3VJDvUgG
 const INACTIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyevfLj9kN07KG-dAw3TdLPI6nheUedgisMsdRZGn-xaeqtkDZ4NAqU6gjNf_xx2Eco/exec";
 
 const GET_ACTIVATION_URL = "https://script.google.com/macros/s/AKfycbzYaqXrLJqAxLFeNDNo41aDGiOM5w1lJ-sifCYph_ETvN3h4pLDSxDXG4VNYHTM9D9T/exec";
-const POST_ACTIVATION_URL = "https://script.google.com/macros/s/AKfycbxyTxqHWQQVA6aTOSVA2Ino5AVJ-cak4G502ddDfd3uJUeGfG2s2GLH9QdJGHq06fxk/exec";
+const POST_ACTIVATION_URL = "https://script.google.com/macros/s/AKfycbzPT2Sh-Wf_Un0iYv8KzoAmiLpmIdSZOLqNbq1RVciyIym6jc4dRLzCEKTQGcZ9X8dO/exec";
 
 window.allData = [];
 window.activationData = [];
@@ -985,39 +985,103 @@ function filterActivationTable() {
     displayActivationTable(filtered);
 }
 
+let pendingActivationMember = null;
+let pendingOriginalIndex = -1;
+
 function makeActive(index, button) {
-    const activeSearchInput = document.getElementById("activationSearchInput");
-    const query = activeSearchInput ? activeSearchInput.value.trim().toLowerCase() : "";
-    
-    let member = null;
-    let originalIndex = index;
+    try {
+        const activeSearchInput = document.getElementById("activationSearchInput");
+        const query = activeSearchInput ? activeSearchInput.value.trim().toLowerCase() : "";
+        
+        let member = null;
+        let originalIndex = index;
 
-    if (query && window.activationData) {
-        const filtered = window.activationData.filter(function(row) {
-            return (
-                String(row.branch || "").toLowerCase().includes(query) ||
-                String(row.name || "").toLowerCase().includes(query) ||
-                String(row.uid || "").toLowerCase().includes(query) ||
-                String(row.mobile || "").toLowerCase().includes(query)
-            );
-        });
-        member = filtered[index];
-        if (member) {
-            originalIndex = window.activationData.findIndex(m => 
-                (m.uid && m.uid === member.uid) || (m.mobile && m.mobile === member.mobile)
-            );
+        if (!window.activationData || window.activationData.length === 0) {
+            alert("Activation data available nahi hai. Please refresh karein.");
+            return;
         }
-    } else if (window.activationData) {
-        member = window.activationData[index];
-    }
 
-    if (!member) {
-        alert("Member data not found.");
+        if (query) {
+            const filtered = window.activationData.filter(function(row) {
+                return (
+                    String(row.branch || "").toLowerCase().includes(query) ||
+                    String(row.name || "").toLowerCase().includes(query) ||
+                    String(row.uid || "").toLowerCase().includes(query) ||
+                    String(row.mobile || "").toLowerCase().includes(query)
+                );
+            });
+            member = filtered[index];
+            if (member) {
+                originalIndex = window.activationData.findIndex(m => 
+                    (m.uid && m.uid === member.uid) || (m.mobile && m.mobile === member.mobile)
+                );
+            }
+        } else {
+            member = window.activationData[index];
+        }
+
+        if (!member) {
+            alert("Member data nahi mila.");
+            return;
+        }
+
+        pendingActivationMember = member;
+        pendingOriginalIndex = originalIndex;
+
+        // आज की तारीख
+        const today = new Date();
+        const activationDate = ('0' + today.getDate()).slice(-2) + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + today.getFullYear();
+
+        // व्हाट्सएप मैसेज फॉर्मेट
+        const msg = `प्रिय *${member.name || "Member"} (${member.uid || ""})* Eminence Library में आपकी सदस्यता को दिनांक *${activationDate}* से *Active* कर दिया गया है Eminence Library को पुनः चुनने के लिए आपका धन्यवाद !`;
+
+        const waTextElem = document.getElementById("whatsappMessageText");
+        const waModalElem = document.getElementById("whatsappModal");
+
+        if (waTextElem && waModalElem) {
+            waTextElem.value = msg;
+            waModalElem.style.display = "flex";
+        } else {
+            finalizeActivation(false);
+        }
+    } catch (err) {
+        console.error("makeActive Error: ", err);
+        alert("Error: " + err.message);
+    }
+}
+
+// यह फंक्शन पॉपअप के Skip / Cancel बटन के लिए है
+window.closeWhatsappModal = function() {
+    const waModalElem = document.getElementById("whatsappModal");
+    if (waModalElem) waModalElem.style.display = "none";
+    finalizeActivation(false);
+};
+
+// यह फंक्शन 'Send WhatsApp & Active' बटन के लिए है
+window.sendWhatsAppAndFinish = function() {
+    const member = pendingActivationMember;
+    if (!member || !member.mobile) {
+        alert("Mobile number available nahi hai!");
         return;
     }
 
-    button.disabled = true;
-    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Activating...';
+    const message = document.getElementById("whatsappMessageText").value;
+    const cleanMobile = String(member.mobile).replace(/\D/g, "").slice(-10);
+    
+    const waUrl = `https://wa.me/91${cleanMobile}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+
+    const waModalElem = document.getElementById("whatsappModal");
+    if (waModalElem) waModalElem.style.display = "none";
+    
+    finalizeActivation(true);
+};
+
+function finalizeActivation(isWhatsAppSent) {
+    const member = pendingActivationMember;
+    const originalIndex = pendingOriginalIndex;
+
+    if (!member) return;
 
     fetch(POST_ACTIVATION_URL, {
         method: "POST",
@@ -1040,8 +1104,6 @@ function makeActive(index, button) {
             throw new Error(result && result.message ? result.message : "Unable to activate member.");
         }
 
-        alert("Membership Activated Successfully!");
-        
         if (originalIndex !== -1 && window.activationData) {
             window.activationData.splice(originalIndex, 1);
         }
@@ -1052,14 +1114,15 @@ function makeActive(index, button) {
         if (typeof loadData === "function") {
             loadData(false);
         }
+
+        alert("Member Activation Done Successfully!");
     })
     .catch(function(error) {
         console.error("Activation error:", error);
-        button.disabled = false;
-        button.innerHTML = '<i class="fa-solid fa-user-check"></i> Active';
         alert("Activation failed.\n" + error.message);
     });
 }
+
 function escapeHtml(value) {
     if (value === null || value === undefined) return "";
     return String(value)
@@ -1078,6 +1141,20 @@ window.addEventListener("load", function() {
     loadData(false);
 });
 </script>
-
+<div id="whatsappModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:25px; border-radius:12px; width:90%; max-width:500px; box-shadow:0 4px 20px rgba(0,0,0,0.2); font-family:sans-serif;">
+        <h3 style="margin-top:0; color:#25D366; display:flex; align-items:center; gap:8px;">
+            <i class="fa-brands fa-whatsapp"></i> WhatsApp Message Preview
+        </h3>
+        <p style="font-size:14px; color:#555;">यह मैसेज मेंबर को भेजा जाएगा:</p>
+        <textarea id="whatsappMessageText" rows="5" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px; resize:none; outline:none;"></textarea>
+        <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+            <button onclick="closeWhatsappModal()" style="padding:8px 16px; background:#ccc; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Skip / Cancel</button>
+            <button id="sendWaBtn" onclick="sendWhatsAppAndFinish()" style="padding:8px 16px; background:#25D366; color:#white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; color:#fff;">
+                <i class="fa-brands fa-whatsapp"></i> Send WhatsApp & Active
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
