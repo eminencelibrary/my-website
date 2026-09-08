@@ -23,9 +23,6 @@
         let allData = { core: {}, nexus: {} };
         let existingMembersDB = {}; 
 
-        // Admin Quick Management Variables
-        
-
         // 1. Purane Students ka Data Fetch karna
         function fetchOldStudentsData() {
             if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return;
@@ -69,11 +66,12 @@
             .catch(err => console.log("Error saving data: " + err));
         }
 
+        // स्पीड सुधारने के लिए इसे 1 सेकंड से बढ़ाकर 7 सेकंड कर दिया गया है
         setInterval(() => {
             if (activeBranch) {
                 fetchSheetData();
             }
-        }, 1000);
+        }, 7000);
 
         window.onload = function() {
             fetchOldStudentsData();
@@ -83,6 +81,10 @@
         window.selectBranch = function(branchKey) {
             activeBranch = branchKey;
             document.getElementById('branchGateOverlay').style.display = 'none';
+            
+            // Branch select hone ke baad naya attractive popup show karne ke liye
+            document.getElementById('branchNoticePopup').style.display = 'flex';
+
             document.getElementById('mainContentContainer').style.display = 'block';
 
             document.getElementById('coreBranchSection').style.display = 'none';
@@ -96,6 +98,11 @@
                 document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-chart-pie"></i> Nexus Branch - <span class="blink-live">Live</span> Seat Availability';
             }
             renderLayouts();
+        }
+
+        // Popup close karne ka function
+        window.closeBranchNoticePopup = function() {
+            document.getElementById('branchNoticePopup').style.display = 'none';
         }
 
         window.changeBranchPrompt = function() {
@@ -132,15 +139,15 @@
                 </div>
             `;
             
-         seat.onclick = () => {
-    if (info.status === 'booked') {
-        alert("This Seat is Already Booked...!");
-    } else if (info.status === 'waiting') {
-        alert("This Seat is On Hold or on Waiting List...!");
-    } else {
-        onSeatDoubleClick(num, info);
-    }
-};
+            seat.onclick = () => {
+                if (info.status === 'booked') {
+                    alert("This Seat is Already Booked...!");
+                } else if (info.status === 'waiting') {
+                    alert("This Seat is On Hold or on Waiting List...!");
+                } else {
+                    onSeatDoubleClick(num, info);
+                }
+            };
 
             return seat;
         }
@@ -218,7 +225,6 @@
             if (isValidLength) {
                 const cleanInputMobile = inputVal.slice(-10);
                 
-                // 1. Check karein ki kya yeh mobile ya UID pehle se kisi active seat par booked/waiting hai
                 for (let branch in allData) {
                     for (let seat in allData[branch]) {
                         let seatInfo = allData[branch][seat];
@@ -229,7 +235,7 @@
                             if (seatMobile === cleanInputMobile || (inputVal.length >= 3 && seatUid === inputVal.toLowerCase())) {
                                 msgBox.style.display = "block";
                                 msgBox.style.color = "#dc2626";
-                                msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>आपकी पहले से ही (${branch.toUpperCase()}) Branch में  सीट नंबर  ${seat} पर बुकिंग  Active हैं ! अभी आप दूसरी सीट बुक नहीं कर सकते.`;
+                                msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>आपकी पहले से ही (${branch.toUpperCase()}) Branch में सीट नंबर ${seat} पर बुकिंग Active हैं ! अभी आप दूसरी सीट बुक नहीं कर सकते.`;
                                 nameField.value = seatInfo.studentName || "";
                                 uidField.value = seatInfo.uid || "";
                                 nameField.readOnly = true;
@@ -279,7 +285,7 @@
                         formGroupDiv.id = "memberSelectDropdownGroup";
                         formGroupDiv.className = "form-group";
                         
-                        let optionsHtml = `<label><i class="fa-solid fa-list"></i> Select Member:</label><select id="multiMemberSelect" class="form-control" onchange="selectMemberFromDropdown()"><option value="">-- अपना उचित नाम चुनें   --</option>`;
+                        let optionsHtml = `<label><i class="fa-solid fa-list"></i> Select Member:</label><select id="multiMemberSelect" class="form-control" onchange="selectMemberFromDropdown()"><option value="">-- अपना उचित नाम चुनें --</option>`;
                         
                         foundMembers.forEach((m, idx) => {
                             optionsHtml += `<option value="${idx}">${m.name} (UID: ${m.uid || 'N/A'})</option>`;
@@ -477,62 +483,6 @@
             }
         }
 
-        function openAdminQuickModal(seatNum, seatInfo) {
-            quickSelectedSeatNum = seatNum;
-            document.getElementById("quickModalSeatNo").innerText = seatNum;
-            document.getElementById("quickModalNewStatus").value = seatInfo.status || 'vacant';
-            
-            const detailsDiv = document.getElementById("quickModalSeatDetails");
-            const notifyBtn = document.getElementById("quickBtnNotify");
-
-            if (!seatInfo.status || seatInfo.status === 'vacant') {
-                detailsDiv.innerHTML = `
-                    <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
-                        <i class="fa-solid fa-circle-check"></i> This seat is currently Vacant.
-                    </div>
-                `;
-                notifyBtn.style.display = "none";
-            } else {
-                const statusColor = seatInfo.status === 'booked' ? '#dc2626' : '#2563eb';
-                detailsDiv.innerHTML = `
-                    <div style="background:#f1f5f9; padding:10px; border-radius:6px; border-left:4px solid ${statusColor}; font-size:0.85rem;">
-                        <p style="margin-bottom:4px;"><b>Status:</b> <span style="color:${statusColor}; text-transform:uppercase;">${seatInfo.status}</span></p>
-                        <p style="margin-bottom:4px;"><b>Name:</b> ${seatInfo.studentName || 'N/A'}</p>
-                        <p style="margin-bottom:4px;"><b>Mobile:</b> ${seatInfo.mobile || 'N/A'}</p>
-                        <p style="margin-bottom:4px;"><b>UID:</b> ${seatInfo.uid || 'N/A'}</p>
-                        <p style="margin-bottom:0;"><b>Fee Status:</b> ${seatInfo.feeStatus || 'N/A'}</p>
-                    </div>
-                `;
-                notifyBtn.style.display = "block";
-            }
-
-            document.getElementById("adminQuickModal").style.display = "flex";
-        }
-
-        window.applyQuickSeatChange = function() {
-            const newStatus = document.getElementById("quickModalNewStatus").value;
-
-            if (!allData[activeBranch]) allData[activeBranch] = {};
-            if (!allData[activeBranch][quickSelectedSeatNum]) {
-                allData[activeBranch][quickSelectedSeatNum] = {};
-            }
-            
-            allData[activeBranch][quickSelectedSeatNum].status = newStatus;
-
-            saveToSheet();
-            closeModal('adminQuickModal');
-            renderLayouts();
-            alert("Seat status updated successfully!");
-        }
-
-        window.notifyQuickStudentWhatsApp = function() {
-            const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
-            if (student && student.mobile) {
-                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment Success*\n\nHello ${student.studentName},\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर ${quickSelectedSeatNum} निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence.\n\n`;
-                window.open(`https://wa.me/91${student.mobile}?text=${encodeURIComponent(msg)}`, '_blank');
-            }
-        }
-
         window.searchMember = function() {
             const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
             const res = document.getElementById("adminSearchResult");
@@ -583,7 +533,6 @@
         window.closeModal = function(id) {
             document.getElementById(id).style.display = "none";
         }
-
     </script>
     
     <style>
@@ -662,6 +611,77 @@
             z-index: 4000;
             padding: 20px;
         }
+        
+        /* Custom Notification Popup Styles */
+        .custom-popup-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
+        }
+        .custom-popup-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 380px;
+            border-radius: 16px;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border-top: 5px solid #22c55e;
+            transform: scale(0.9);
+            animation: scaleUp 0.3s ease forwards;
+        }
+        .custom-popup-icon {
+            font-size: 2.5rem;
+            color: #22c55e;
+            margin-bottom: 12px;
+        }
+        .custom-popup-card h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.1rem;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+        .custom-popup-card p {
+            font-size: 0.9rem;
+            color: #475569;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .custom-popup-card p span {
+            color: #15803d;
+            font-weight: 700;
+            background: #dcfce7;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .btn-popup-ok {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.2);
+        }
+        .btn-popup-ok:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp { to { transform: scale(1); } }
+
         .logo {
             width: 80px;
             height: 80px;
@@ -834,10 +854,8 @@
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #334155; }
         .form-control { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-family: 'Poppins', sans-serif; }
-html {
-  scroll-behavior: smooth;
-}   
- </style>
+        html { scroll-behavior: smooth; }   
+    </style>
 </head>
 <body>
 
@@ -855,6 +873,18 @@ html {
                     <i class="fa-solid fa-graduation-cap"></i> Nexus Branch
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Branch Selected Notification Popup Modal -->
+    <div id="branchNoticePopup" class="custom-popup-overlay">
+        <div class="custom-popup-card">
+            <div class="custom-popup-icon">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h3>Branch Selected!</h3>
+            <p>सीट बुक करने के लिए <br><span>Green सीट पर क्लिक करें</span></p>
+            <button class="btn-popup-ok" onclick="closeBranchNoticePopup()">OK</button>
         </div>
     </div>
 
@@ -894,36 +924,6 @@ html {
         </div>
     </div>
 
-    <!-- Admin Quick Action Modal -->
-    <div id="adminQuickModal" class="branch-gate-overlay" style="display: none;">
-        <div class="branch-gate-card" style="max-width: 420px; text-align: left;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
-                <h3 style="font-size: 1rem; color: #0f172a; margin: 0;"><i class="fa-solid fa-chair"></i> Seat :<span id="quickModalSeatNo"></span> Management</h3>
-                <button onclick="closeModal('adminQuickModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <div id="quickModalSeatDetails" style="margin-bottom: 15px;"></div>
-
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 5px;">Change Status:</label>
-                <select id="quickModalNewStatus" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <option value="vacant">Vacant (Khali)</option>
-                    <option value="waiting">On Hold / Waiting</option>
-                    <option value="booked">Booked</option>
-                </select>
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <button onclick="applyQuickSeatChange()" class="btn-branch-choice" style="flex: 1; padding: 10px; font-size: 0.85rem; background: var(--primary-color); color: #fff; border: none;">
-                    <i class="fa-solid fa-floppy-disk"></i> Update Status
-                </button>
-                <button id="quickBtnNotify" onclick="notifyQuickStudentWhatsApp()" class="btn-branch-choice" style="flex: 1; padding: 10px; font-size: 0.85rem; background: #25d366; color: #fff; border: none; display: none;">
-                    <i class="fa-brands fa-whatsapp"></i> Notify
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Admin Panel Modal -->
     <div id="adminModal" class="branch-gate-overlay" style="display: none;">
         <div class="branch-gate-card" style="max-width: 450px; text-align: left;">
@@ -932,7 +932,6 @@ html {
                 <button onclick="closeModal('adminModal')" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
-            <!-- Admin Login Section -->
             <div id="adminLoginSec">
                 <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Enter admin password to access controls:</p>
                 <div class="form-group" style="margin-bottom: 15px;">
@@ -941,7 +940,6 @@ html {
                 <button onclick="loginAdmin()" class="btn-branch-choice" style="width: 100%; padding: 10px; background: var(--primary-color); color: #fff; border: none;">Login</button>
             </div>
 
-            <!-- Admin Control Section -->
             <div id="adminControlSec" style="display: none;">
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Select Branch:</label>
@@ -989,19 +987,15 @@ html {
     <!-- Main App Container -->
     <div id="mainContentContainer" class="container">
        <header id="main-header">
-    <img src="logo.png" alt="Banner" class="main-logo-banner">
-    <div class="nav-buttons">
-        <!-- Home Page Button -->
-        <a href="index.html#main-header" class="nav-btn btn-admin" onclick="localStorage.setItem('skipSplash', 'true');">
-    <i class="fa-solid fa-house"></i> Home Page
-</a>
-        <!-- Admin Button -->
-        <a href="Admin.html" class="nav-btn btn-admin"><i class="fa-solid fa-user-shield"></i> Admin</a>
-        
-        <!-- Switch Branch Button -->
-        <button class="nav-btn btn-switch-branch" onclick="changeBranchPrompt()"><i class="fa-solid fa-building"></i> BRANCH </button>
-    </div>
-</header>
+            <img src="logo.png" alt="Banner" class="main-logo-banner">
+            <div class="nav-buttons">
+                <a href="index.html#main-header" class="nav-btn btn-admin" onclick="localStorage.setItem('skipSplash', 'true');">
+                    <i class="fa-solid fa-house"></i> Home Page
+                </a>
+                <a href="Admin.html" class="nav-btn btn-admin"><i class="fa-solid fa-user-shield"></i> Admin</a>
+                <button class="nav-btn btn-switch-branch" onclick="changeBranchPrompt()"><i class="fa-solid fa-building"></i> BRANCH </button>
+            </div>
+        </header>
 
         <main style="margin-top: 20px;">
             <div class="chart-heading-box">
