@@ -15,13 +15,14 @@
         // GOOGLE SHEETS APPS SCRIPT URLS
         // ==========================================
         const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcipVYb2RFh_nF6gdB3GjklbnvQDVI3I_Q2cqeVUjj7puo2dLeg7BsCxZWhzmCmPYa/exec";
-        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwkB6v9c2_SQt0AKCm-ez5ZRRtneH9ntKKWa8P9H844cHkM8dEhhJs4ORx3UPxVMPav/exec";
+        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarHm6enNyPnaydyi0gKEdh06lYaN9nsI0O7jtV6qEAh3SWX0fhmXhYVJwEAqzPNDF/exec";
 
         const ADMIN_PHONE = "919799995511";
         let activeBranch = null; 
         let currentSelectedSeat = null;
         let allData = { core: {}, nexus: {} };
         let existingMembersDB = {}; 
+        let isAdminLoggedIn = false;
 
         // 1. Purane Students ka Data Fetch karna
         function fetchOldStudentsData() {
@@ -53,28 +54,40 @@
                 .catch(err => console.log("Live sheet fetch error: ", err));
         }
 
-function saveToSheet() {
-    if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
-    fetch(LIVE_BOOKING_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(allData)
-    })
-    .then(response => response.text())
-    .then(result => {
-        // डेटा गूगल शीट पर पूरी तरह सेव होने के लिए 1.5 सेकंड का समय दें
-        setTimeout(() => {
-            fetchSheetData();
-        }, 1500);
-    })
-    .catch(err => console.log("Error saving data: " + err));
-}        
-
-
-
+        function saveToSheet() {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
+            fetch(LIVE_BOOKING_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(allData)
+            })
+            .then(result => {
+                console.log("Synced with Google Sheet successfully");
+            })
+            .catch(err => console.log("Error saving data: " + err));
+        }
 
         window.selectBranch = function(branchKey) {
             activeBranch = branchKey;
             document.getElementById('branchGateOverlay').style.display = 'none';
+            
+            // Yahan data fetch functions call kiye gaye hain taaki search data load ho sake
+            fetchOldStudentsData();
+            fetchSheetData();
+	// === YEH NAYA CODE ADD KAREN (Auto-Refresh ke liye) ===
+            // Har 5 second (5000 milliseconds) mein live data automatically fetch hoga
+            // Agar aur kam karna ho toh 5000 ki jagah 3000 (3 seconds) ya 2000 (2 seconds) kar sakte hain.
+            if (!window.liveRefreshInterval) {
+                window.liveRefreshInterval = setInterval(() => {
+                    if (activeBranch) {
+                        fetchSheetData();
+                    }
+                }, 3000); 
+            }
+            // =======================================================
             
             // Branch select hone ke baad naya attractive popup show karne ke liye
             document.getElementById('branchNoticePopup').style.display = 'flex';
@@ -380,6 +393,7 @@ function saveToSheet() {
             };
 
             saveToSheet();
+            renderLayouts(); // Yahan renderLayouts add kiya gaya hai taaki icon turant change ho jaye
             closeModal('newStudentModal');
 
             const msg = `*NEW SEAT REQUEST (${chosenBranch.toUpperCase()})*\n\nSeat No: ${currentSelectedSeat}\nName: ${name}\nMobile: ${mobile}\nUID: ${uid}\nFee Status: ${feeStatus}\n\nPlease verify and allot from Admin Panel.`;
@@ -462,6 +476,7 @@ function saveToSheet() {
             allData[branch][seatNo].status = newStatus;
 
             saveToSheet();
+            renderLayouts(); // Layout bhi update ho jayega admin update par
             alert("Seat status updated successfully!");
             updateAdminSeatDisplay();
         }
@@ -526,6 +541,10 @@ function saveToSheet() {
 
         window.closeModal = function(id) {
             document.getElementById(id).style.display = "none";
+        }
+
+        window.closeCustomAlert = function() {
+            document.getElementById("customAlertModal").style.display = "none";
         }
     </script>
     
@@ -606,7 +625,6 @@ function saveToSheet() {
             padding: 20px;
         }
         
-        /* Custom Notification Popup Styles */
         .custom-popup-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -849,6 +867,30 @@ function saveToSheet() {
         .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #334155; }
         .form-control { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-family: 'Poppins', sans-serif; }
         html { scroll-behavior: smooth; }   
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+        .modal-card {
+            background: #ffffff;
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .btn-submit {
+            background: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -1025,16 +1067,17 @@ function saveToSheet() {
             </div>
         </main>
     </div>
-<!-- Custom Attractive Alert Popup Modal -->
-<div id="customAlertModal" class="modal-overlay" style="display: none; z-index: 9999;">
-    <div class="modal-card" style="max-width: 400px; text-align: center; padding: 30px 20px;">
-        <div id="customAlertIcon" style="font-size: 2.5rem; margin-bottom: 12px; color: #ff6600;">
-            <i class="fa-solid fa-circle-exclamation"></i>
+
+    <!-- Custom Attractive Alert Popup Modal -->
+    <div id="customAlertModal" class="modal-overlay" style="display: none; z-index: 9999;">
+        <div class="modal-card" style="max-width: 400px; text-align: center; padding: 30px 20px;">
+            <div id="customAlertIcon" style="font-size: 2.5rem; margin-bottom: 12px; color: #ff6600;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <h3 id="customAlertTitle" style="font-size: 1.15rem; color: #0f172a; margin-bottom: 8px; font-weight: 700;">Alert</h3>
+            <p id="customAlertMessage" style="font-size: 0.9rem; color: #475569; margin-bottom: 20px; line-height: 1.5;"></p>
+            <button type="button" class="btn-submit" onclick="closeCustomAlert()" style="width: 100%; padding: 10px; border-radius: 8px;">OK</button>
         </div>
-        <h3 id="customAlertTitle" style="font-size: 1.15rem; color: #0f172a; margin-bottom: 8px; font-weight: 700;">Alert</h3>
-        <p id="customAlertMessage" style="font-size: 0.9rem; color: #475569; margin-bottom: 20px; line-height: 1.5;"></p>
-        <button type="button" class="btn-submit" onclick="closeCustomAlert()" style="width: 100%; padding: 10px; border-radius: 8px;">OK</button>
     </div>
-</div>
 </body>
 </html>
