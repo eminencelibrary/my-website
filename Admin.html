@@ -213,7 +213,7 @@ function closeCustomAlert() {
             .catch(err => console.log("Error saving data: " + err));
         }
 
-        setInterval(() => { if (isAdminLoggedIn) fetchSheetData(false, true); }, 15000);
+        setInterval(() => { if (isAdminLoggedIn) fetchSheetData(false, true); }, 10000);
 
         window.onload = function() {
             try {
