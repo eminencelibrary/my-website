@@ -221,7 +221,7 @@ function closeCustomAlert() {
                 fetchSheetData();
                 fetchFeeLibraryData();
                 
-                let today = new Date().toISOString().split('T')[0];
+                let today = getLocalDateInputValue();
                 let feePayDateElem = document.getElementById("feePayDate");
                 if(feePayDateElem) {
                     feePayDateElem.value = today;
@@ -434,7 +434,7 @@ function closeCustomAlert() {
             const columnIndex = {
                 name: 1, uid: 2, mobile: 3, branch: 4, shift: 5,
                 month: 6, amount: 7, mode: 8, utr: 9, remark: 10,
-                payDate: 11, expiryDate: 12
+                payDate: 0, expiryDate: 11
             };
 
             if (Array.isArray(record)) {
@@ -472,29 +472,142 @@ function closeCustomAlert() {
             return '';
         }
 
-        function feeDateToInputValue(value) {
+        // ------------------------------------------------------------
+        // DATE HELPERS
+        // Internal <input type="date"> value = YYYY-MM-DD
+        // User-facing date everywhere = DD-MM-YYYY
+        //
+        // Important:
+        // - Our saved Fee Updation text is DD-MM-YYYY.
+        // - Google/Apps Script can sometimes return a spreadsheet Date
+        //   as MM/DD/YYYY.
+        // - Therefore slash and hyphen formats are handled separately
+        //   instead of blindly reversing the parts.
+        // ------------------------------------------------------------
+        function formatFeeDisplayDate(value) {
+            const normalized = feeDateToInputValue(value);
+            if (!normalized) return String(value ?? "").trim();
+            const parts = normalized.split("-");
+            return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : String(value ?? "").trim();
+        }
+
+        // Fee Reprint API currently returns history dates in MM-DD-YYYY.
+        // Reprint-only helper converts that source format to the app's
+        // internal YYYY-MM-DD so the receipt always displays DD-MM-YYYY.
+        function reprintDateToInputValue(value) {
             if (value === null || value === undefined || String(value).trim() === '') return '';
+
+            if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+                return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;
+            }
+
             const raw = String(value).trim();
+            let m;
 
-            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-
-            const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T/);
-            if (iso) return `${iso[1]}-${String(iso[2]).padStart(2,'0')}-${String(iso[3]).padStart(2,'0')}`;
-
-            let m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            // ISO date / ISO datetime from an API.
+            m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:T|$)/);
             if (m) {
-                const d = Number(m[1]);
-                const mo = Number(m[2]);
-                if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
-                    return `${m[3]}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+            }
+
+            // Reprint history source format: MM-DD-YYYY.
+            m = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            if (m) {
+                const month = Number(m[1]);
+                const day = Number(m[2]);
+                const year = m[3];
+                if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
                 }
             }
 
+            // Google Sheets / Apps Script slash format: MM/DD/YYYY.
+            m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (m) {
+                const month = Number(m[1]);
+                const day = Number(m[2]);
+                const year = m[3];
+                if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                }
+            }
+
+            return feeDateToInputValue(raw);
+        }
+
+        function formatReprintHistoryDate(value) {
+            const normalized = reprintDateToInputValue(value);
+            if (!normalized) return String(value ?? '').trim();
+            const parts = normalized.split('-');
+            return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : String(value ?? '').trim();
+        }
+
+        function feeDateToInputValue(value) {
+            if (value === null || value === undefined || String(value).trim() === '') return '';
+
+            // If the value is already a Date object.
+            if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+                return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;
+            }
+
+            const raw = String(value).trim();
+
+            // ISO date: YYYY-MM-DD
+            let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+            if (m) {
+                return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+            }
+
+            // ISO datetime: YYYY-MM-DDTHH:mm:ss...
+            m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T/);
+            if (m) {
+                return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+            }
+
+            // Our Fee Updation saved format is DD-MM-YYYY.
+            // If the first part is > 12 it is definitely a day.
+            m = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            if (m) {
+                const first = Number(m[1]);
+                const second = Number(m[2]);
+                const year = m[3];
+
+                if (first >= 1 && first <= 31 && second >= 1 && second <= 12) {
+                    // Explicitly saved by this app => DD-MM-YYYY.
+                    // For an unambiguous MM-DD-YYYY value (second > 12),
+                    // interpret it as MM-DD-YYYY.
+                    if (second > 12 && first <= 12) {
+                        return `${year}-${String(first).padStart(2,'0')}-${String(second).padStart(2,'0')}`;
+                    }
+                    return `${year}-${String(second).padStart(2,'0')}-${String(first).padStart(2,'0')}`;
+                }
+            }
+
+            // Google Sheets / Apps Script commonly returns dates as MM/DD/YYYY.
+            m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (m) {
+                const month = Number(m[1]);
+                const day = Number(m[2]);
+                const year = m[3];
+
+                if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                }
+            }
+
+            // Fallback for strings such as "Wed Sep 10 2026 ...".
             const parsed = new Date(raw);
             if (!isNaN(parsed.getTime())) {
                 return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`;
             }
+
             return '';
+        }
+
+        // Local date for <input type="date">. Avoids UTC/IST one-day shifts.
+        function getLocalDateInputValue() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
         }
 
         function findLastMemberExpiryDate(historyRows) {
@@ -790,7 +903,7 @@ function closeCustomAlert() {
                 return digits;
             };
 
-            const COL = { payDateA: 0, nameB: 1, uidC: 2, mobileD: 3, branchE: 4, shiftF: 5, feeMonthG: 6, amountH: 7, modeI: 8, utrJ: 9, remarkK: 10, payDateL: 11, expiryM: 12 };
+            const COL = { payDateA: 0, nameB: 1, uidC: 2, mobileD: 3, branchE: 4, shiftF: 5, feeMonthG: 6, amountH: 7, modeI: 8, utrJ: 9, remarkK: 10, expiryDateL: 11, todayM: 12, daysLeftN: 13 };
 
             const aliases = {
                 name: ["membername", "name", "studentname", "studentfullname", "fullname"],
@@ -810,18 +923,21 @@ function closeCustomAlert() {
             function readFeeField(record, field) {
                 if (record === null || record === undefined) return "";
                 if (Array.isArray(record)) {
-                    const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateL : field === "expiryDate" ? COL.expiryM : undefined;
+                    const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateA : field === "expiryDate" ? COL.expiryDateL : undefined;
                     return idx !== undefined ? (record[idx] ?? "") : "";
                 }
                 if (typeof record !== "object") return "";
                 
-                if (field === "month") {
-                    const exactMonthKeys = ["Fees For Month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"];
-                    for (const key of exactMonthKeys) {
-                        if (Object.prototype.hasOwnProperty.call(record, key)) {
-                            const value = record[key];
-                            if (value !== null && value !== undefined && String(value).trim() !== "") return value;
-                        }
+                const exactKeysByField = {
+                    month: ["Fees For Month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"],
+                    payDate: ["Pay Date", "Payment Date", "Fees Pay Date", "PayDate", "payDate", "L", "11"],
+                    expiryDate: ["Expiry Date", "Fees Expiry Date", "ExpiryDate", "expiryDate", "L", "11"]
+                };
+                const exactKeys = exactKeysByField[field] || [];
+                for (const key of exactKeys) {
+                    if (Object.prototype.hasOwnProperty.call(record, key)) {
+                        const value = record[key];
+                        if (value !== null && value !== undefined && String(value).trim() !== "") return value;
                     }
                 }
 
@@ -904,8 +1020,10 @@ function closeCustomAlert() {
 
             currentMemberFeeHistory = historyRows.slice();
             currentMemberFeeHistory.sort((a, b) => {
-                const da = new Date(readFeeField(a, "payDate") || 0).getTime() || 0;
-                const db = new Date(readFeeField(b, "payDate") || 0).getTime() || 0;
+                const aInput = feeDateToInputValue(readFeeField(a, "payDate"));
+                const bInput = feeDateToInputValue(readFeeField(b, "payDate"));
+                const da = aInput ? new Date(aInput + "T00:00:00").getTime() : 0;
+                const db = bInput ? new Date(bInput + "T00:00:00").getTime() : 0;
                 return db - da;
             });
 
@@ -937,7 +1055,7 @@ function closeCustomAlert() {
                 const rawMonth = readFeeField(record, "month");
                 const amount = readFeeField(record, "amount") || "0";
                 const paidOnRaw = readFeeField(record, "payDate");
-                const paidOn = paidOnRaw ? formatMonthYear(paidOnRaw) : "";
+                const paidOn = formatReprintHistoryDate(paidOnRaw);
                 const paidOnText = paidOn ? ` | Paid On: ${escapeHtml(String(paidOn))}` : "";
                 optionsHtml += `<option value="${idx}">Fees For: ${escapeHtml(String(rawMonth))} — Paid ₹${escapeHtml(String(amount))}${paidOnText}</option>`;
             });
@@ -981,11 +1099,11 @@ function closeCustomAlert() {
             setValue("feeUtr", readFeeField(record, "utr"));
             setValue("feeRemark", readFeeField(record, "remark"));
 
-            const payDate = readFeeField(record, "payDate") || readFeeField(record, "date");
-            if (payDate) setValue("feePayDate", String(payDate).split("T")[0]);
+            const payDate = reprintDateToInputValue(readFeeField(record, "payDate"));
+            if (payDate) setValue("feePayDate", payDate);
 
-            const expiryDate = readFeeField(record, "expiryDate");
-            if (expiryDate) setValue("feeExpiryDate", String(expiryDate).split("T")[0]);
+            const expiryDate = reprintDateToInputValue(readFeeField(record, "expiryDate"));
+            if (expiryDate) setValue("feeExpiryDate", expiryDate);
 
             if (typeof handlePaymentModeChange === "function") handlePaymentModeChange();
             if (typeof calculateDueDays === "function") calculateDueDays();
@@ -1345,7 +1463,7 @@ function closeCustomAlert() {
             let detailsSection = document.getElementById("feeDetailsSection");
             if (detailsSection) detailsSection.style.display = "block";
             
-            document.getElementById("feePayDate").value = new Date().toISOString().split('T')[0];
+            document.getElementById("feePayDate").value = getLocalDateInputValue();
             handlePaymentModeChange();
 
             let submitBtn = document.getElementById("feeSubmitBtn");
@@ -1528,8 +1646,10 @@ function closeCustomAlert() {
             const mode = document.getElementById("feePaymentMode").value;
             const utr = mode === "Cash" ? "Cash Payment" : document.getElementById("feeUtr").value;
             const remark = document.getElementById("feeRemark").value;
-            const payDate = document.getElementById("feePayDate").value;
-            const expiryDate = document.getElementById("feeExpiryDate").value;
+            const payDateRaw = document.getElementById("feePayDate").value;
+            const expiryDateRaw = document.getElementById("feeExpiryDate").value;
+            const payDate = formatFeeDisplayDate(payDateRaw);
+            const expiryDate = formatFeeDisplayDate(expiryDateRaw);
 
             const receiptWindow = window.open('', '_blank', 'width=750,height=650');
             if (!receiptWindow) {
@@ -1568,25 +1688,23 @@ body, html {
   overflow-x: hidden;
 }
 
-/* Parent container ko vertical column mein badlein */
-.cards-container, .dashboard-wrapper, .row {
-  display: flex !important;
+/* 2. Dashboard Cards ke liye jo horizontal cut rahe hain */
+.dashboard-cards-container, .cards-wrapper, .row {
+  display: flex;
   flex-direction: column !important;
-  align-items: center !important;
+  align-items: center;
   width: 100% !important;
-  max-width: 100% !important;
   padding: 10px !important;
   margin: 0 !important;
-  box-sizing: border-box !important;
 }
 
-/* Individual cards ki width mobile screen ke mutabiq set karein */
-.card, .admin-card, .dashboard-card {
+/* Har ek card ko mobile screen ke mutabiq 100 width dein */
+.card, .admin-card, .box {
   width: 90% !important;
-  max-width: 350px !important;
+  max-width: 400px !important;
   margin: 10px auto !important;
-  box-sizing: border-box !important;
 }
+
 /* 3. Seat Management Layout ke liye */
 #liveSeatManagementContainer, .seat-grid, .seats-container {
   width: 100% !important;
@@ -1653,6 +1771,59 @@ body, html {
             setTimeout(() => {
                 try { receiptWindow.print(); } catch (e) { console.warn("Receipt print error:", e); }
             }, 250);
+        };
+
+        window.sendReprintWhatsApp = function() {
+            if (!feeSelectedMember || !feeSelectedMember.mobile) {
+                alert("⚠️ Member mobile number is not available.");
+                return;
+            }
+
+            const monthSelect = document.getElementById("reprintMonthSelect");
+            const selectedIdx = monthSelect ? monthSelect.value : "";
+
+            if (selectedIdx === "" || !currentMemberFeeHistory[selectedIdx]) {
+                alert("⚠️ Please select a paid month first.");
+                return;
+            }
+
+            const record = currentMemberFeeHistory[selectedIdx];
+            const readFeeField = window.__readFeeReprintField || function(rec, field) { return ""; };
+
+            const feeMonth = String(readFeeField(record, "month") || "").trim();
+            const amount = String(readFeeField(record, "amount") || "0").trim();
+            const mode = String(readFeeField(record, "mode") || "Cash").trim();
+            const payDateRaw = readFeeField(record, "payDate");
+            const expiryDateRaw = readFeeField(record, "expiryDate");
+            const remark = String(readFeeField(record, "remark") || "").trim();
+
+            const payDate = formatFeeDisplayDate(payDateRaw);
+            const expiryDate = formatFeeDisplayDate(expiryDateRaw);
+
+            const name = feeSelectedMember.name || "Member";
+            const uid = feeSelectedMember.uid || "";
+            let mobileNumber = normalizeSearchMobile(feeSelectedMember.mobile);
+
+            if (mobileNumber.length === 10) {
+                mobileNumber = "91" + mobileNumber;
+            } else if (mobileNumber.length === 11 && mobileNumber.startsWith("0")) {
+                mobileNumber = "91" + mobileNumber.slice(1);
+            }
+
+            const whatsappMessage =
+                `*Eminence Library - Fee Receipt*\n\n` +
+                `Dear *${name}*,\n` +
+                `Your fee receipt details are as follows:\n\n` +
+                `*UID:* ${uid}\n` +
+                `*Fees For Month:* ${feeMonth}\n` +
+                `*Amount Paid:* ₹${amount}\n` +
+                `*Payment Mode:* ${mode}\n` +
+                `*Paid On:* ${payDate || "N/A"}\n` +
+                `*Expiry Date:* ${expiryDate || "N/A"}\n` +
+                `${remark ? `*Payment For:* ${remark}\n` : ""}\n` +
+                `Thank you for studying with Eminence Library!\n-- Team Eminence`;
+
+            window.open(`https://wa.me/${mobileNumber}?text=${encodeURIComponent(whatsappMessage)}`, "_blank");
         };
 
         window.sendFeeWhatsAppNotification = function() {
@@ -1838,7 +2009,6 @@ const input = document.getElementById("feeSearchInput");
             let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
             if (student && mobNum) {
                 const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello *${student.studentName || student.name}*,\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर *${quickSelectedSeatNum}*निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं.Happy Study -- Team Eminence.\n\n`;
-
                 window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
             } else {
                 alert("No mobile number available for this seat.");
@@ -2118,6 +2288,7 @@ const input = document.getElementById("feeSearchInput");
                             </select>
                         </div>
                         <button type="button" class="btn-submit" style="width: auto; background: #0284c7;" onclick="generateFeeReceiptOnly(true)"><i class="fa-solid fa-print"></i> Reprint Receipt</button>
+                        <button type="button" class="btn-submit" style="width: auto; background: #25d366;" onclick="sendReprintWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
                     </div>
                 </div>
 
