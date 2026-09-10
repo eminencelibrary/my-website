@@ -1810,19 +1810,7 @@ body, html {
                 mobileNumber = "91" + mobileNumber.slice(1);
             }
 
-            const whatsappMessage =
-                `*Eminence Library - Fee Receipt*\n\n` +
-                `Dear *${name}*,\n` +
-                `Your fee receipt details are as follows:\n\n` +
-                `*UID:* ${uid}\n` +
-                `*Fees For Month:* ${feeMonth}\n` +
-                `*Amount Paid:* ₹${amount}\n` +
-                `*Payment Mode:* ${mode}\n` +
-                `*Paid On:* ${payDate || "N/A"}\n` +
-                `*Expiry Date:* ${expiryDate || "N/A"}\n` +
-                `${remark ? `*Payment For:* ${remark}\n` : ""}\n` +
-                `Thank you for studying with Eminence Library!\n-- Team Eminence`;
-
+            const whatsappMessage = `*${name} (${uid})* आपकी एमिनेंस लाइब्रेरी सदस्यता को दिनांक *${expiryDate}* तक आगे बढ़ा दिया गया है--धन्यवाद`;
             window.open(`https://wa.me/${mobileNumber}?text=${encodeURIComponent(whatsappMessage)}`, "_blank");
         };
 
