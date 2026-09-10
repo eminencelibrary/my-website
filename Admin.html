@@ -1837,7 +1837,8 @@ const input = document.getElementById("feeSearchInput");
             const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
             let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
             if (student && mobNum) {
-                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello ${student.studentName || student.name},\naapke seat number #${quickSelectedSeatNum} का allotment कर दिया गया है. Happy Study -- Team Eminence.\n\n`;
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello *${student.studentName || student.name}*,\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर *${quickSelectedSeatNum}*निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं.Happy Study -- Team Eminence.\n\n`;
+
                 window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
             } else {
                 alert("No mobile number available for this seat.");
