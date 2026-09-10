@@ -15,7 +15,7 @@
         // GOOGLE SHEETS APPS SCRIPT URLS
         // ==========================================
         const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcipVYb2RFh_nF6gdB3GjklbnvQDVI3I_Q2cqeVUjj7puo2dLeg7BsCxZWhzmCmPYa/exec";
-        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarHm6enNyPnaydyi0gKEdh06lYaN9nsI0O7jtV6qEAh3SWX0fhmXhYVJwEAqzPNDF/exec";
+        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbtsvWX9lyc02h3hAOk0Lv9CNrWKv3LO-iRLzi09gsjGJ-Vu_X5yofk3QwgBlm9zO0/exec";
 
         const ADMIN_PHONE = "919799995511";
         let activeBranch = null; 
@@ -38,7 +38,7 @@
                 .catch(err => console.log("Old students fetch error: ", err));
         }
 
-        // 2. Live Seats Data Fetch karna
+        // 2. Live Seats Data Fetch karna (Added missing function)
         function fetchSheetData() {
             if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
             fetch(LIVE_BOOKING_SCRIPT_URL)
@@ -46,15 +46,17 @@
                 .then(data => {
                     if (data && typeof data === 'object') {
                         allData = data;
-                        if (activeBranch) {
+                        if (typeof renderLayouts === 'function' && activeBranch) {
                             renderLayouts();
                         }
                     }
                 })
-                .catch(err => console.log("Live sheet fetch error: ", err));
+                .catch(err => console.log("Fetch sheet data error: ", err));
         }
 
+        // 3. Live Seats Data Save karna
         function saveToSheet() {
+            console.log("saveToSheet function triggered!");
             if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
             fetch(LIVE_BOOKING_SCRIPT_URL, {
                 method: 'POST',
@@ -64,7 +66,7 @@
                 },
                 body: JSON.stringify(allData)
             })
-            .then(result => {
+            .then(() => {
                 console.log("Synced with Google Sheet successfully");
             })
             .catch(err => console.log("Error saving data: " + err));
@@ -74,12 +76,9 @@
             activeBranch = branchKey;
             document.getElementById('branchGateOverlay').style.display = 'none';
             
-            // Yahan data fetch functions call kiye gaye hain taaki search data load ho sake
             fetchOldStudentsData();
             fetchSheetData();
-	// === YEH NAYA CODE ADD KAREN (Auto-Refresh ke liye) ===
-            // Har 5 second (5000 milliseconds) mein live data automatically fetch hoga
-            // Agar aur kam karna ho toh 5000 ki jagah 3000 (3 seconds) ya 2000 (2 seconds) kar sakte hain.
+
             if (!window.liveRefreshInterval) {
                 window.liveRefreshInterval = setInterval(() => {
                     if (activeBranch) {
@@ -87,11 +86,8 @@
                     }
                 }, 3000); 
             }
-            // =======================================================
             
-            // Branch select hone ke baad naya attractive popup show karne ke liye
             document.getElementById('branchNoticePopup').style.display = 'flex';
-
             document.getElementById('mainContentContainer').style.display = 'block';
 
             document.getElementById('coreBranchSection').style.display = 'none';
@@ -107,7 +103,6 @@
             renderLayouts();
         }
 
-        // Popup close karne ka function
         window.closeBranchNoticePopup = function() {
             document.getElementById('branchNoticePopup').style.display = 'none';
         }
@@ -393,7 +388,7 @@
             };
 
             saveToSheet();
-            renderLayouts(); // Yahan renderLayouts add kiya gaya hai taaki icon turant change ho jaye
+            renderLayouts(); 
             closeModal('newStudentModal');
 
             const msg = `*NEW SEAT REQUEST (${chosenBranch.toUpperCase()})*\n\nSeat No: ${currentSelectedSeat}\nName: ${name}\nMobile: ${mobile}\nUID: ${uid}\nFee Status: ${feeStatus}\n\nPlease verify and allot from Admin Panel.`;
@@ -476,7 +471,7 @@
             allData[branch][seatNo].status = newStatus;
 
             saveToSheet();
-            renderLayouts(); // Layout bhi update ho jayega admin update par
+            renderLayouts(); 
             alert("Seat status updated successfully!");
             updateAdminSeatDisplay();
         }
@@ -498,7 +493,7 @@
             
             if (!query) {
                 res.style.color = "red";
-                res.innerHTML = "Please Enter Vaild Mobile No. or UID to search.";
+                res.innerHTML = "Please Enter Valid Mobile No., UID or Name to search.";
                 return;
             }
 
@@ -507,23 +502,35 @@
             for (let branch in allData) {
                 for (let seat in allData[branch]) {
                     let s = allData[branch][seat];
-                    if ((s.mobile && s.mobile.toLowerCase().includes(query)) || (s.uid && s.uid.toLowerCase().includes(query))) {
-                        foundResults.push({
-                            info: `<b>Live Booking Found:</b><br><b>Branch:</b> ${branch.toUpperCase()} | <b>Seat :</b> ${seat}<br><b>Name:</b> ${s.studentName}<br><b>Mobile:</b> ${s.mobile} | <b>UID:</b> ${s.uid || 'N/A'}<br><b>Status:</b> <span style="text-transform:uppercase; color:${s.status=='booked'?'red':'blue'}">${s.status}</span>`
-                        });
+                    if (s && s.status && s.status !== 'vacant') {
+                        let nameMatch = s.studentName && s.studentName.toLowerCase().includes(query);
+                        let mobileMatch = s.mobile && String(s.mobile).toLowerCase().includes(query);
+                        let uidMatch = s.uid && String(s.uid).toLowerCase().includes(query);
+
+                        if (nameMatch || mobileMatch || uidMatch) {
+                            foundResults.push({
+                                info: `<b>Live Booking Found:</b><br><b>Branch:</b> ${branch.toUpperCase()} | <b>Seat:</b> ${seat}<br><b>Name:</b> ${s.studentName}<br><b>Mobile:</b> ${s.mobile} | <b>UID:</b> ${s.uid || 'N/A'}<br><b>Status:</b> <span style="text-transform:uppercase; color:${s.status=='booked'?'red':'blue'}">${s.status}</span>`
+                            });
+                        }
                     }
                 }
             }
 
             for (let mob in existingMembersDB) {
                 let membersList = existingMembersDB[mob];
-                membersList.forEach(mem => {
-                    if (mob.includes(query) || (mem.uid && mem.uid.toLowerCase().includes(query))) {
-                        foundResults.push({
-                            info: `<b>Old Students Database Record:</b><br><b>Name:</b> ${mem.name}<br><b>Mobile:</b> ${mob} | <b>UID:</b> ${mem.uid || 'N/A'}`
-                        });
-                    }
-                });
+                if (Array.isArray(membersList)) {
+                    membersList.forEach(mem => {
+                        let memName = mem.name ? mem.name.toLowerCase() : "";
+                        let memUid = mem.uid ? String(mem.uid).toLowerCase() : "";
+                        let memMob = String(mob).toLowerCase();
+
+                        if (memName.includes(query) || memMob.includes(query) || memUid.includes(query)) {
+                            foundResults.push({
+                                info: `<b>Old Students Database Record:</b><br><b>Name:</b> ${mem.name}<br><b>Mobile:</b> ${mob} | <b>UID:</b> ${mem.uid || 'N/A'}`
+                            });
+                        }
+                    });
+                }
             }
 
             if (foundResults.length > 0) {
@@ -535,7 +542,7 @@
                 res.innerHTML = htmlOutput;
             } else {
                 res.style.color = "#dc2626";
-                res.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> No record found for this Mobile No. or UID.";
+                res.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> No record found for this Name, Mobile No. or UID.";
             }
         }
 
@@ -934,10 +941,11 @@
             
             <form id="newBookingForm" onsubmit="handleNewStudentSubmit(event)">
                 <div class="form-group">
-                    <label>Mobile Number / UID:</label>
-                    <input type="text" id="newMobile" class="form-control" placeholder="Enter Mobile No or UID" oninput="checkExistingMemberNew()" required>
+                    <label>Mobile Number / UID </label>
+                    <input type="text" id="newMobile" class="form-control" placeholder="Enter Mobile No / UID " oninput="checkExistingMemberNew()" required>
                     <small id="newMemberStatusMsg" style="display:none; font-size:0.75rem; margin-top:4px; font-weight:600;"></small>
                 </div>
+
                 <div class="form-group">
                     <label>Full Name:</label>
                     <input type="text" id="newName" class="form-control" placeholder="Enter your full name" required>
