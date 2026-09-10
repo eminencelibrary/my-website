@@ -11,8 +11,45 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
+// Native alert ko attractive modal se override karna
+window.alert = function(message) {
+    const modal = document.getElementById('customAlertModal');
+    const msgElem = document.getElementById('customAlertMessage');
+    const titleElem = document.getElementById('customAlertTitle');
+    const iconElem = document.getElementById('customAlertIcon');
+
+    if (!modal || !msgElem) {
+        // Agar modal load nahi hua hai toh fallback standard alert
+        console.log("Alert: ", message);
+        return;
+    }
+
+    msgElem.innerText = message;
+
+    // Message ke type ke hisaab se Icon aur Title customize karna
+    if (String(message).includes("✅") || String(message).includes("successfully")) {
+        titleElem.innerText = "Success";
+        titleElem.style.color = "#16a34a";
+        iconElem.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #16a34a;"></i>';
+    } else if (String(message).includes("❌") || String(message).includes("⚠️") || String(message).includes("Incorrect")) {
+        titleElem.innerText = "Notice / Warning";
+        titleElem.style.color = "#dc2626";
+        iconElem.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #dc2626;"></i>';
+    } else {
+        titleElem.innerText = "Eminence Library";
+        titleElem.style.color = "#ff6600";
+        iconElem.innerHTML = '<i class="fa-solid fa-circle-info" style="color: #ff6600;"></i>';
+    }
+
+    modal.style.display = "flex";
+};
+
+function closeCustomAlert() {
+    const modal = document.getElementById('customAlertModal');
+    if (modal) modal.style.display = "none";
+}
         const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5WEnufQq_eV3HmsGShNC28Wig5DA7QRqVSsQ7T0SQyLgui1HUXkcYZRH5yiIHmvX5/exec";
-        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxarHm6enNyPnaydyi0gKEdh06lYaN9nsI0O7jtV6qEAh3SWX0fhmXhYVJwEAqzPNDF/exec";
+        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbtsvWX9lyc02h3hAOk0Lv9CNrWKv3LO-iRLzi09gsjGJ-Vu_X5yofk3QwgBlm9zO0/exec";
         const FEE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwcsYordBQJFslwS7KRTL_KBJ_KYFvYAVR7j0J42Tg2mRAfAFPzYUvN5AJ_EiwpU1ww/exec";
         
         let activeBranch = 'core'; 
@@ -2173,5 +2210,16 @@ const input = document.getElementById("feeSearchInput");
             </div>
         </div>
     </div>
+<!-- Custom Attractive Alert Popup Modal -->
+<div id="customAlertModal" class="modal-overlay" style="display: none; z-index: 9999;">
+    <div class="modal-card" style="max-width: 400px; text-align: center; padding: 30px 20px;">
+        <div id="customAlertIcon" style="font-size: 2.5rem; margin-bottom: 12px; color: #ff6600;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <h3 id="customAlertTitle" style="font-size: 1.15rem; color: #0f172a; margin-bottom: 8px; font-weight: 700;">Alert</h3>
+        <p id="customAlertMessage" style="font-size: 0.9rem; color: #475569; margin-bottom: 20px; line-height: 1.5;"></p>
+        <button type="button" class="btn-submit" onclick="closeCustomAlert()" style="width: 100%; padding: 10px; border-radius: 8px;">OK</button>
+    </div>
+</div>
 </body>
 </html>
