@@ -1,3 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eminence Library - Admin Master Portal & Fee Management</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@600;700;800&family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+// Native alert ko attractive modal se override karna
+window.alert = function(message) {
+    const modal = document.getElementById('customAlertModal');
+    const msgElem = document.getElementById('customAlertMessage');
+    const titleElem = document.getElementById('customAlertTitle');
+    const iconElem = document.getElementById('customAlertIcon');
+
+    if (!modal || !msgElem) {
+        // Agar modal load nahi hua hai toh fallback standard alert
+        console.log("Alert: ", message);
+        return;
+    }
+
+    msgElem.innerText = message;
+
+    // Message ke type ke hisaab se Icon aur Title customize karna
+    if (String(message).includes("✅") || String(message).includes("successfully")) {
+        titleElem.innerText = "Success";
+        titleElem.style.color = "#16a34a";
+        iconElem.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #16a34a;"></i>';
+    } else if (String(message).includes("❌") || String(message).includes("⚠️") || String(message).includes("Incorrect")) {
+        titleElem.innerText = "Notice / Warning";
+        titleElem.style.color = "#dc2626";
+        iconElem.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #dc2626;"></i>';
+    } else {
+        titleElem.innerText = "Eminence Library";
+        titleElem.style.color = "#ff6600";
+        iconElem.innerHTML = '<i class="fa-solid fa-circle-info" style="color: #ff6600;"></i>';
+    }
+
+    modal.style.display = "flex";
+};
+
+function closeCustomAlert() {
+    const modal = document.getElementById('customAlertModal');
+    if (modal) modal.style.display = "none";
+}
+        const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5WEnufQq_eV3HmsGShNC28Wig5DA7QRqVSsQ7T0SQyLgui1HUXkcYZRH5yiIHmvX5/exec";
+        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbtsvWX9lyc02h3hAOk0Lv9CNrWKv3LO-iRLzi09gsjGJ-Vu_X5yofk3QwgBlm9zO0/exec";
+        const FEE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwcsYordBQJFslwS7KRTL_KBJ_KYFvYAVR7j0J42Tg2mRAfAFPzYUvN5AJ_EiwpU1ww/exec";
+        
+        let activeBranch = 'core'; 
+        let allData = { core: {}, nexus: {} };
+        let existingMembersDB = {}; 
+        let feeLibraryDataObject = []; 
+        let feeSelectedMember = null;
+        let isAdminLoggedIn = false;
+        let quickSelectedSeatNum = null;
+        let feeFlowState = 1; // 1: Update Fee, 2: Print Receipt, 3: WhatsApp
+        let feeSaveInProgress = false;
+        let feeReceiptMode = "new"; 
+        let feeReceiptPrinted = false;
+        let feeTrackerBackTarget = "dashboard";
+
+        let oldStudentsDataPromise = null;
+
+        function fetchOldStudentsData() {
+            if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return Promise.resolve({});
+            if (oldStudentsDataPromise) return oldStudentsDataPromise;
+
+            oldStudentsDataPromise = fetch(OLD_STUDENTS_SCRIPT_URL, { cache: "no-store" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        existingMembersDB = data;
+                    }
+                    return existingMembersDB;
+                })
+                .catch(err => {
+                    console.log("Old students fetch error: ", err);
+                    return existingMembersDB;
+                });
+
+            return oldStudentsDataPromise;
+        }
+
+        let feeLibraryDataPromise = null;
+        let liveSheetDataPromise = null;
+
+        function formatMonthYear(dateString) {
+            if (dateString === null || dateString === undefined || String(dateString).trim() === '') return '';
+            const raw = String(dateString).trim();
+
+            if (/^[A-Za-z]+-\d{4}$/.test(raw)) return raw;
+
+            let m = raw.match(/^(\d{4})[-\/](\d{1,2})(?:[-\/](\d{1,2}))?$/);
+            if (m) {
+                const monthNo = Number(m[2]);
+                if (monthNo >= 1 && monthNo <= 12) {
+                    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                    return names[monthNo - 1] + "-" + m[1];
+                }
+            }
+
+            m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            if (m) {
+                const monthNo = Number(m[2]);
+                if (monthNo >= 1 && monthNo <= 12) {
+                    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                    return names[monthNo - 1] + "-" + m[3];
+                }
+            }
+
+            try {
+                let cleanStr = raw;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+                    cleanStr = raw + "T00:00:00";
+                }
+                const date = new Date(cleanStr);
+                if (isNaN(date.getTime())) return raw;
+                
+                const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                const monthName = monthNames[date.getUTCMonth() !== undefined && !isNaN(date.getUTCMonth()) ? date.getUTCMonth() : date.getMonth()];
+                const yearVal = date.getUTCFullYear() !== undefined && !isNaN(date.getUTCFullYear()) ? date.getUTCFullYear() : date.getFullYear();
+                
+                return monthName + "-" + yearVal;
+            } catch (e) {
+                console.error("Date format error:", e);
+                return raw;
+            }
+        }
+
+        function fetchFeeLibraryData(forceRefresh = false) {
+            if (!FEE_WEB_APP_URL.startsWith("http")) return Promise.resolve(feeLibraryDataObject);
+            if (feeLibraryDataPromise && !forceRefresh) return feeLibraryDataPromise;
+
+            feeLibraryDataPromise = fetch(FEE_WEB_APP_URL + "?t=" + Date.now(), {
+                cache: "no-store"
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error("Fee Web App HTTP " + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    let rows = data;
+                    if (data && !Array.isArray(data) && typeof data === "object") {
+                        rows = Array.isArray(data.history) ? data.history :
+                               Array.isArray(data.data) ? data.data :
+                               Array.isArray(data.records) ? data.records :
+                               Array.isArray(data.rows) ? data.rows :
+                               Array.isArray(data.result) ? data.result :
+                               Array.isArray(data.fees) ? data.fees : [];
+                    }
+                    if (!Array.isArray(rows)) {
+                        feeLibraryDataObject = [];
+                        return feeLibraryDataObject;
+                    }
+                    if (rows.length > 0 && Array.isArray(rows[0])) {
+                        const headers = rows[0].map(h => String(h ?? "").trim());
+                        feeLibraryDataObject = rows.slice(1).map(row => {
+                            const obj = {};
+                            headers.forEach((header, i) => {
+                                if (header) obj[header] = row[i] ?? "";
+                            });
+                            return obj;
+                        });
+                    } else {
+                        feeLibraryDataObject = rows.filter(row => row && typeof row === "object");
+                    }
+                    return feeLibraryDataObject;
+                })
+                .catch(err => {
+                    console.error("Fee data fetch error:", err);
+                    feeLibraryDataObject = [];
+                    return feeLibraryDataObject;
+                });
+
+            return feeLibraryDataPromise;
+        }
+
+        function fetchSheetData(forceRefresh = false, silent = false) {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return Promise.resolve(allData);
+            if (liveSheetDataPromise && !forceRefresh) return liveSheetDataPromise;
+
+            liveSheetDataPromise = fetch(LIVE_BOOKING_SCRIPT_URL + "?t=" + Date.now(), { cache: "no-store" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data && typeof data === 'object') {
+                        allData = data;
+                        if (isAdminLoggedIn && !silent) renderLayouts();
+                    }
+                    return allData;
+                })
+                .catch(err => {
+                    console.log("Live sheet fetch error: ", err);
+                    return allData;
+                });
+
+            return liveSheetDataPromise;
+        }
+
+        function saveToSheet() {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
+            fetch(LIVE_BOOKING_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(allData)
+            })
+            .then(response => response.text())
+            .then(result => { fetchSheetData(); })
+            .catch(err => console.log("Error saving data: " + err));
+        }
+
+        setInterval(() => { if (isAdminLoggedIn) fetchSheetData(false, true); }, 10000);
+
+        window.onload = function() {
+            try {
+                fetchOldStudentsData();
+                fetchSheetData();
+                fetchFeeLibraryData();
+                
+                let today = new Date().toISOString().split('T')[0];
+                let feePayDateElem = document.getElementById("feePayDate");
+                if(feePayDateElem) {
+                    feePayDateElem.value = today;
+                }
+                
+                let dateObj = new Date();
+                let month = dateObj.toLocaleString('en-US', { month: 'long' });
+                let year = dateObj.getFullYear();
+                
+                let feeMonthSelect = document.getElementById("feeMonthSelect");
+                let feeYearSelect = document.getElementById("feeYearSelect");
+                if(feeMonthSelect) feeMonthSelect.value = month;
+                if(feeYearSelect) feeYearSelect.value = year;
+                updateCombinedFeeForMonth();
+            } catch (error) {
+                console.error("Error during page load: ", error);
+            }
+        };
+
+        window.updateCombinedFeeForMonth = function() {
+            let m = document.getElementById("feeMonthSelect").value;
+            let y = document.getElementById("feeYearSelect").value;
+            let combinedField = document.getElementById("feeForMonth");
+            if (combinedField && m && y) {
+                combinedField.value = m + "-" + y;
+                checkFormCompletion();
+            }
+        };
+
+        window.loginMasterAdmin = function() {
+            const pass = document.getElementById("masterAdminPass").value.trim();
+            if (pass === "admin123") {
+                isAdminLoggedIn = true;
+                document.getElementById('adminGateOverlay').style.display = 'none';
+                document.getElementById('mainDashboardPortal').style.display = 'flex';
+                renderLayouts();
+            } else {
+                alert("Incorrect Admin Password! Please try again.");
+                document.getElementById("masterAdminPass").value = "";
+                document.getElementById("masterAdminPass").focus();
+            }
+        }
+
+        window.openSeatManagement = function() {
+            document.getElementById('mainDashboardPortal').style.display = 'none';
+            document.getElementById('liveSeatManagementContainer').style.display = 'block';
+            switchBranch('core');
+        }
+
+        window.backToDashboard = function() {
+            document.getElementById('liveSeatManagementContainer').style.display = 'none';
+            document.getElementById('mainDashboardPortal').style.display = 'flex';
+        }
+
+        window.openFeeManagementModal = function() {
+            document.getElementById('feeDetailsSection').style.display = 'none';
+            feeSelectedMember = null;
+            const dashboard = document.getElementById('mainDashboardPortal');
+            const feeContainer = document.getElementById('feeManagementContainer');
+
+            if (!feeContainer) {
+                console.error('Fee Management container not found.');
+                alert('Fee Management panel load nahi ho pa raha. HTML mein feeManagementContainer missing hai.');
+                return;
+            }
+
+            if (dashboard) dashboard.style.display = 'none';
+            feeContainer.style.display = 'block';
+            feeContainer.scrollTop = 0;
+
+            const setDisplay = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = value;
+            };
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value;
+            };
+
+           	setValue('feeSearchInput', '');
+		setDisplay('feeSearchResults', 'none');
+		setDisplay('feeDetailsSection', 'none');
+		setValue('reprintQueryInput', '');
+            const reprintMonthSelect = document.getElementById('reprintMonthSelect');
+            if (reprintMonthSelect) {
+                reprintMonthSelect.innerHTML = '<option value="">-- First find Member --</option>';
+                reprintMonthSelect.disabled = true;
+            }
+
+            feeSelectedMember = { name: 'Direct Walk-in / Member', mobile: '', uid: 'DIRECT', branch: activeBranch };
+            feeFlowState = 1;
+            feeReceiptMode = 'new';
+            feeReceiptPrinted = false;
+
+            const submitBtn = document.getElementById('feeSubmitBtn');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
+                submitBtn.style.background = '#16a34a';
+                submitBtn.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+
+            const extraActionButtons = document.getElementById('feeExtraActionButtons');
+            if (extraActionButtons) extraActionButtons.style.display = 'none';
+
+            Promise.all([
+                fetchOldStudentsData(),
+                fetchFeeLibraryData(true),
+                fetchSheetData(true, true)
+            ]).catch(err => console.warn('Fee Management background load:', err));
+        };
+
+        window.openFeeTrackerModal = function() {
+            const feeContainer = document.getElementById('feeManagementContainer');
+            feeTrackerBackTarget = (feeContainer && feeContainer.style.display === 'block') ? "fee" : "dashboard";
+            document.getElementById('mainDashboardPortal').style.display = 'none';
+            document.getElementById('feeTrackerContainer').style.display = 'block';
+            document.getElementById("trackerQueryInput").value = "";
+            document.getElementById("trackerSearchResults").style.display = "none";
+            document.getElementById("trackerMemberSummaryBox").style.display = "none";
+            document.getElementById("trackerTableContainer").style.display = "none";
+            Promise.all([fetchOldStudentsData(), fetchFeeLibraryData()]);
+        }
+
+        window.backToDashboardFromFee = function() {
+            document.getElementById('feeManagementContainer').style.display = 'none';
+            document.getElementById('mainDashboardPortal').style.display = 'flex';
+        }
+
+        window.backToDashboardFromTracker = function() {
+            const tracker = document.getElementById('feeTrackerContainer');
+            const feeContainer = document.getElementById('feeManagementContainer');
+            const dashboard = document.getElementById('mainDashboardPortal');
+
+            if (tracker) tracker.style.display = 'none';
+
+            if (feeTrackerBackTarget === "fee" && feeContainer) {
+                if (dashboard) dashboard.style.display = 'none';
+                feeContainer.style.display = 'block';
+            } else if (dashboard) {
+                dashboard.style.display = 'flex';
+            }
+
+            const gate = document.getElementById('adminGateOverlay');
+            if (gate && isAdminLoggedIn) gate.style.display = 'none';
+        }
+
+        window.handlePaymentModeChange = function() {
+            let mode = document.getElementById("feePaymentMode").value;
+            let utrContainer = document.getElementById("utrContainer");
+            
+            if (mode === "Online" || mode === "By QR") {
+                if(utrContainer) utrContainer.style.display = "block";
+            } else {
+                if(utrContainer) utrContainer.style.display = "none";
+            }
+            checkFormCompletion();
+        }
+
+        window.checkFormCompletion = function() {
+            let submitBtn = document.getElementById("feeSubmitBtn");
+            if (!submitBtn) return;
+
+            if (feeFlowState === 1 && feeSelectedMember) {
+                let monthVal = document.getElementById("feeForMonth").value.trim();
+                let amountVal = document.getElementById("feeAmount").value.trim();
+                let modeVal = document.getElementById("feePaymentMode").value;
+                let utrVal = document.getElementById("feeUtr").value.trim();
+
+                let isUtrValid = (modeVal === "Cash" || (modeVal !== "Cash" && utrVal !== ""));
+
+                if (monthVal !== "" && amountVal !== "" && isUtrValid) {
+                    submitBtn.style.display = "block";
+                } else {
+                    submitBtn.style.display = "none";
+                }
+            } else if (feeFlowState > 1) {
+                submitBtn.style.display = "block";
+            }
+        }
+
+        window.feeSearchMatchCache = [];
+
+        function getMemberField(obj, names) {
+            if (!obj || typeof obj !== 'object') return '';
+            const wanted = names.map(x => String(x).toLowerCase().replace(/[^a-z0-9]/g, ''));
+            for (const key of Object.keys(obj)) {
+                const cleanKey = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (wanted.includes(cleanKey)) {
+                    const value = obj[key];
+                    if (value !== null && value !== undefined && String(value).trim() !== '') {
+                        return value;
+                    }
+                }
+            }
+            return '';
+        }
+
+        function normalizeSearchText(value) {
+            return String(value ?? '').trim().toLowerCase();
+        }
+
+        function normalizeSearchMobile(value) {
+            return String(value ?? '').replace(/\D/g, '');
+        }
+
+        function getFeeHistoryField(record, field) {
+            if (record === null || record === undefined) return '';
+
+            const columnIndex = {
+                name: 1, uid: 2, mobile: 3, branch: 4, shift: 5,
+                month: 6, amount: 7, mode: 8, utr: 9, remark: 10,
+                payDate: 11, expiryDate: 12
+            };
+
+            if (Array.isArray(record)) {
+                const idx = columnIndex[field];
+                return idx !== undefined ? String(record[idx] ?? '').trim() : '';
+            }
+
+            if (typeof record !== 'object') return '';
+
+            const aliases = {
+                name: ['Member Name','Name','Student Name','StudentName'],
+                uid: ['UID Code','UID','uidCode','Member UID'],
+                mobile: ['Mobile Number','Mobile','Phone','Phone Number','mobileNumber'],
+                branch: ['Branch','Branch Name','branchName'],
+                shift: ['Shift'],
+                month: ['Fees For Month','Fees for month','Fee Month','Fees Month','feeForMonth'],
+                amount: ['Amount','Payment Amount','Fee Amount'],
+                mode: ['Mode','Payment Mode','PaymentMode'],
+                utr: ['UTR','UTR Number','Transaction Number','Transaction ID'],
+                remark: ['Payment For','Payment For / Remark','Remark','Payment Remark'],
+                payDate: ['Pay Date','Payment Date','Fees Pay Date','Date'],
+                expiryDate: ['Expiry Date','Fees Expiry Date','Expiry','Validity','ExpiryDate','FeesExpiryDate']
+            };
+
+            const wanted = new Set((aliases[field] || []).map(k => String(k).toLowerCase().replace(/[^a-z0-9]/g,'')));
+            for (const key of Object.keys(record)) {
+                const clean = String(key).toLowerCase().replace(/[^a-z0-9]/g,'');
+                if (wanted.has(clean)) {
+                    const value = record[key];
+                    if (value !== null && value !== undefined && String(value).trim() !== '') {
+                        return String(value).trim();
+                    }
+                }
+            }
+            return '';
+        }
+
+        function feeDateToInputValue(value) {
+            if (value === null || value === undefined || String(value).trim() === '') return '';
+            const raw = String(value).trim();
+
+            if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+            const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})T/);
+            if (iso) return `${iso[1]}-${String(iso[2]).padStart(2,'0')}-${String(iso[3]).padStart(2,'0')}`;
+
+            let m = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+            if (m) {
+                const d = Number(m[1]);
+                const mo = Number(m[2]);
+                if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+                    return `${m[3]}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                }
+            }
+
+            const parsed = new Date(raw);
+            if (!isNaN(parsed.getTime())) {
+                return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`;
+            }
+            return '';
+        }
+
+        function findLastMemberExpiryDate(historyRows) {
+            if (!Array.isArray(historyRows)) return '';
+            for (let i = historyRows.length - 1; i >= 0; i--) {
+                const raw = getFeeHistoryField(historyRows[i], 'expiryDate');
+                const normalized = feeDateToInputValue(raw);
+                if (normalized) return normalized;
+            }
+            return '';
+        }
+
+        function extractMemberRecords(source, output, visited) {
+            if (source === null || source === undefined) return;
+            if (typeof source !== 'object') return;
+            if (visited.has(source)) return;
+            visited.add(source);
+
+            if (Array.isArray(source)) {
+                source.forEach(item => extractMemberRecords(item, output, visited));
+                return;
+            }
+
+            const mobile = getMemberField(source, ['Mobile Number', 'Mobile', 'Phone', 'Phone Number', 'mobileNumber', 'phoneNumber', 'mob']);
+            const uid = getMemberField(source, ['UID Code', 'UID', 'uidCode', 'Student UID', 'Member UID']);
+            const name = getMemberField(source, ['Member Name', 'Name', 'Student Name', 'StudentName', 'Full Name', 'studentName']);
+            const branch = getMemberField(source, ['Branch Name', 'Branch', 'branchName', 'Library Branch']);
+
+            if (mobile || uid || name) {
+                output.push({
+                    mobile: String(mobile || '').trim(),
+                    uid: String(uid || '').trim(),
+                    name: String(name || '').trim(),
+                    branch: String(branch || '').trim(),
+                    record: source
+                });
+            }
+
+            Object.keys(source).forEach(key => {
+                const value = source[key];
+                if (value && typeof value === 'object') {
+                    extractMemberRecords(value, output, visited);
+                }
+            });
+        }
+
+        function mergeMemberRecords(records) {
+            const merged = new Map();
+            function keyFor(m) {
+                const mob = normalizeSearchMobile(m.mobile);
+                const uid = normalizeSearchText(m.uid);
+                const name = normalizeSearchText(m.name);
+                if (uid && uid !== 'direct') return 'uid:' + uid;
+                if (mob) return 'mob:' + mob;
+                if (name) return 'name:' + name;
+                return 'unknown:' + Math.random();
+            }
+
+            records.forEach(m => {
+                const key = keyFor(m);
+                if (!merged.has(key)) {
+                    merged.set(key, { ...m });
+                    return;
+                }
+                const old = merged.get(key);
+                if (!old.name && m.name) old.name = m.name;
+                if (!old.mobile && m.mobile) old.mobile = m.mobile;
+                if (!old.uid && m.uid) old.uid = m.uid;
+                if (!old.branch && m.branch) old.branch = m.branch;
+            });
+            return Array.from(merged.values());
+        }
+
+        let feeSearchTimer = null;
+        window.debouncedFeeSearch = function() {
+            clearTimeout(feeSearchTimer);
+            feeSearchTimer = setTimeout(() => searchLibraryData(), 180);
+        };
+
+        let feeSearchRequestId = 0;
+
+        window.searchLibraryData = async function() {
+    const input = document.getElementById("feeSearchInput");
+    const resultsDiv = document.getElementById("feeSearchResults");
+    const feeDetailsSection = document.getElementById("feeDetailsSection");
+    const memberSummary = document.getElementById("selectedMemberSummary");
+    if (!input || !resultsDiv) return;
+
+    const requestId = ++feeSearchRequestId;
+    const query = input.value.trim().toLowerCase();
+
+    // Search box blank hote hi purana result/member selection completely clear karein.
+    if (query === "") {
+        resultsDiv.style.display = "none";
+        resultsDiv.innerHTML = "";
+        window.feeSearchMatchCache = [];
+
+        if (feeDetailsSection) feeDetailsSection.style.display = "none";
+        if (memberSummary) {
+            memberSummary.innerHTML = '<div style="font-size:0.85rem;font-weight:600;color:#0f172a;">👤 Search Member First </div>';
+        }
+
+        feeSelectedMember = null;
+        feeReceiptMode = "new";
+        feeReceiptPrinted = false;
+        feeFlowState = 1;
+
+        // Purane async search ko ignore karne ke liye request id invalidate karein.
+        return;
+    }
+
+            resultsDiv.style.display = "block";
+            resultsDiv.innerHTML = "<span style='color:#64748b;font-size:12px;'>Member data load ho raha hai...</span>";
+
+            if (!Array.isArray(feeLibraryDataObject) || feeLibraryDataObject.length === 0) {
+                await fetchFeeLibraryData(false);
+            }
+
+            // Agar user ne meanwhile search box clear/change kar diya hai,
+            // to is purane async result ko screen par dobara mat dikhayein.
+            if (requestId !== feeSearchRequestId ||
+                input.value.trim().toLowerCase() !== query) {
+                return;
+            }
+
+            const sourceRecords = [];
+            extractMemberRecords(feeLibraryDataObject, sourceRecords, new WeakSet());
+            extractMemberRecords(existingMembersDB, sourceRecords, new WeakSet());
+            extractMemberRecords(allData, sourceRecords, new WeakSet());
+            const mergedSourceRecords = mergeMemberRecords(sourceRecords);
+            const matches = [];
+            const queryDigits = normalizeSearchMobile(query);
+
+            mergedSourceRecords.forEach(member => {
+                const mobile = String(member.mobile || '').trim();
+                const uid = String(member.uid || '').trim();
+                const name = String(member.name || '').trim();
+                const branch = String(member.branch || '').trim();
+
+                const mobDigits = normalizeSearchMobile(mobile);
+                const uidStr = normalizeSearchText(uid);
+                const nameStr = normalizeSearchText(name);
+
+                const isFullMobileMatch = queryDigits.length >= 5 && mobDigits && mobDigits === queryDigits;
+                const isLast4Match = queryDigits.length === 4 && mobDigits.endsWith(queryDigits);
+                const isUidMatch = uidStr && uidStr === query;
+                const isPartialUidMatch = query.length >= 3 && uidStr && uidStr.includes(query);
+                const isNameMatch = nameStr && nameStr.includes(query);
+                const isPartialMobileMatch = queryDigits.length >= 4 && mobDigits.includes(queryDigits);
+
+                if (isFullMobileMatch || isLast4Match || isUidMatch || isPartialUidMatch || isNameMatch || isPartialMobileMatch) {
+                    matches.push({ mobile, name, uid, branch, record: member.record });
+                }
+            });
+
+            window.feeSearchMatchCache = matches;
+
+            if (matches.length > 0) {
+                resultsDiv.innerHTML = matches.slice(0, 30).map((m, index) => `
+                    <div onclick="selectThisMemberByIndex(${index})"
+                         style="padding:10px;border-bottom:1px solid #f1f5f9;cursor:pointer; background:#fff;"
+                         onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                        👤 <b>${escapeHtml(m.name || 'N/A')}</b>
+                        | 📱 <b>${escapeHtml(m.mobile || 'N/A')}</b>
+                        | 🆔 <b>${escapeHtml(m.uid || 'N/A')}</b><br>
+                        <span style="font-size:11px;color:#64748b;">
+                            🏢 <b>Branch:</b> ${escapeHtml(m.branch || 'Core/Nexus')}
+                        </span>
+                    </div>
+                `).join("");
+            } else {
+                resultsDiv.innerHTML = "<span style='color:#dc2626;font-size:12px;'>⚠️ कोई सदस्य नहीं मिला। Sahi Mobile, UID ya Name check karein.</span>";
+            }
+        };
+
+        let reprintSearchMatchCache = [];
+        let currentMemberFeeHistory = [];
+
+        window.debouncedReprintSearch = function() {
+            clearTimeout(feeSearchTimer);
+            feeSearchTimer = setTimeout(() => searchReprintLibraryDataList(), 180);
+        };
+
+        window.searchReprintLibraryDataList = async function() {
+            const input = document.getElementById("reprintQueryInput");
+            const resultsDiv = document.getElementById("reprintSearchResults");
+            if (!input || !resultsDiv) return;
+
+            const query = input.value.trim().toLowerCase();
+
+            if (query === "") {
+                resultsDiv.style.display = "none";
+                resultsDiv.innerHTML = "";
+                reprintSearchMatchCache = [];
+                return;
+            }
+
+            resultsDiv.style.display = "block";
+            resultsDiv.innerHTML = "<span style='color:#64748b;font-size:12px;'>Member data load ho raha hai...</span>";
+
+            if (!Array.isArray(feeLibraryDataObject) || feeLibraryDataObject.length === 0) {
+                await fetchFeeLibraryData(false);
+            }
+
+            const sourceRecords = [];
+            extractMemberRecords(feeLibraryDataObject, sourceRecords, new WeakSet());
+            const mergedSourceRecords = mergeMemberRecords(sourceRecords);
+            const matches = [];
+            const queryDigits = normalizeSearchMobile(query);
+
+            mergedSourceRecords.forEach(member => {
+                const mobile = String(member.mobile || '').trim();
+                const uid = String(member.uid || '').trim();
+                const name = String(member.name || '').trim();
+                const branch = String(member.branch || '').trim();
+
+                const mobDigits = normalizeSearchMobile(mobile);
+                const uidStr = normalizeSearchText(uid);
+                const nameStr = normalizeSearchText(name);
+
+                const isFullMobileMatch = queryDigits.length >= 5 && mobDigits && mobDigits === queryDigits;
+                const isLast4Match = queryDigits.length === 4 && mobDigits.endsWith(queryDigits);
+                const isUidMatch = uidStr && uidStr === query;
+                const isPartialUidMatch = query.length >= 3 && uidStr && uidStr.includes(query);
+                const isNameMatch = nameStr && nameStr.includes(query);
+                const isPartialMobileMatch = queryDigits.length >= 4 && mobDigits.includes(queryDigits);
+
+                if (isFullMobileMatch || isLast4Match || isUidMatch || isPartialUidMatch || isNameMatch || isPartialMobileMatch) {
+                    matches.push({ mobile, name, uid, branch, record: member.record });
+                }
+            });
+
+            reprintSearchMatchCache = matches;
+
+            if (matches.length > 0) {
+                resultsDiv.innerHTML = matches.slice(0, 30).map((m, index) => `
+                    <div onclick="selectReprintMemberByIndex(${index})"
+                         style="padding:10px;border-bottom:1px solid #f1f5f9;cursor:pointer; background:#fff;"
+                         onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                        👤 <b>${escapeHtml(m.name || 'N/A')}</b>
+                        | 📱 <b>${escapeHtml(m.mobile || 'N/A')}</b>
+                        | 🆔 <b>${escapeHtml(m.uid || 'N/A')}</b><br>
+                        <span style="font-size:11px;color:#64748b;">
+                            🏢 <b>Branch:</b> ${escapeHtml(m.branch || 'Core/Nexus')}
+                        </span>
+                    </div>
+                `).join("");
+            } else {
+                resultsDiv.innerHTML = "<span style='color:#dc2626;font-size:12px;'>⚠️ कोई सदस्य नहीं मिला। Sahi Mobile, UID ya Name check karein.</span>";
+            }
+        };
+
+        window.selectReprintMemberByIndex = async function(index) {
+            const item = reprintSearchMatchCache[index];
+            if (!item) return;
+
+            feeSelectedMember = {
+                name: item.name || "",
+                mobile: item.mobile || "",
+                uid: item.uid || "",
+                branch: item.branch || activeBranch
+            };
+            feeReceiptMode = "reprint";
+            feeReceiptPrinted = false;
+            feeFlowState = 1;
+
+            const searchInput = document.getElementById("reprintQueryInput");
+            if (searchInput) {
+                searchInput.value = `${feeSelectedMember.name} (${feeSelectedMember.mobile} - ${feeSelectedMember.uid})`;
+            }
+
+            const searchResults = document.getElementById("reprintSearchResults");
+            if (searchResults) searchResults.style.display = "none";
+
+            const monthSelect = document.getElementById("reprintMonthSelect");
+            if (monthSelect) {
+                monthSelect.innerHTML = `<option value="">⏳ Member's Payment History Loading...</option>`;
+                monthSelect.disabled = true;
+            }
+
+            currentMemberFeeHistory = [];
+
+            const keyNorm = v => String(v ?? "")
+                .toLowerCase()
+                .replace(/[\u200B-\u200D\uFEFF]/g, "")
+                .replace(/[^a-z0-9]+/g, "")
+                .trim();
+
+            const mobileNorm = v => {
+                let digits = String(v ?? "").replace(/\D/g, "");
+                if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+                if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+                return digits;
+            };
+
+            const COL = { payDateA: 0, nameB: 1, uidC: 2, mobileD: 3, branchE: 4, shiftF: 5, feeMonthG: 6, amountH: 7, modeI: 8, utrJ: 9, remarkK: 10, payDateL: 11, expiryM: 12 };
+
+            const aliases = {
+                name: ["membername", "name", "studentname", "studentfullname", "fullname"],
+                uid: ["uidcode", "uid", "studentuid", "memberuid"],
+                mobile: ["mobilenumber", "mobile", "phone", "phonenumber", "contactnumber"],
+                branch: ["branchname", "branch"],
+                shift: ["shift"],
+                month: ["feesformonth", "feesfor", "feemonth", "feesmonth", "feeformonth"],
+                amount: ["paidamount", "amount", "paymentamount", "feesamount", "feeamount"],
+                mode: ["paymentmode", "paymentmo", "mode", "paymode"],
+                utr: ["utr", "utrnumber", "transactionid", "transactionnumber"],
+                remark: ["paymentforremark", "paymentfor", "remark", "paymentremark"],
+                payDate: ["paydate", "paymentdate"],
+                expiryDate: ["expirydate", "feesexpirydate", "expiry", "validity"]
+            };
+
+            function readFeeField(record, field) {
+                if (record === null || record === undefined) return "";
+                if (Array.isArray(record)) {
+                    const idx = field === "month" ? COL.feeMonthG : field === "name" ? COL.nameB : field === "uid" ? COL.uidC : field === "mobile" ? COL.mobileD : field === "branch" ? COL.branchE : field === "shift" ? COL.shiftF : field === "amount" ? COL.amountH : field === "mode" ? COL.modeI : field === "utr" ? COL.utrJ : field === "remark" ? COL.remarkK : field === "payDate" ? COL.payDateL : field === "expiryDate" ? COL.expiryM : undefined;
+                    return idx !== undefined ? (record[idx] ?? "") : "";
+                }
+                if (typeof record !== "object") return "";
+                
+                if (field === "month") {
+                    const exactMonthKeys = ["Fees For Month", "Fees for month", "FeesForMonth", "feesForMonth", "Fee Month", "Fees Month", "feeForMonth", "G", "6"];
+                    for (const key of exactMonthKeys) {
+                        if (Object.prototype.hasOwnProperty.call(record, key)) {
+                            const value = record[key];
+                            if (value !== null && value !== undefined && String(value).trim() !== "") return value;
+                        }
+                    }
+                }
+
+                const wanted = aliases[field] || [];
+                const wantedSet = new Set(wanted.map(keyNorm));
+                for (const key of Object.keys(record)) {
+                    if (wantedSet.has(keyNorm(key))) {
+                        const value = record[key];
+                        if (value !== null && value !== undefined && String(value).trim() !== "") return value;
+                    }
+                }
+                return "";
+            }
+            window.__readFeeReprintField = readFeeField;
+
+            const targetUID = keyNorm(feeSelectedMember.uid);
+            const targetMobile = mobileNorm(feeSelectedMember.mobile);
+
+            const strictMemberMatch = record => {
+                const recordUID = keyNorm(readFeeField(record, "uid"));
+                const recordMobile = mobileNorm(readFeeField(record, "mobile"));
+                if (targetUID && targetUID !== "direct") {
+                    if (recordUID) return recordUID === targetUID;
+                    return Boolean(targetMobile && recordMobile && recordMobile === targetMobile);
+                }
+                return Boolean(targetMobile && recordMobile && recordMobile === targetMobile);
+            };
+
+            const extractRows = data => {
+                if (Array.isArray(data)) return data;
+                if (!data || typeof data !== "object") return [];
+                if (Array.isArray(data.history)) return data.history;
+                if (Array.isArray(data.data)) return data.data;
+                if (Array.isArray(data.records)) return data.records;
+                if (Array.isArray(data.rows)) return data.rows;
+                if (Array.isArray(data.result)) return data.result;
+                if (Array.isArray(data.fees)) return data.fees;
+                return [];
+            };
+
+            let historyRows = [];
+            for (const action of ["feeHistory", "searchFee"]) {
+                try {
+                    const params = new URLSearchParams();
+                    params.set("action", action);
+                    if (feeSelectedMember.uid) params.set("uid", String(feeSelectedMember.uid).trim());
+                    if (targetMobile) params.set("mobile", targetMobile);
+                    if (feeSelectedMember.name) params.set("name", String(feeSelectedMember.name).trim());
+                    params.set("t", String(Date.now()));
+
+                    const response = await fetch(FEE_WEB_APP_URL + "?" + params.toString(), { method: "GET", cache: "no-store" });
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    const rows = extractRows(data).filter(r => r && (typeof r === "object" || Array.isArray(r)));
+                    const matched = rows.filter(strictMemberMatch);
+                    if (matched.length > 0) {
+                        historyRows = matched;
+                        break;
+                    }
+                } catch (error) {
+                    console.warn("Fee history API action failed:", action, error);
+                }
+            }
+
+            if (historyRows.length === 0) {
+                try {
+                    await fetchFeeLibraryData(true);
+                    if (Array.isArray(feeLibraryDataObject)) {
+                        historyRows = feeLibraryDataObject.filter(strictMemberMatch);
+                    }
+                } catch (error) {
+                    console.warn("Fee Updation full history refresh failed:", error);
+                }
+            }
+
+            historyRows = historyRows.filter(record => {
+                const gValue = readFeeField(record, "month");
+                return gValue !== null && gValue !== undefined && String(gValue).trim() !== "";
+            });
+
+            currentMemberFeeHistory = historyRows.slice();
+            currentMemberFeeHistory.sort((a, b) => {
+                const da = new Date(readFeeField(a, "payDate") || 0).getTime() || 0;
+                const db = new Date(readFeeField(b, "payDate") || 0).getTime() || 0;
+                return db - da;
+            });
+
+            const uniqueHistory = [];
+            const seenHistoryKeys = new Set();
+            currentMemberFeeHistory.forEach(record => {
+                const monthKey = String(readFeeField(record, "month") || "").trim().toLowerCase();
+                const amountKey = String(readFeeField(record, "amount") || "").trim();
+                const dateKey = String(readFeeField(record, "payDate") || "").trim();
+                const utrKey = String(readFeeField(record, "utr") || "").trim();
+                const uniqueKey = [monthKey, amountKey, dateKey, utrKey].join("|");
+
+                if (!seenHistoryKeys.has(uniqueKey)) {
+                    seenHistoryKeys.add(uniqueKey);
+                    uniqueHistory.push(record);
+                }
+            });
+            currentMemberFeeHistory = uniqueHistory;
+
+            if (!monthSelect) return;
+            if (currentMemberFeeHistory.length === 0) {
+                monthSelect.innerHTML = '<option value="">⚠️ Is member ki Fee Updation sheet me history nahi mili</option>';
+                monthSelect.disabled = true;
+                return;
+            }
+
+            let optionsHtml = '<option value="">-- Select Paid Month --</option>';
+            currentMemberFeeHistory.forEach((record, idx) => {
+                const rawMonth = readFeeField(record, "month");
+                const amount = readFeeField(record, "amount") || "0";
+                const paidOnRaw = readFeeField(record, "payDate");
+                const paidOn = paidOnRaw ? formatMonthYear(paidOnRaw) : "";
+                const paidOnText = paidOn ? ` | Paid On: ${escapeHtml(String(paidOn))}` : "";
+                optionsHtml += `<option value="${idx}">Fees For: ${escapeHtml(String(rawMonth))} — Paid ₹${escapeHtml(String(amount))}${paidOnText}</option>`;
+            });
+            monthSelect.innerHTML = optionsHtml;
+            monthSelect.disabled = false;
+        };
+
+        window.handleReprintMonthChange = function() {
+            const monthSelect = document.getElementById("reprintMonthSelect");
+            if (!monthSelect) return;
+
+            const selectedIdx = monthSelect.value;
+            if (selectedIdx === "" || !currentMemberFeeHistory[selectedIdx]) return;
+
+            const record = currentMemberFeeHistory[selectedIdx];
+            feeReceiptMode = "reprint";
+            feeFlowState = 1;
+            feeReceiptPrinted = false;
+            const readFeeField = window.__readFeeReprintField || function(rec, field) { return ""; };
+
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el && value !== "") el.value = value;
+            };
+
+            const rawMonth = readFeeField(record, "month");
+            if (rawMonth) {
+                setValue("feeForMonth", rawMonth);
+                let parts = String(rawMonth).split("-");
+                if (parts.length === 2) {
+                    let mEl = document.getElementById("feeMonthSelect");
+                    let yEl = document.getElementById("feeYearSelect");
+                    if (mEl) mEl.value = parts[0];
+                    if (yEl) yEl.value = parts[1];
+                }
+            }
+
+            setValue("feeAmount", readFeeField(record, "amount"));
+            setValue("feeShift", readFeeField(record, "shift"));
+            setValue("feePaymentMode", readFeeField(record, "mode"));
+            setValue("feeUtr", readFeeField(record, "utr"));
+            setValue("feeRemark", readFeeField(record, "remark"));
+
+            const payDate = readFeeField(record, "payDate") || readFeeField(record, "date");
+            if (payDate) setValue("feePayDate", String(payDate).split("T")[0]);
+
+            const expiryDate = readFeeField(record, "expiryDate");
+            if (expiryDate) setValue("feeExpiryDate", String(expiryDate).split("T")[0]);
+
+            if (typeof handlePaymentModeChange === "function") handlePaymentModeChange();
+            if (typeof calculateDueDays === "function") calculateDueDays();
+        };
+
+        let trackerSearchMatchCache = [];
+        let trackerMemberHistory = [];
+
+        window.debouncedTrackerSearch = function() {
+            clearTimeout(feeSearchTimer);
+            feeSearchTimer = setTimeout(() => searchTrackerLibraryData(), 180);
+        };
+
+        window.searchTrackerLibraryData = async function() {
+            const input = document.getElementById("trackerQueryInput");
+            const resultsDiv = document.getElementById("trackerSearchResults");
+            if (!input || !resultsDiv) return;
+
+            const query = input.value.trim().toLowerCase();
+
+            if (query === "") {
+                resultsDiv.style.display = "none";
+                resultsDiv.innerHTML = "";
+                trackerSearchMatchCache = [];
+                return;
+            }
+
+            resultsDiv.style.display = "block";
+            resultsDiv.innerHTML = "<span style='color:#64748b;font-size:12px;'>Member data load ho raha hai...</span>";
+
+            if (!Array.isArray(feeLibraryDataObject) || feeLibraryDataObject.length === 0) {
+                await fetchFeeLibraryData(false);
+            }
+
+            const sourceRecords = [];
+            extractMemberRecords(feeLibraryDataObject, sourceRecords, new WeakSet());
+            extractMemberRecords(existingMembersDB, sourceRecords, new WeakSet());
+            extractMemberRecords(allData, sourceRecords, new WeakSet());
+            const mergedSourceRecords = mergeMemberRecords(sourceRecords);
+            const matches = [];
+            const queryDigits = normalizeSearchMobile(query);
+
+            mergedSourceRecords.forEach(member => {
+                const mobile = String(member.mobile || '').trim();
+                const uid = String(member.uid || '').trim();
+                const name = String(member.name || '').trim();
+                const branch = String(member.branch || '').trim();
+
+                const mobDigits = normalizeSearchMobile(mobile);
+                const uidStr = normalizeSearchText(uid);
+                const nameStr = normalizeSearchText(name);
+
+                const isFullMobileMatch = queryDigits.length >= 5 && mobDigits && mobDigits === queryDigits;
+                const isLast4Match = queryDigits.length === 4 && mobDigits.endsWith(queryDigits);
+                const isUidMatch = uidStr && uidStr === query;
+                const isPartialUidMatch = query.length >= 3 && uidStr && uidStr.includes(query);
+                const isNameMatch = nameStr && nameStr.includes(query);
+                const isPartialMobileMatch = queryDigits.length >= 4 && mobDigits.includes(queryDigits);
+
+                if (isFullMobileMatch || isLast4Match || isUidMatch || isPartialUidMatch || isNameMatch || isPartialMobileMatch) {
+                    matches.push({ mobile, name, uid, branch, record: member.record });
+                }
+            });
+
+            trackerSearchMatchCache = matches;
+
+            if (matches.length > 0) {
+                resultsDiv.innerHTML = matches.slice(0, 30).map((m, index) => `
+                    <div onclick="selectTrackerMemberByIndex(${index})"
+                         style="padding:10px;border-bottom:1px solid #f1f5f9;cursor:pointer; background:#fff;"
+                         onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                        👤 <b>${escapeHtml(m.name || 'N/A')}</b>
+                        | 📱 <b>${escapeHtml(m.mobile || 'N/A')}</b>
+                        | 🆔 <b>${escapeHtml(m.uid || 'N/A')}</b><br>
+                        <span style="font-size:11px;color:#64748b;">
+                            🏢 <b>Branch:</b> ${escapeHtml(m.branch || 'Core/Nexus')}
+                        </span>
+                    </div>
+                `).join("");
+            } else {
+                resultsDiv.innerHTML = "<span style='color:#dc2626;font-size:12px;'>⚠️ कोई सदस्य नहीं मिला। Sahi Mobile, UID ya Name check karein.</span>";
+            }
+        };
+
+        window.selectTrackerMemberByIndex = async function(index) {
+            const item = trackerSearchMatchCache[index];
+            if (!item) return;
+
+            const selectedMember = {
+                name: item.name || "",
+                mobile: item.mobile || "",
+                uid: item.uid || "",
+                branch: item.branch || activeBranch
+            };
+
+            const searchInput = document.getElementById("trackerQueryInput");
+            if (searchInput) {
+                searchInput.value = `${selectedMember.name} (${selectedMember.mobile} - ${selectedMember.uid})`;
+            }
+
+            const searchResults = document.getElementById("trackerSearchResults");
+            if (searchResults) searchResults.style.display = "none";
+
+            const summaryBox = document.getElementById("trackerMemberSummaryBox");
+            if (summaryBox) {
+                summaryBox.style.display = "block";
+                summaryBox.innerHTML = `
+                    <div style="font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
+                        <i class="fa-solid fa-user-check" style="color: #16a34a;"></i> ${escapeHtml(selectedMember.name)}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #475569; display: flex; gap: 15px; flex-wrap: wrap;">
+                        <span>📱 <b>Mobile:</b> ${escapeHtml(selectedMember.mobile)}</span>
+                        <span>🆔 <b>UID:</b> ${escapeHtml(selectedMember.uid || 'N/A')}</span>
+                        <span>🏢 <b>Branch:</b> ${escapeHtml(selectedMember.branch || 'N/A')}</span>
+                    </div>
+                `;
+            }
+
+            const tableContainer = document.getElementById("trackerTableContainer");
+            if (tableContainer) {
+                tableContainer.style.display = "block";
+                tableContainer.innerHTML = `<div style="padding:15px; text-align:center; color:#64748b; font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching fee history...</div>`;
+            }
+
+            const keyNorm = v => String(v ?? "")
+                .toLowerCase()
+                .replace(/[\u200B-\u200D\uFEFF]/g, "")
+                .replace(/[^a-z0-9]+/g, "")
+                .trim();
+
+            const mobileNorm = v => {
+                let digits = String(v ?? "").replace(/\D/g, "");
+                if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+                if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+                return digits;
+            };
+
+            const targetUID = keyNorm(selectedMember.uid);
+            const targetMobile = mobileNorm(selectedMember.mobile);
+
+            const extractRows = data => {
+                if (Array.isArray(data)) return data;
+                if (!data || typeof data !== "object") return [];
+                if (Array.isArray(data.history)) return data.history;
+                if (Array.isArray(data.data)) return data.data;
+                if (Array.isArray(data.records)) return data.records;
+                if (Array.isArray(data.rows)) return data.rows;
+                if (Array.isArray(data.result)) return data.result;
+                if (Array.isArray(data.fees)) return data.fees;
+                return [];
+            };
+
+            let historyRows = [];
+            for (const action of ["feeHistory", "searchFee"]) {
+                try {
+                    const params = new URLSearchParams();
+                    params.set("action", action);
+                    if (selectedMember.uid) params.set("uid", String(selectedMember.uid).trim());
+                    if (targetMobile) params.set("mobile", targetMobile);
+                    if (selectedMember.name) params.set("name", String(selectedMember.name).trim());
+                    params.set("t", String(Date.now()));
+
+                    const response = await fetch(FEE_WEB_APP_URL + "?" + params.toString(), { method: "GET", cache: "no-store" });
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    const rows = extractRows(data).filter(r => r && (typeof r === "object" || Array.isArray(r)));
+                    const readFn = window.__readFeeReprintField || ((rec, f) => "");
+                    const matched = rows.filter(r => {
+                        const rUID = keyNorm(readFn(r, "uid"));
+                        const rMob = mobileNorm(readFn(r, "mobile"));
+                        if (targetUID && targetUID !== "direct") {
+                            if (rUID) return rUID === targetUID;
+                            return Boolean(targetMobile && rMob && rMob === targetMobile);
+                        }
+                        return Boolean(targetMobile && rMob && rMob === targetMobile);
+                    });
+                    if (matched.length > 0) {
+                        historyRows = matched;
+                        break;
+                    }
+                } catch (error) {
+                    console.warn("Tracker API history fetch failed:", error);
+                }
+            }
+
+            if (historyRows.length === 0 && Array.isArray(feeLibraryDataObject)) {
+                const readFn = window.__readFeeReprintField || ((rec, f) => "");
+                historyRows = feeLibraryDataObject.filter(r => {
+                    const rUID = keyNorm(readFn(r, "uid"));
+                    const rMob = mobileNorm(readFn(r, "mobile"));
+                    if (targetUID && targetUID !== "direct") {
+                        if (rUID) return rUID === targetUID;
+                        return Boolean(targetMobile && rMob && rMob === targetMobile);
+                    }
+                    return Boolean(targetMobile && rMob && rMob === targetMobile);
+                });
+            }
+
+            const readFn = window.__readFeeReprintField || ((rec, f) => "");
+            trackerMemberHistory = historyRows.filter(record => {
+                const gVal = readFn(record, "month");
+                return gVal !== null && gVal !== undefined && String(gVal).trim() !== "";
+            });
+
+            trackerMemberHistory.sort((a, b) => {
+                const da = new Date(readFn(a, "payDate") || readFn(a, "date") || 0).getTime() || 0;
+                const db = new Date(readFn(b, "payDate") || readFn(b, "date") || 0).getTime() || 0;
+                return db - da;
+            });
+
+            if (!tableContainer) return;
+
+            if (trackerMemberHistory.length === 0) {
+                tableContainer.innerHTML = `<div style="padding:15px; text-align:center; color:#dc2626; font-size:13px;">⚠️ Is member ki koi fee history available nahi hai.</div>`;
+                return;
+            }
+
+            let totalPaidSum = 0;
+            let rowsHtml = "";
+
+            trackerMemberHistory.forEach((record, idx) => {
+                const month = formatMonthYear(readFn(record, "month")) || readFn(record, "month") || "N/A";
+                const amount = Number(readFn(record, "amount") || 0);
+                totalPaidSum += amount;
+                const mode = readFn(record, "mode") || "Cash";
+                const utr = readFn(record, "utr") || "N/A";
+                const payDate = readFn(record, "payDate") || readFn(record, "date") || "N/A";
+                const expiryDate = readFn(record, "expiryDate") || "N/A";
+                const remark = readFn(record, "remark") || readFn(record, "paymentfor") || "N/A";
+
+                rowsHtml += `
+                    <tr style="border-bottom:1px solid #f1f5f9; font-size:12.5px;">
+                        <td style="padding:10px; font-weight:600; color:#16a34a;">${escapeHtml(month)}</td>
+                        <td style="padding:10px; font-weight:700; color:#16a34a;">₹${escapeHtml(amount)}</td>
+                        <td style="padding:10px;">${escapeHtml(mode)} ${utr !== 'N/A' && utr !== 'Cash Payment' ? `<br><small style="color:#64748b;">UTR: ${escapeHtml(utr)}</small>` : ''}</td>
+                        <td style="padding:10px;">${escapeHtml(payDate)}</td>
+                        <td style="padding:10px; color:#dc2626; font-weight:600;">${escapeHtml(expiryDate)}</td>
+                        <td style="padding:10px; color:#475569;">${escapeHtml(remark)}</td>
+                    </tr>
+                `;
+            });
+
+            tableContainer.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:600; color:#1e293b;">
+                    <span>Total Records Found: ${trackerMemberHistory.length}</span>
+                    <span style="background:#f0fdf4; color:#16a34a; padding:4px 10px; border-radius:6px; border:1px solid #bbf7d0;">Total Paid Amount: ₹${totalPaidSum}</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left;">
+                        <thead>
+                            <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0; font-size:12px; color:#475569;">
+                                <th style="padding:10px;">Fee Month</th>
+                                <th style="padding:10px;">Amount</th>
+                                <th style="padding:10px;">Payment Mode</th>
+                                <th style="padding:10px;">Paid Date</th>
+                                <th style="padding:10px;">Expiry Date</th>
+                                <th style="padding:10px;">Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        window.selectThisMemberByIndex = function(index) {
+            const item = window.feeSearchMatchCache[index];
+            if (!item) return;
+            selectThisMember(item.name, item.mobile, item.uid, item.branch, item.record);
+        };
+
+        window.selectThisMember = function(name, mobile, uid, branch, sourceRecord) {
+            feeSearchRequestId++;
+            feeSelectedMember = { name, mobile, uid, branch };
+            feeFlowState = 1;
+            feeReceiptMode = "new";
+            feeReceiptPrinted = false;
+            
+            let searchInput = document.getElementById("feeSearchInput");
+            if (searchInput) searchInput.value = `${name} (${mobile} - ${uid})`;
+
+            let searchResults = document.getElementById("feeSearchResults");
+            if (searchResults) searchResults.style.display = "none";
+
+            let memberHistory = [];
+            if (Array.isArray(feeLibraryDataObject)) {
+                memberHistory = feeLibraryDataObject.filter(m => {
+                    let mMob = normalizeSearchMobile(m["Mobile Number"] || m.mobile || m.phone || "");
+                    let mUid = normalizeSearchText(m["UID Code"] || m.uid || "");
+                    let targetMob = normalizeSearchMobile(mobile);
+                    let targetUid = normalizeSearchText(uid);
+
+                    return (targetMob && mMob && mMob === targetMob) || (targetUid && mUid && mUid === targetUid);
+                });
+            }
+
+            const matchedRecord = memberHistory[memberHistory.length - 1] || sourceRecord || {};
+            let fetchedAmount = getFeeHistoryField(matchedRecord, 'amount');
+            let fetchedShift = getFeeHistoryField(matchedRecord, 'shift');
+            let fetchedMode = getFeeHistoryField(matchedRecord, 'mode');
+            let fetchedRemark = getFeeHistoryField(matchedRecord, 'remark');
+
+            const expDate = findLastMemberExpiryDate(memberHistory);
+
+            const feeExpInput = document.getElementById('feeExpiryDate');
+            if (feeExpInput) {
+                feeExpInput.value = expDate || '';
+                if (typeof calculateDueDays === 'function') calculateDueDays();
+            }
+
+            const feeMonthEl = document.getElementById("feeMonthSelect");
+            const feeYearEl = document.getElementById("feeYearSelect");
+            const feeCombinedEl = document.getElementById("feeForMonth");
+            if (feeMonthEl && feeYearEl && feeCombinedEl && !String(feeCombinedEl.value || '').trim()) {
+                const currentFeeDate = new Date();
+                const currentMonthName = currentFeeDate.toLocaleString('en-US', { month: 'long' });
+                const currentYearVal = currentFeeDate.getFullYear();
+                feeMonthEl.value = currentMonthName;
+                feeYearEl.value = currentYearVal;
+                updateCombinedFeeForMonth();
+            }
+
+            const feeExpiryAfterMonth = document.getElementById('feeExpiryDate');
+            if (feeExpiryAfterMonth) feeExpiryAfterMonth.value = expDate || '';
+            if (typeof calculateDueDays === 'function') calculateDueDays();
+
+            if (fetchedAmount) document.getElementById("feeAmount").value = fetchedAmount;
+            if (fetchedShift) document.getElementById("feeShift").value = fetchedShift;
+            if (fetchedMode) document.getElementById("feePaymentMode").value = fetchedMode;
+            if (fetchedRemark) document.getElementById("feeRemark").value = fetchedRemark;
+
+            let summaryHtml = `
+                <div style="font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
+                    <i class="fa-solid fa-user-check" style="color: #0284c7;"></i> ${name}
+                </div>
+                <div style="font-size: 0.8rem; color: #475569; display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 2px;">
+                    <span>📱 <b>Mobile:</b> ${mobile}</span>
+                    <span>🆔 <b>UID:</b> ${uid || 'N/A'}</span>
+                    <span>🏢 <b>Branch:</b> ${branch || 'N/A'}</span>
+                </div>
+            `;
+
+            let summaryElem = document.getElementById("selectedMemberSummary");
+            if (summaryElem) summaryElem.innerHTML = summaryHtml;
+
+            let detailsSection = document.getElementById("feeDetailsSection");
+            if (detailsSection) detailsSection.style.display = "block";
+            
+            document.getElementById("feePayDate").value = new Date().toISOString().split('T')[0];
+            handlePaymentModeChange();
+
+            let submitBtn = document.getElementById("feeSubmitBtn");
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
+                submitBtn.style.background = "#16a34a";
+                checkFormCompletion();
+            }
+        };
+
+        window.calculateDueDays = function() {
+            let expiryVal = document.getElementById("feeExpiryDate").value;
+            let dueDaysDisplay = document.getElementById("feeDueDaysDisplay");
+
+            if (!expiryVal) {
+                if(dueDaysDisplay) dueDaysDisplay.innerHTML = "";
+                checkFormCompletion();
+                return;
+            }
+
+            let expiryDate = new Date(expiryVal);
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            expiryDate.setHours(0,0,0,0);
+
+            let diffTime = expiryDate - today;
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            let colorStyle = "", statusText = "";
+
+            if (diffDays > 2) {
+                colorStyle = "color: #16a34a; font-weight: 700; background: #f0fdf4; padding: 6px 10px; border-radius: 6px; border: 1px solid #bbf7d0; display: inline-block;";
+                statusText = `<i class="fa-solid fa-circle-check"></i> Subscription Active (${diffDays} Days left)`;
+            } else if (diffDays >= 0) {
+                colorStyle = "color: #d97706; font-weight: 700; background: #fffbeb; padding: 6px 10px; border-radius: 6px; border: 1px solid #fef3c7; display: inline-block;";
+                statusText = `<i class="fa-solid fa-triangle-exclamation"></i> Expiring Soon! (${diffDays} Days left)`;
+            } else {
+                colorStyle = "color: #dc2626; font-weight: 700; background: #fef2f2; padding: 6px 10px; border-radius: 6px; border: 1px solid #fecaca; display: inline-block;";
+                statusText = `<i class="fa-solid fa-triangle-exclamation"></i> Alert: Fees Expired by ${Math.abs(diffDays)} Days!`;
+            }
+
+            if(dueDaysDisplay) dueDaysDisplay.innerHTML = `<div style="${colorStyle}">${statusText}</div>`;
+            checkFormCompletion();
+        }
+
+        window.handleFeeButtonAction = function() {
+            if (feeFlowState === 2) {
+                generateFeeReceiptOnly(false);
+                return;
+            }
+            if (feeFlowState === 3) {
+                sendFeeWhatsAppNotification();
+                return;
+            }
+            validateAndSubmitFee();
+        };
+
+        function normalizeFeeMonth(value) {
+            if (value === null || value === undefined || value === "") return "";
+            const str = String(value).trim().toLowerCase();
+            const m = str.match(/^(\d{4})-(\d{1,2})$/);
+            if (m) return m[1] + "-" + String(m[2]).padStart(2, "0");
+            return str;
+        }
+
+        function makeFeeRequestId() {
+            return "FEE-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+        }
+
+        window.validateAndSubmitFee = async function() {
+            if (feeSaveInProgress) return;
+
+            if (!feeSelectedMember) {
+                alert("Please select a member first!");
+                return;
+            }
+
+            const rawInputMonth = document.getElementById("feeForMonth").value.trim();
+            const normalizedMonth = normalizeFeeMonth(rawInputMonth);
+
+            if (!rawInputMonth || !normalizedMonth) {
+                alert("⚠️ Please enter a valid Fee Month.");
+                document.getElementById("feeForMonth").focus();
+                return;
+            }
+
+            const submitBtn = document.getElementById("feeSubmitBtn");
+            feeSaveInProgress = true;
+
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+                submitBtn.disabled = true;
+            }
+
+            try {
+                const rawPayDate = document.getElementById("feePayDate").value;
+                const rawExpiryDate = document.getElementById("feeExpiryDate").value;
+
+                function formatDateToDDMMYYYY(dateStr) {
+                    if (!dateStr) return "";
+                    const parts = dateStr.split("-");
+                    return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr;
+                }
+
+                const mode = document.getElementById("feePaymentMode").value;
+                const utr = mode === "Cash" ? "Cash Payment" : document.getElementById("feeUtr").value.trim();
+                const requestId = makeFeeRequestId();
+
+                const payload = {
+                    action: "saveFee",
+                    requestId: requestId,
+                    name: feeSelectedMember.name || "",
+                    uid: feeSelectedMember.uid || "",
+                    mobile: feeSelectedMember.mobile || "",
+                    branch: feeSelectedMember.branch || "",
+                    shift: document.getElementById("feeShift").value,
+                    feesformonth: rawInputMonth,
+                    amount: document.getElementById("feeAmount").value,
+                    mode: mode,
+                    utr: utr || "N/A",
+                    paymentfor: document.getElementById("feeRemark").value,
+                    payDate: formatDateToDDMMYYYY(rawPayDate),
+                    expiryDate: formatDateToDDMMYYYY(rawExpiryDate),
+                    remark: document.getElementById("feeRemark").value
+                };
+
+                const saveResponse = await fetch(FEE_WEB_APP_URL + "?action=saveFee&t=" + Date.now(), { 
+                    method: "POST", 
+                    headers: {
+                        "Content-Type": "text/plain;charset=utf-8",
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!saveResponse.ok) throw new Error("Google Web App HTTP " + saveResponse.status);
+
+                let result = await saveResponse.json();
+
+                if (result && (result.status === "success" || result.result === "success" || result.success)) {
+                    alert("✅ Fee Update successfully !");
+                    fetchFeeLibraryData(true).catch(() => {});
+                    
+                    feeFlowState = 2;
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Receipt';
+                        submitBtn.style.background = "#f59e0b";
+                        submitBtn.disabled = false;
+                        submitBtn.style.display = "block";
+                    }
+                    feeReceiptMode = "new";
+                    feeReceiptPrinted = false;
+                    return;
+                }
+
+                throw new Error((result && result.message) || "Google Sheet save confirmation nahi mili.");
+
+            } catch (err) {
+                console.error("Fee save error:", err);
+                alert("❌ Fee save confirm nahi ho saki.\n\n" + (err.message || "Please try again."));
+                feeFlowState = 1;
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fa-solid fa-sync"></i> Update Fee';
+                    submitBtn.style.background = "#16a34a";
+                    submitBtn.disabled = false;
+                }
+            } finally {
+                feeSaveInProgress = false;
+            }
+        };
+
+        window.generateFeeReceiptOnly = function(isReprint = false) {
+            if (!feeSelectedMember) {
+                alert("⚠️ Please select a member first.");
+                return;
+            }
+
+            const feeMonth = document.getElementById("feeForMonth").value.trim();
+            const shift = document.getElementById("feeShift").value;
+            const amount = document.getElementById("feeAmount").value;
+            const mode = document.getElementById("feePaymentMode").value;
+            const utr = mode === "Cash" ? "Cash Payment" : document.getElementById("feeUtr").value;
+            const remark = document.getElementById("feeRemark").value;
+            const payDate = document.getElementById("feePayDate").value;
+            const expiryDate = document.getElementById("feeExpiryDate").value;
+
+            const receiptWindow = window.open('', '_blank', 'width=750,height=650');
+            if (!receiptWindow) {
+                alert("⚠️ Receipt window blocked. Please allow pop-ups for this site.");
+                return;
+            }
+
+            const safe = value => escapeHtml(value);
+            const receiptTitle = isReprint ? "Official Fee Receipt (Reprint)" : "Official Fee Receipt";
+            const today = new Date();
+            const receiptHeaderDate = `${String(today.getDate()).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(2, "0")}-${today.getFullYear()}`;
+
+receiptWindow.document.write(`
+        <html>
+        <head>
+            <title>${safe(feeSelectedMember.uid)}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+            <style>
+                body { font-family: 'Poppins', sans-serif; padding: 25px; color: #334155; }
+                .receipt-box { max-width: 650px; margin: 0 auto; border: 2px solid #cbd5e1; padding: 25px; border-radius: 12px; background: #fff; }
+                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
+                .logo-title { display: flex; align-items: center; gap: 15px; }
+                .logo-img { width: 65px; height: 65px; object-fit: contain; border-radius: 50%; border: 1px solid #cbd5e1; }
+                .title-text h2 { margin: 0; font-family: 'Abhaya Libre', serif; font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+                .title-text h2 .eminence-part { color: #ff6600; }
+                .title-text h2 .library-part { color: #000000; }
+                .title-text p { margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b; }
+                .details-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+                .details-table td { padding: 8px 10px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; }
+                .details-table td.label { font-weight: 600; color: #475569; width: 40%; }
+                .note { text-align: left; margin: 8px 0 18px 0; font-size: 0.76rem; line-height: 1.45; color: #475569; font-weight: 600; }
+                .footer { text-align: center; margin-top: 8px; font-size: 0.8rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 15px; }
 /* 1. Sabhi main containers ko mobile par overflow hone se rokein */
 body, html {
   max-width: 100%;
@@ -30,4 +1594,666 @@ body, html {
   align-items: center;
   padding: 5px !important;
   box-sizing: border-box;
-}
+}            
+
+</style>
+        </head>
+        <body>
+            <div class="receipt-box">
+                <div class="header">
+                    <div class="logo-title">
+                        <img src="logo2.png" alt="Logo" class="logo-img">
+                        <div class="title-text">
+                            <h2><span class="eminence-part">Eminence</span> <span class="library-part">Library</span></h2>
+                            <p>${receiptTitle}</p>
+                        </div>
+                    </div>
+                    <div style="text-align:right;font-size:0.85rem;color:#64748b;"><b>Date:</b> ${safe(receiptHeaderDate)}</div>
+                </div>
+                <table class="details-table">
+                    <tr><td class="label">Student Name:</td><td><b>${safe(feeSelectedMember.name)}</b></td></tr>
+                    <tr><td class="label">UID:</td><td>${safe(feeSelectedMember.uid)}</td></tr>
+                    <tr><td class="label">Mobile Number:</td><td>${safe(feeSelectedMember.mobile)}</td></tr>
+                    <tr><td class="label">Branch:</td><td>${safe(feeSelectedMember.branch)}</td></tr>
+                    <tr><td class="label">Fees For Month:</td><td><b style="color:#0284c7;">${safe(feeMonth)}</b></td></tr>
+                    <tr><td class="label">Shift:</td><td>${safe(shift)}</td></tr>
+                    <tr><td class="label">Payment Amount:</td><td><b style="color:#16a34a;">₹${safe(amount)}</b></td></tr>
+                    <tr><td class="label">Payment Mode:</td><td>${safe(mode)}</td></tr>
+                    ${(mode === "Online" || mode === "By QR") ? `<tr><td class="label">UTR Number:</td><td><b>${safe(utr)}</b></td></tr>` : ''}
+                    <tr><td class="label">Payment For:</td><td><b style="color:#c2410c;">${safe(remark)}</b></td></tr>
+                    <tr><td class="label">Fees Pay Date:</td><td>${safe(payDate)}</td></tr>
+                    <tr><td class="label">Fees Expiry Date:</td><td><b style="color:#dc2626;">${safe(expiryDate)}</b></td></tr>
+                </table>
+                <div class="note">Note: The above fees are non-refundable, non-transferable &amp; non adjustable</div>
+                <div class="footer"><p>Thank you for studying with Eminence Library! -- Team Eminence</p></div>
+            </div>
+        </body>
+        </html>
+    `);
+
+
+           
+            receiptWindow.document.close();
+
+            if (!isReprint) {
+                feeReceiptPrinted = true;
+                feeFlowState = 3;
+                const submitBtn = document.getElementById("feeSubmitBtn");
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> WhatsApp';
+                    submitBtn.style.background = "#25d366";
+                    submitBtn.disabled = false;
+                    submitBtn.style.display = "block";
+                }
+            }
+
+            receiptWindow.focus();
+            setTimeout(() => {
+                try { receiptWindow.print(); } catch (e) { console.warn("Receipt print error:", e); }
+            }, 250);
+        };
+
+        window.sendFeeWhatsAppNotification = function() {
+            if (!feeSelectedMember || !feeSelectedMember.mobile) {
+                alert("⚠️ Member mobile number is not available.");
+                return;
+            }
+
+            const rawExpiryDate = document.getElementById("feeExpiryDate").value;
+            let formattedExpiryDate = rawExpiryDate;
+            if (rawExpiryDate && rawExpiryDate.includes("-")) {
+                const parts = rawExpiryDate.split("-");
+                if (parts.length === 3) {
+                    formattedExpiryDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+            }
+
+            const name = feeSelectedMember.name || "Member";
+            const uid = feeSelectedMember.uid || "";
+            const mobileNumber = feeSelectedMember.mobile;
+
+            const whatsappMessage = `*${name} (${uid})* आपकी एमिनेंस लाइब्रेरी सदस्यता को दिनांक *${formattedExpiryDate}* तक आगे बढ़ा दिया गया है--धन्यवाद`;
+            const whatsappUrl = `https://wa.me/${mobileNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+            
+            window.open(whatsappUrl, '_blank');
+            clearFeeEntryForm();
+        };
+
+        window.clearFeeEntryForm = function() {
+const input = document.getElementById("feeSearchInput");
+    if (input) input.value = "";
+    
+    const resultsDiv = document.getElementById("feeSearchResults");
+    if (resultsDiv) {
+        resultsDiv.style.display = "none"; // Results hide
+        resultsDiv.innerHTML = "";         // Results clear
+    }
+    
+    const feeDetailsSection = document.getElementById("feeDetailsSection");
+    if (feeDetailsSection) feeDetailsSection.style.display = "none"; // Form hide
+    
+    // Form fields ko reset karna
+    const feeShift = document.getElementById("feeShift");
+    if (feeShift) feeShift.selectedIndex = 0;
+
+    const feePaymentMode = document.getElementById("feePaymentMode");
+    if (feePaymentMode) feePaymentMode.selectedIndex = 0;
+
+    const feeRemark = document.getElementById("feeRemark");
+    if (feeRemark) feeRemark.value = ""; // Agar yeh dropdown nahi text/other input hai toh value = "" safe hai
+
+    const memberSummary = document.getElementById("selectedMemberSummary");
+    if (memberSummary) {
+        memberSummary.innerHTML = '<div style="font-size:0.85rem;font-weight:600;color:#0f172a;">👤 Member search karein</div>';
+    }
+
+    if (typeof feeSearchRequestId !== "undefined") feeSearchRequestId++;
+
+    const dueDaysDisplay = document.getElementById("feeDueDaysDisplay");
+    if (dueDaysDisplay) dueDaysDisplay.innerHTML = "";
+    
+    feeSelectedMember = null;
+};
+
+        window.switchBranch = function(branchKey) {
+            activeBranch = branchKey;
+            document.getElementById('coreBranchBtn').classList.remove('active');
+            document.getElementById('nexusBranchBtn').classList.remove('active');
+            
+            if (branchKey === 'core') {
+                document.getElementById('coreBranchBtn').classList.add('active');
+                document.getElementById('coreBranchSection').style.display = 'block';
+                document.getElementById('nexusBranchSection').style.display = 'none';
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-building-columns"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability';
+            } else {
+                document.getElementById('nexusBranchBtn').classList.add('active');
+                document.getElementById('coreBranchSection').style.display = 'none';
+                document.getElementById('nexusBranchSection').style.display = 'block';
+                document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-graduation-cap"></i> Nexus Branch - <span class="blink-live">Live</span> Seat Availability';
+            }
+            renderLayouts();
+        }
+
+        function createSeatNode(num, row, col) {
+            const seat = document.createElement("div");
+            const branchSeats = allData[activeBranch] || {};
+            const info = branchSeats[num] || { status: 'vacant' };
+            
+            let seatImage = "Desk1.png", statusLabel = "Available";
+            if (info.status === 'booked') { seatImage = "Desk2.png"; statusLabel = "Booked"; }
+            else if (info.status === 'waiting') { seatImage = "Desk4.png"; statusLabel = "On Hold (Waiting)"; }
+
+            let tooltipClass = (row === 1) ? 'seat tooltip-down' : 'seat';
+            seat.className = `${tooltipClass} ${info.status}`;
+            seat.style.gridRow = row;
+            seat.style.gridColumn = col;
+            
+            seat.innerHTML = `
+                <img src="${seatImage}" alt="Seat" class="seat-icon">
+                <span>${num}</span>
+                <div class="seat-tooltip ${info.status}">
+                    Seat #${num}<br><span class="tooltip-status-text">${statusLabel}</span>
+                </div>
+            `;
+            seat.onclick = () => { openAdminQuickModal(num, info); };
+            return seat;
+        }
+
+        function renderLayouts() {
+            if (!activeBranch) return;
+            if (activeBranch === 'core') {
+                const h1Container = document.getElementById("hall1GridContainer");
+                if(h1Container) {
+                    h1Container.innerHTML = "";
+                    for (let i = 12; i <= 18; i++) h1Container.appendChild(createSeatNode(i, 1, i - 11));
+                    for (let i = 11; i >= 1; i--) h1Container.appendChild(createSeatNode(i, 13 - i, 1));
+                    for (let i = 19; i <= 32; i++) h1Container.appendChild(createSeatNode(i, i - 18, 8));
+                    for (let i = 57, r = 3; i >= 49; i--, r++) h1Container.appendChild(createSeatNode(i, r, 3));
+                    [58, 41, 42, 43, 44, 45, 46, 47, 48].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 5)));
+                    [59, 40, 39, 38, 37, 36, 35, 34, 33].forEach((num, idx) => h1Container.appendChild(createSeatNode(num, 3 + idx, 6)));
+                }
+
+                const h2Container = document.getElementById("hall2GridContainer");
+                if(h2Container) {
+                    h2Container.innerHTML = "";
+                    for (let i = 65; i <= 70; i++) h2Container.appendChild(createSeatNode(i, 1, i - 64));
+                    [64, 63, 62, 61].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 1)));
+                    [71, 72, 73, 74].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 2 + idx, 6)));
+                    [80, 79, 78].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 3)));
+                    [77, 76, 75].forEach((num, idx) => h2Container.appendChild(createSeatNode(num, 3 + idx, 4)));
+                    h2Container.appendChild(createSeatNode(81, 6, 3));
+                    h2Container.appendChild(createSeatNode(82, 6, 4));
+                    h2Container.appendChild(createSeatNode(83, 6, 6));
+                }
+            } else {
+                const nexusContainer = document.getElementById("nexusGridContainer");
+                if(nexusContainer) {
+                    nexusContainer.innerHTML = "";
+                    for (let i = 1; i <= 65; i++) {
+                        let r = Math.floor((i - 1) / 8) + 1;
+                        let c = ((i - 1) % 8) + 1;
+                        nexusContainer.appendChild(createSeatNode(i, r, c));
+                    }
+                }
+            }
+        }
+
+        window.openAdminQuickModal = function(seatNum, seatInfo) {
+            quickSelectedSeatNum = seatNum;
+            document.getElementById("quickModalSeatNo").innerText = seatNum;
+            const detailsBox = document.getElementById("seatReadOnlyDetails");
+            if (seatInfo.status && seatInfo.status !== 'vacant') {
+                detailsBox.innerHTML = `<b>Branch:</b> ${activeBranch.toUpperCase()} | <b>Seat #:</b> ${seatNum}<br><b>Name:</b> ${seatInfo.studentName || seatInfo.name || 'N/A'}<br><b>Mobile:</b> ${seatInfo.mobile || seatInfo.phone || 'N/A'} | <b>UID:</b> ${seatInfo.uid || 'N/A'}`;
+            } else {
+                detailsBox.innerHTML = `<b>Seat #${seatNum}:</b> <span style="color: green; font-weight:600;">Vacant (Available)</span>`;
+            }
+            document.getElementById("quickModalNewStatus").value = seatInfo.status || 'vacant';
+            document.getElementById("quickBtnNotify").style.display = (!seatInfo.status || seatInfo.status === 'vacant') ? "none" : "block";
+            document.getElementById("adminQuickModal").style.display = "flex";
+        }
+
+        window.applyQuickSeatStatusChange = function() {
+            const newStatus = document.getElementById("quickModalNewStatus").value;
+            if (!allData[activeBranch]) allData[activeBranch] = {};
+            
+            if (newStatus === 'vacant') {
+                allData[activeBranch][quickSelectedSeatNum] = { status: 'vacant' };
+            } else {
+                if (allData[activeBranch][quickSelectedSeatNum]) {
+                    allData[activeBranch][quickSelectedSeatNum].status = newStatus;
+                } else {
+                    allData[activeBranch][quickSelectedSeatNum] = { status: newStatus };
+                }
+            }
+            closeModal('adminQuickModal');
+            renderLayouts();
+            saveToSheet();
+            alert("Seat status updated successfully!");
+        }
+
+        window.notifyQuickStudentWhatsApp = function() {
+            const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
+            let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
+            if (student && mobNum) {
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello ${student.studentName || student.name},\naapke seat number #${quickSelectedSeatNum} का allotment कर दिया गया है. Happy Study -- Team Eminence.\n\n`;
+                window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
+            } else {
+                alert("No mobile number available for this seat.");
+            }
+        }
+
+        window.searchMember = function() {
+            const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
+            const res = document.getElementById("adminSearchResult");
+            if (!query) {
+                res.style.color = "red";
+                res.innerHTML = "Please Enter Valid Mobile No. or UID.";
+                return;
+            }
+            let foundResults = [];
+            for (let branch in allData) {
+                for (let seat in allData[branch]) {
+                    let s = allData[branch][seat];
+                    let mobStr = (s.mobile || s.phone || '').toString().toLowerCase();
+                    let uidStr = (s.uid || '').toString().toLowerCase();
+                    if (mobStr.includes(query) || uidStr.includes(query)) {
+                        foundResults.push({ branch: branch, seat: seat, info: s });
+                    }
+                }
+            }
+            if (foundResults.length > 0) {
+                res.style.color = "#0f172a";
+                let htmlOutput = "";
+                foundResults.forEach(item => {
+                    let s = item.info;
+                    let branchFullName = item.branch === 'core' ? 'Core Branch - Main Library' : 'Eminence Library 2 - Basement, Agarsen Hospital, Devi Nagar, Jaipur';
+                    let uidVal = (s.uid && s.uid !== "" && s.uid !== "undefined") ? s.uid : "#N/A";
+                    
+                    htmlOutput += `
+                    <div style="background:#ffffff; border: 1px solid #e2e8f0; padding:12px 14px; border-radius:10px; margin-top:10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div style="font-size: 0.92rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <i class="fa-solid fa-user" style="color: #ff6600;"></i> <span>${s.studentName || s.name || 'N/A'}</span> 
+                            <span style="font-size: 0.72rem; background: #fff7ed; color: #c2410c; padding: 2px 6px; border-radius: 4px; font-weight: 600; border: 1px solid #ffedd5;"><i class="fa-solid fa-id-card"></i> UID: ${uidVal}</span>
+                            <span style="font-size: 0.75rem; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; color: #334155; font-weight: 700; margin-left: auto; border: 1px solid #cbd5e1;">Seat #${item.seat}</span>
+                        </div>
+                        <div style="font-size: 0.88rem; font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                            <i class="fa-solid fa-mobile-screen" style="color: #64748b;"></i> <span>${s.mobile || s.phone || 'N/A'}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; font-weight: 500; color: #475569; display: flex; align-items: center; gap: 6px; border-top: 1px solid #f1f5f9; padding-top: 6px;">
+                            <i class="fa-solid fa-building" style="color: #94a3b8;"></i> <span><b>Branch:</b> ${branchFullName}</span>
+                        </div>
+                    </div>`;
+                });
+                res.innerHTML = htmlOutput;
+            } else {
+                res.style.color = "#dc2626";
+                res.innerHTML = "<i class='fa-solid fa-triangle-exclamation'></i> No live booking found.";
+            }
+        }
+
+        window.openGlobalSearchModal = function() { document.getElementById("globalSearchModal").style.display = "flex"; }
+        window.closeModal = function(id) { document.getElementById(id).style.display = "none"; }
+    </script>
+    
+    <style>
+        :root { --primary-color: #ff6600; --primary-hover: #e65c00; --bg-light: #f8fafc; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background-color: #0f172a; color: #334155; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .admin-gate-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: flex; justify-content: center; align-items: center; z-index: 5000; padding: 20px; }
+        .admin-gate-card { background: #ffffff; width: 100%; max-width: 420px; border-radius: 16px; padding: 35px 25px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-top: 6px solid var(--primary-color); display: flex; flex-direction: column; justify-content: space-between; }
+        .portal-icon-container { width: 85px; height: 85px; margin: 0 auto 15px auto; border-radius: 50%; border: 2px solid var(--primary-color); display: flex; align-items: center; justify-content: center; background: #fffaf5; overflow: hidden; }
+        .portal-icon-img { width: 50px; height: 50px; object-fit: contain; }
+        .admin-gate-card h2 { font-size: 1.1rem; color: #1e293b; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .portal-title { font-size: 1.35rem; color: var(--primary-color); font-weight: 700; margin-bottom: 12px; text-transform: uppercase; }
+        .admin-gate-card p { font-size: 0.85rem; color: #64748b; margin-bottom: 25px; line-height: 1.5; }
+        .form-group { margin-bottom: 12px; text-align: left; }
+        .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+        .form-control { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none; font-family: 'Poppins', sans-serif; }
+        .form-control:focus { border-color: var(--primary-color); }
+        .form-control[readonly] { background-color: #f1f5f9; color: #64748b; cursor: not-allowed; }
+        .btn-submit { background: var(--primary-color); color: #ffffff; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: background 0.2s; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3); }
+        .btn-submit:hover { background: var(--primary-hover); }
+        .dashboard-container { width: 100%; max-width: 1300px; display: none; }
+        .windows-wrapper { display: flex; gap: 20px; justify-content: center; flex-wrap: nowrap; width: 100%; }
+        .windows-wrapper .admin-gate-card { flex: 1; min-width: 280px; max-width: 400px; }
+        #liveSeatManagementContainer, #feeManagementContainer, #feeTrackerContainer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-light); z-index: 6000; overflow-y: auto; padding-bottom: 80px; }
+        header { background-color: var(--primary-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; border-bottom: 4px solid #0f172a; }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .main-logo-banner { max-width: 180px; height: auto; display: block; }
+        .admin-portal-badge { background: #0f172a; color: #ffffff; font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; }
+        .nav-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .nav-btn { padding: 8px 14px; font-weight: 700; border-radius: 20px; font-size: 0.78rem; text-transform: uppercase; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; text-decoration: none; background: #334155; color: #ffffff; }
+        .nav-btn.active { background: #0f172a; border: 2px solid #ffffff; }
+        .nav-btn:hover { transform: translateY(-2px); opacity: 0.95; }
+        .btn-search-nav { background: #0284c7; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        .status-legend { display: flex; justify-content: center; gap: 25px; margin-bottom: 20px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; color: #334155; }
+        .legend-seat-icon { width: 55px; height: 55px; object-fit: contain; }
+        .chart-header { background: #ffffff; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+        .chart-header h3 { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; color: #0f172a; }
+        .blink-live { color: #16a34a; animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        .hall-section { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-bottom: 30px; }
+        .hall-title { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #1e293b; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #f1f5f9; }
+        .seat-grid { display: grid; gap: 10px; justify-content: center; }
+        .core-h1-grid { grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(12, 60px); }
+        .core-h2-grid { grid-template-columns: repeat(6, 60px); grid-template-rows: repeat(6, 60px); }
+        .nexus-grid { grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(9, 60px); }
+        .seat { position: relative; background: transparent; border: none; border-radius: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; color: #334155; transition: transform 0.2s; user-select: none; }
+        .seat:hover { transform: scale(1.08); z-index: 10; }
+        .seat-icon { width: 55px; height: 55px; object-fit: contain; margin-bottom: 2px; }
+        .seat-tooltip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #0f172a; color: #ffffff; padding: 5px 8px; border-radius: 6px; font-size: 0.65rem; white-space: nowrap; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-align: center; margin-bottom: 5px; }
+        .seat.tooltip-down .seat-tooltip { bottom: auto !important; top: calc(100% + 5px) !important; margin-bottom: 0 !important; }
+        .seat:hover .seat-tooltip { display: block; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.75); display: none; justify-content: center; align-items: center; z-index: 7000; padding: 20px; }
+        .modal-card { background: #ffffff; width: 100%; max-width: 650px; border-radius: 16px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        .modal-header h3 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #0f172a; }
+        .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
+        .search-results { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 13px; max-height: 150px; overflow-y: auto; display: none; text-align: left; }
+    </style>
+</head>
+<body>
+    <div id="adminGateOverlay" class="admin-gate-overlay">
+        <div class="admin-gate-card">
+            <div>
+                <img src="logo2.png" alt="Eminence Logo" style="width: 75px; height: 75px; display: block; margin: 0 auto 12px auto; border-radius: 50%; object-fit: cover; background: #cbd5e1;">
+                <h2>Eminence Library</h2>
+                <p>Admin Authentication Required</p>
+            </div>
+            <div class="form-group">
+                <label>Master Admin Password</label>
+                <input type="password" id="masterAdminPass" class="form-control" placeholder="Enter admin password">
+            </div>
+            <button type="button" class="btn-submit" onclick="loginMasterAdmin()">Login Dashboard</button>
+        </div>
+    </div>
+
+    <div id="mainDashboardPortal" class="dashboard-container">
+        <div class="windows-wrapper">
+            <div class="admin-gate-card">
+                <div>
+                    <div class="portal-icon-container"><img src="Desk5.png" alt="Seat Management" class="portal-icon-img"></div>
+                    <h2>Eminence Library</h2>
+                    <div class="portal-title">Seat Management</div>
+                    <p> सीटों की स्थिति मैनेज और ट्रैक करें।</p>
+                </div>
+                <button type="button" class="btn-submit" onclick="openSeatManagement()">Manage Seats</button>
+            </div>
+
+            <div class="admin-gate-card" style="border-top-color: #0284c7;">
+                <div>
+                    <div class="portal-icon-container" style="border-color: #0284c7; background: #f0f9ff;"><img src="Rs.png" alt="Fee Deposit" class="portal-icon-img"></div>
+                    <h2>Eminence Library</h2>
+                    <div class="portal-title" style="color: #0284c7;">Fee Deposit</div>
+                    <p> फीस यहाँ अपडेट करें ।</p>
+                </div>
+                <button type="button" class="btn-submit" style="background: #0284c7; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);" onclick="openFeeManagementModal()">Manage Fees</button>
+            </div>
+
+            <div class="admin-gate-card" style="border-top-color: #16a34a;">
+                <div>
+                    <div class="portal-icon-container" style="border-color: #16a34a; background: #f0fdf4;"><img src="tracker.png" alt="Fee Tracker" class="portal-icon-img"></div>
+                    <h2>Eminence Library</h2>
+                    <div class="portal-title" style="color: #16a34a;">Fee Tracker</div>
+                    <p>सदस्य की फीस हिस्ट्री ट्रैक करें।</p>
+                </div>
+                <button type="button" class="btn-submit" style="background: #16a34a; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);" onclick="window.location.href='Fee tracker.html';">Track Fee</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="liveSeatManagementContainer">
+        <header>
+            <div class="header-brand">
+                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
+                <span class="admin-portal-badge"><i class="fa-solid fa-chair"></i> Live Seat Portal</span>
+            </div>
+            <div class="nav-buttons">
+                <button type="button" class="nav-btn active" id="coreBranchBtn" onclick="switchBranch('core')"><i class="fa-solid fa-building-columns"></i> Core Branch</button>
+                <button type="button" class="nav-btn" id="nexusBranchBtn" onclick="switchBranch('nexus')"><i class="fa-solid fa-graduation-cap"></i> Nexus Branch</button>
+                <button type="button" class="nav-btn btn-search-nav" onclick="openGlobalSearchModal()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+                <button type="button" class="nav-btn" style="background:#dc2626;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+        </header>
+        <div class="container">
+            <div class="status-legend">
+                <div class="legend-item"><img src="Desk1.png" alt="Available" class="legend-seat-icon"> Available</div>
+                <div class="legend-item"><img src="Desk4.png" alt="Waiting" class="legend-seat-icon"> On Hold (Waiting)</div>
+                <div class="legend-item"><img src="Desk2.png" alt="Booked" class="legend-seat-icon"> Booked</div>
+            </div>
+            <div class="chart-header">
+                <h3 id="chartHeadingText"><i class="fa-solid fa-building-columns"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability</h3>
+            </div>
+            <div id="coreBranchSection">
+                <div class="hall-section">
+                    <div class="hall-title">Hall 1 (Seats 1-59)</div>
+                    <div id="hall1GridContainer" class="seat-grid core-h1-grid"></div>
+                </div>
+                <div class="hall-section">
+                    <div class="hall-title">Hall 2 (Seats 61-83)</div>
+                    <div id="hall2GridContainer" class="seat-grid core-h2-grid"></div>
+                </div>
+            </div>
+            <div id="nexusBranchSection" style="display: none;">
+                <div class="hall-section">
+                    <div class="hall-title">Nexus Branch Main Hall (Seats 1-65)</div>
+                    <div id="nexusGridContainer" class="seat-grid nexus-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Seat Status Change Modal -->
+    <div id="adminQuickModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Seat #<span id="quickModalSeatNo"></span> Details</h3>
+                <button type="button" class="modal-close" onclick="closeModal('adminQuickModal')">&times;</button>
+            </div>
+            <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px; line-height: 1.5;" id="seatReadOnlyDetails"></div>
+            <div class="form-group">
+                <label>Change Seat Status</label>
+                <select id="quickModalNewStatus" class="form-control">
+                    <option value="vacant">Vacant (Available)</option>
+                    <option value="waiting">On Hold (Waiting)</option>
+                    <option value="booked">Booked</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" class="btn-submit" onclick="applyQuickSeatStatusChange()">Update Status</button>
+                <button type="button" class="btn-submit" id="quickBtnNotify" style="background: #25d366; display: none;" onclick="notifyQuickStudentWhatsApp()"><i class="fa-brands fa-whatsapp"></i> WhatsApp Allotment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Search Modal -->
+    <div id="globalSearchModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Global Member Search</h3>
+                <button type="button" class="modal-close" onclick="closeModal('globalSearchModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Enter Mobile Number or UID</label>
+                <input type="text" id="searchMemberInput" class="form-control" placeholder="Search by mobile or UID...">
+            </div>
+            <button type="button" class="btn-submit" onclick="searchMember()">Search Live Bookings</button>
+            <div id="adminSearchResult" style="margin-top: 15px; max-height: 250px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- Fee Management Container -->
+    <div id="feeManagementContainer">
+        <header>
+            <div class="header-brand">
+                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
+                <span class="admin-portal-badge" style="background:#0284c7;"><i class="fa-solid fa-receipt"></i> Fee Deposit Portal</span>
+            </div>
+            <div class="nav-buttons">
+                <button type="button" class="nav-btn" style="background:#dc2626;" onclick="backToDashboardFromFee()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+        </header>
+        <div class="container" style="max-width: 800px;">
+            <div class="hall-section">
+                <div class="hall-title"><i class="fa-solid fa-file-invoice-dollar"></i> Fee Deposit &amp; Management Panel</div>
+                
+                <!-- Reprint Section -->
+                <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+                        <i class="fa-solid fa-print"></i> Reprint Receipt (Member Search &amp; History Months)
+                    </label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 220px; position: relative;">
+                            <input type="text" id="reprintQueryInput" class="form-control" placeholder="Search Member (Name / Mobile / UID)..." oninput="debouncedReprintSearch()">
+                            <div id="reprintSearchResults" class="search-results" style="position: absolute; width: 100%; z-index: 50;"></div>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <select id="reprintMonthSelect" class="form-control" onchange="handleReprintMonthChange()" disabled>
+                                <option value="">-- Pehle Member Search Karein --</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn-submit" style="width: auto; background: #0284c7;" onclick="generateFeeReceiptOnly(true)"><i class="fa-solid fa-print"></i> Reprint Receipt</button>
+                    </div>
+                </div>
+
+                <!-- Member Search Input for New Entry -->
+                <div class="form-group" style="position: relative;">
+                    <label><i class="fa-solid fa-user-plus"></i> नया फीस जमा करने के लिए सदस्य खोजें (मोबाइल नंबर या UID):</label>
+                    <input type="text" id="feeSearchInput" class="form-control" placeholder="Type Mobile Number, UID or Name..." oninput="debouncedFeeSearch()">
+                    <div id="feeSearchResults" class="search-results" style="position: absolute; width: 100%; z-index: 50;"></div>
+                </div>
+
+                <div id="selectedMemberSummary" style="margin: 15px 0; padding: 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: #0f172a;">👤 Direct Entry Mode Active</div>
+                </div>
+
+                <div id="feeDetailsSection" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Shift</label>
+                            <select id="feeShift" class="form-control">
+                                <option value="Morning Shift (07:00 AM To 02:00 PM)">Morning Shift (07:00 AM To 02:00 PM)</option>
+                                <option value="Evening Shift (02:00 PM To 11:00 PM)">Evening Shift (02:00 PM To 11:00 PM)</option>
+                                <option value="Full Day Shift(07:00 AM To 11:00 PM)">Full Day Shift (07:00 AM To 11:00 PM)</option>
+                                <option value="Short Term Plan (For Min 15 Days)">Short Term Plan (For Min 15 Days)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fees For Month</label>
+                            <div style="display: flex; gap: 5px;">
+                                <select id="feeMonthSelect" class="form-control" onchange="updateCombinedFeeForMonth()">
+                                    <option value="January">January</option>
+                                    <option value="February">February</option>
+                                    <option value="March">March</option>
+                                    <option value="April">April</option>
+                                    <option value="May">May</option>
+                                    <option value="June">June</option>
+                                    <option value="July">July</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
+                                </select>
+                                <select id="feeYearSelect" class="form-control" onchange="updateCombinedFeeForMonth()" style="width: 100px;">
+                                    <option value="2025">2025</option>
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2027">2027</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="feeForMonth">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Payment Amount (₹)</label>
+                            <input type="number" id="feeAmount" class="form-control" placeholder="Enter amount" oninput="checkFormCompletion()">
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Remark / For</label>
+                            <select id="feeRemark" class="form-control">
+                                <option value="Fee Renewal">Fee Renewal</option>
+                                <option value="New Member">New Member</option>
+                                <option value="Advance Payment">Advance Payment</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Payment Mode</label>
+                            <select id="feePaymentMode" class="form-control" onchange="handlePaymentModeChange()">
+                                <option value="Cash">Cash</option>
+                                <option value="Online">Online</option>
+                                <option value="By QR">By QR</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="utrContainer" style="display: none;">
+                            <label>UTR Number / Transaction ID</label>
+                            <input type="text" id="feeUtr" class="form-control" placeholder="Enter UTR number" oninput="checkFormCompletion()">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label>Fees Pay Date</label>
+                            <input type="date" id="feePayDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Fees Expiry Date (Auto-Filled)</label>
+                            <input type="date" id="feeExpiryDate" class="form-control" onchange="calculateDueDays()">
+                        </div>
+                    </div>
+
+                    <div id="feeDueDaysDisplay" style="margin-bottom: 15px;"></div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn-submit" id="feeSubmitBtn" style="background: #16a34a; display: none;" onclick="handleFeeButtonAction()"><i class="fa-solid fa-sync"></i> Update Fee</button>
+                        <button type="button" class="btn-submit" style="background: #64748b;" onclick="clearFeeEntryForm()"><i class="fa-solid fa-rotate-right"></i> Clear Form</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fee Tracker Container -->
+    <div id="feeTrackerContainer">
+        <header>
+            <div class="header-brand">
+                <img src="logo.png" alt="Eminence Library" class="main-logo-banner">
+                <span class="admin-portal-badge" style="background:#16a34a;"><i class="fa-solid fa-chart-line"></i> Fee Tracker Portal</span>
+            </div>
+            <div class="nav-buttons">
+                <button type="button" class="nav-btn" style="background:#dc2626;" onclick="backToDashboardFromTracker()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            </div>
+        </header>
+        <div class="container" style="max-width: 900px;">
+            <div class="hall-section">
+                <div class="hall-title"><i class="fa-solid fa-history"></i> Member Fee History &amp; Tracker</div>
+                <div class="form-group" style="position: relative;">
+                    <label>सदस्य खोजें (मोबाइल नंबर, UID या नाम):</label>
+                    <input type="text" id="trackerQueryInput" class="form-control" placeholder="Type Mobile, UID or Name..." oninput="debouncedTrackerSearch()">
+                    <div id="trackerSearchResults" class="search-results" style="position: absolute; width: 100%; z-index: 50;"></div>
+                </div>
+
+                <div id="trackerMemberSummaryBox" style="display: none; margin: 15px 0; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;"></div>
+                <div id="trackerTableContainer" style="display: none; margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+<!-- Custom Attractive Alert Popup Modal -->
+<div id="customAlertModal" class="modal-overlay" style="display: none; z-index: 9999;">
+    <div class="modal-card" style="max-width: 400px; text-align: center; padding: 30px 20px;">
+        <div id="customAlertIcon" style="font-size: 2.5rem; margin-bottom: 12px; color: #ff6600;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <h3 id="customAlertTitle" style="font-size: 1.15rem; color: #0f172a; margin-bottom: 8px; font-weight: 700;">Alert</h3>
+        <p id="customAlertMessage" style="font-size: 0.9rem; color: #475569; margin-bottom: 20px; line-height: 1.5;"></p>
+        <button type="button" class="btn-submit" onclick="closeCustomAlert()" style="width: 100%; padding: 10px; border-radius: 8px;">OK</button>
+    </div>
+</div>
+</body>
+</html>
