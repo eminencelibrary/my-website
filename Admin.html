@@ -1714,7 +1714,25 @@ body, html {
   align-items: center;
   padding: 5px !important;
   box-sizing: border-box;
-}            
+}  
+
+.home-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #4f46e5; /* Apne theme ke anusaar color change kar sakte hain */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+}
+
+.home-button:hover {
+    background-color: #4338ca;
+}          
 
 </style>
         </head>
@@ -2128,9 +2146,13 @@ const input = document.getElementById("feeSearchInput");
                 <input type="password" id="masterAdminPass" class="form-control" placeholder="Enter admin password">
             </div>
             <button type="button" class="btn-submit" onclick="loginMasterAdmin()">Login Dashboard</button>
+<a href="index.html#main-header" style="text-decoration: none; display: block; margin-top: 12px;">
+    <button type="button" class="home-btn" style="width: 100%; padding: 12px; background-color: #334155; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+        Home Page
+    </button>
+</a>
         </div>
     </div>
-
     <div id="mainDashboardPortal" class="dashboard-container">
         <div class="windows-wrapper">
             <div class="admin-gate-card">
