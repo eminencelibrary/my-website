@@ -634,11 +634,12 @@
             
             <a href="#portalContainer" class="cta-btn pay-nav-btn"><i class="fa-solid fa-credit-card"></i> Pay Fees</a>
             
-
-	<a href="#" onclick="openFeedbackModal(); return false;" class="cta-btn google-fb-btn">
-    	<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo"> Feedback </a>
-        <a href="Admin.html" class="cta-btn"><i class="fa-solid fa-user-shield"></i> Admin</a>
- </div>
+            <a href="#" onclick="openFeedbackModal(); return false;" class="cta-btn google-fb-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo"> Feedback 
+            </a>
+            
+            <a href="admin.html" class="cta-btn"><i class="fa-solid fa-user-shield"></i> Admin</a>
+        </div>
     </header>
 
     <marquee class="custom-marquee" scrollamount="8" onmouseover="this.stop();" onmouseout="this.start();">
@@ -693,7 +694,7 @@
                     <h3><i class="fa-solid fa-bullhorn"></i> Updates</h3>
                     <div class="vertical-ticker-wrapper">
                         <div class="vertical-scroll-content">
-                            <div class="notice-card"><i class="fa-solid fa-gift"></i> लाइब्रेरी में नए सदस् का रेजिस्ट्रैशन कराने पर अगली मासिक फ़ीस पर 5% की छूट!</div>
+                            <div class="notice-card"><i class="fa-solid fa-gift"></i> लाइब्रेरी में नए सदस्य का रेजिस्ट्रैशन कराने पर अगली मासिक फ़ीस पर 5% की छूट!</div>
                             <div class="notice-card"><i class="fa-solid fa-clock"></i> AC हॉल उपलब्ध।</div>
                             <div class="notice-card"><i class="fa-solid fa-wifi"></i> हाई-स्पीड Wi-Fi।</div>
                             <div class="notice-card"><i class="fa-solid fa-shield"></i> CCTV सुरक्षा।</div>
@@ -722,7 +723,7 @@
                         <p class="portal-desc">अपनी सीट ऑनलाइन बुक करने के लिए फॉर्म भरें।</p>
                     </div>
                     <div class="portal-action-box">
-                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank" class="portal-btn">
+                         <a href="Regform.html" class="portal-btn">
                             Register Now
                         </a>
                     </div>
@@ -766,10 +767,11 @@
             <div class="col-gif">
                 <div class="standalone-gif-card">
                     <div class="gif-badge">Eminence Library Wishes</div>
-                    <h3 style="font-size: 0.85rem; color: #ea580c; margin-bottom: 6px;"><i class="fa-solid fa-fire"></i> Upcoming Festival On Sept-2026 </h3>
+                    <h3 style="font-size: 0.85rem; color: #ea580c; margin-bottom: 6px;"><i class="fa-solid fa-fire"></i> Upcoming Festival on 04-09-2026 </h3>
+		
                     <div class="gif-wrapper">
                         <a href="https://docs.google.com/forms/d/e/1FAIpQLSekwU_WFanr0B0y2ql20BgePS_lPSlU-nmV3Wr5UtAYkkCO6w/viewform" target="_blank">
-                            <img src="banner1.png" alt="Offer GIF" onerror="this.src='https://via.placeholder.com/340x320?text=Special+Offer+GIF'">
+                            <img src="tenor.gif" alt="Offer GIF" onerror="this.src='https://via.placeholder.com/340x320?text=Special+Offer+GIF'">
                         </a>
                     </div>
                 </div>
@@ -859,35 +861,37 @@
                 card.classList.add('animate-slide');
             });
         }
-function openFeedbackModal() {
-    document.getElementById('feedbackModal').style.display = 'flex';
-}
 
-function closeFeedbackModal() {
-    document.getElementById('feedbackModal').style.display = 'none';
-}
+        function openFeedbackModal() {
+            document.getElementById('feedbackModal').style.display = 'flex';
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedbackModal').style.display = 'none';
+        }
     </script>
-<!-- Branch Selection Feedback Modal -->
-<div id="feedbackModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
-        <h3 style="color: #ff6600; margin-bottom: 10px; font-family: 'Montserrat', sans-serif;">Select Branch for Feedback</h3>
-        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">Kripya chunein aap kis branch ka feedback dena chahte hain:</p>
-        
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-            <!-- Core Branch Feedback Link -->
-            <a href="https://g.page/r/CQvR0hi2KgmfEAE/review" target="_blank" onclick="closeFeedbackModal()" style="background: #ff6600; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.2s;">
-                <i class="fa-solid fa-building"></i> Core Branch Feedback
-            </a>
+
+    <!-- Branch Selection Feedback Modal -->
+    <div id="feedbackModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99999; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
+            <h3 style="color: #ff6600; margin-bottom: 10px; font-family: 'Montserrat', sans-serif;">Select Branch for Feedback</h3>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px;">Kripya chunein aap kis branch ka feedback dena chahte hain:</p>
             
-            <!-- Nexus Branch Feedback Link (Agar iska alag link hai toh yahan badal sakte hain) -->
-            <a href="https://g.page/r/Cd90jg0tPUQFEAE/review" style="background: #33415D; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.2s;">
-                <i class="fa-solid fa-building"></i> Nexus Branch Feedback
-            </a>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Core Branch Feedback Link -->
+                <a href="https://g.page/r/CQvR0hi2KgmfEAE/review" target="_blank" onclick="closeFeedbackModal()" style="background: #ff6600; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.2s;">
+                    <i class="fa-solid fa-building"></i> Core Branch Feedback
+                </a>
+                
+                <!-- Nexus Branch Feedback Link -->
+                <a href="https://g.page/r/Cd90jg0tPUQFEAE/review" target="_blank" onclick="closeFeedbackModal()" style="background: #33415D; color: white; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: background 0.2s;">
+                    <i class="fa-solid fa-building"></i> Nexus Branch Feedback
+                </a>
+            </div>
+            
+            <!-- Close Button -->
+            <button onclick="closeFeedbackModal()" style="margin-top: 15px; background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Cancel</button>
         </div>
-        
-        <!-- Close Button -->
-        <button onclick="closeFeedbackModal()" style="margin-top: 15px; background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.85rem; font-weight: 600;">Cancel</button>
     </div>
-</div>
 </body>
 </html>
