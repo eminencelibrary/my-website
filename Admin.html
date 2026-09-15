@@ -9,6 +9,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@600;700;800&family=Montserrat:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Seat icons preload: Manage Seats screen opens instantly -->
+    <link rel="preload" as="image" href="Desk1.png">
+    <link rel="preload" as="image" href="Desk2.png">
+    <link rel="preload" as="image" href="Desk4.png">
     
     <script>
 // Native alert ko attractive modal se override karna
@@ -49,7 +54,7 @@ function closeCustomAlert() {
     if (modal) modal.style.display = "none";
 }
         const OLD_STUDENTS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5WEnufQq_eV3HmsGShNC28Wig5DA7QRqVSsQ7T0SQyLgui1HUXkcYZRH5yiIHmvX5/exec";
-        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbtsvWX9lyc02h3hAOk0Lv9CNrWKv3LO-iRLzi09gsjGJ-Vu_X5yofk3QwgBlm9zO0/exec";
+        const LIVE_BOOKING_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwnuwk0WjzRuPhVChAvLQZ99QQ2ksUZ6fXfimqNAL7ud358WJB4GyiSUMD9IzBHnhTc/exec";
         const FEE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwcsYordBQJFslwS7KRTL_KBJ_KYFvYAVR7j0J42Tg2mRAfAFPzYUvN5AJ_EiwpU1ww/exec";
         
         let activeBranch = 'core'; 
@@ -66,6 +71,8 @@ function closeCustomAlert() {
         let feeTrackerBackTarget = "dashboard";
 
         let oldStudentsDataPromise = null;
+        let lastRenderedSeatDataKey = "";
+        let seatAssetsPreloaded = false;
 
         function fetchOldStudentsData() {
             if (!OLD_STUDENTS_SCRIPT_URL.startsWith("http")) return Promise.resolve({});
@@ -181,24 +188,129 @@ function closeCustomAlert() {
             return feeLibraryDataPromise;
         }
 
+        function normalizeBranchKey(value) {
+            const v = String(value ?? "").trim().toLowerCase();
+            return v === "core" ? "core" : (v === "nexus" ? "nexus" : null);
+        }
+
+        function normalizeSeatKey(value) {
+            if (value === null || value === undefined || String(value).trim() === "") return null;
+            const n = Number(String(value).trim());
+            return Number.isInteger(n) && n > 0 ? String(n) : null;
+        }
+
+        function normalizeSeatInfo(info) {
+            if (!info || typeof info !== "object") return { status: "vacant" };
+            const rawStatus = String(info.status ?? info.Status ?? "vacant").trim().toLowerCase();
+            let status = "vacant";
+            if (["booked", "active", "occupied"].includes(rawStatus)) status = "booked";
+            else if (["waiting", "on hold", "hold", "pending", "onhold"].includes(rawStatus)) status = "waiting";
+            return {
+                ...info,
+                status,
+                studentName: String(info.studentName ?? info.name ?? info.student ?? "").trim(),
+                mobile: String(info.mobile ?? info.mobileNumber ?? info.phone ?? "").trim(),
+                uid: String(info.uid ?? info.uidCode ?? info.UID ?? "").trim()
+            };
+        }
+
+        function normalizeLiveSeatData(data) {
+            const result = { core: {}, nexus: {} };
+            function add(branchValue, seatValue, info) {
+                const branch = normalizeBranchKey(branchValue);
+                const seat = normalizeSeatKey(seatValue);
+                if (!branch || !seat) return;
+                if (branch === "core" && seat === "60") return;
+                result[branch][seat] = normalizeSeatInfo(info);
+            }
+            function readBranch(branch, source) {
+                if (!source) return;
+                if (Array.isArray(source)) {
+                    source.forEach(row => {
+                        if (!row || typeof row !== "object") return;
+                        add(row.branch ?? row.branchName ?? branch, row.seat ?? row.seatNo ?? row.seatNumber ?? row.number, row);
+                    });
+                } else if (typeof source === "object") {
+                    Object.keys(source).forEach(key => add(branch, key, source[key]));
+                }
+            }
+            if (Array.isArray(data)) {
+                data.forEach(row => {
+                    if (!row || typeof row !== "object") return;
+                    add(row.branch ?? row.branchName, row.seat ?? row.seatNo ?? row.seatNumber ?? row.number, row);
+                });
+            } else if (data && typeof data === "object") {
+                readBranch("core", data.core);
+                readBranch("nexus", data.nexus);
+                const nested = data.data ?? data.seats ?? data.records;
+                if (nested) {
+                    if (nested.core || nested.nexus) {
+                        readBranch("core", nested.core);
+                        readBranch("nexus", nested.nexus);
+                    } else if (Array.isArray(nested)) {
+                        nested.forEach(row => {
+                            if (!row || typeof row !== "object") return;
+                            add(row.branch ?? row.branchName, row.seat ?? row.seatNo ?? row.seatNumber ?? row.number, row);
+                        });
+                    }
+                }
+            }
+            return result;
+        }
+
+        function preloadSeatAssets() {
+            if (seatAssetsPreloaded) return;
+            seatAssetsPreloaded = true;
+            ["Desk1.png", "Desk2.png", "Desk4.png"].forEach(src => {
+                const img = new Image();
+                img.decoding = "async";
+                img.src = src;
+            });
+        }
+
+        function getSeatDataRenderKey(data) {
+            try {
+                return JSON.stringify(data || { core: {}, nexus: {} });
+            } catch (e) {
+                return String(Date.now());
+            }
+        }
+
         function fetchSheetData(forceRefresh = false, silent = false) {
             if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return Promise.resolve(allData);
             if (liveSheetDataPromise && !forceRefresh) return liveSheetDataPromise;
 
-            liveSheetDataPromise = fetch(LIVE_BOOKING_SCRIPT_URL + "?t=" + Date.now(), { cache: "no-store" })
-                .then(response => response.json())
+            const url = LIVE_BOOKING_SCRIPT_URL + "?action=liveseats&t=" + Date.now();
+            liveSheetDataPromise = fetch(url, { method: "GET", cache: "no-store" })
+                .then(response => {
+                    if (!response.ok) throw new Error("Live Seat API HTTP " + response.status);
+                    return response.json();
+                })
                 .then(data => {
-                    if (data && typeof data === 'object') {
-                        allData = data;
-                        if (isAdminLoggedIn && !silent) renderLayouts();
+                    console.log("LIVE SEAT DATA FROM SERVER:", data);
+                    const normalizedData = normalizeLiveSeatData(data);
+                    const newRenderKey = getSeatDataRenderKey(normalizedData);
+                    const dataChanged = newRenderKey !== lastRenderedSeatDataKey;
+
+                    allData = normalizedData;
+                    console.log("NORMALIZED LIVE SEAT DATA:", allData);
+
+                    // IMPORTANT: Do not rebuild all 80+ seat DOM nodes every 3.5 sec
+                    // when nothing actually changed. This was causing the live seat
+                    // screen to repeatedly recreate <img> elements and feel slow.
+                    if (isAdminLoggedIn && dataChanged) {
+                        lastRenderedSeatDataKey = newRenderKey;
+                        renderLayouts();
+                    } else if (!lastRenderedSeatDataKey) {
+                        lastRenderedSeatDataKey = newRenderKey;
                     }
                     return allData;
                 })
                 .catch(err => {
-                    console.log("Live sheet fetch error: ", err);
+                    console.error("Live sheet fetch error:", err);
                     return allData;
-                });
-
+                })
+                .finally(() => { liveSheetDataPromise = null; });
             return liveSheetDataPromise;
         }
 
@@ -213,10 +325,13 @@ function closeCustomAlert() {
             .catch(err => console.log("Error saving data: " + err));
         }
 
-        setInterval(() => { if (isAdminLoggedIn) fetchSheetData(false, true); }, 10000);
+        setInterval(() => { if (isAdminLoggedIn) fetchSheetData(false, true); }, 3500);
 
         window.onload = function() {
             try {
+                // Start icon preloading immediately so the first Manage Seats click
+                // feels instant even on a cold browser cache.
+                preloadSeatAssets();
                 fetchOldStudentsData();
                 fetchSheetData();
                 fetchFeeLibraryData();
@@ -268,7 +383,20 @@ function closeCustomAlert() {
         window.openSeatManagement = function() {
             document.getElementById('mainDashboardPortal').style.display = 'none';
             document.getElementById('liveSeatManagementContainer').style.display = 'block';
-            switchBranch('core');
+
+            // Seat images are already preloaded; render immediately from the latest
+            // in-memory live data instead of waiting for another API round-trip.
+            activeBranch = 'core';
+            document.getElementById('coreBranchBtn').classList.add('active');
+            document.getElementById('nexusBranchBtn').classList.remove('active');
+            document.getElementById('coreBranchSection').style.display = 'block';
+            document.getElementById('nexusBranchSection').style.display = 'none';
+            document.getElementById('chartHeadingText').innerHTML = '<i class="fa-solid fa-building-columns"></i> Core Branch - <span class="blink-live">Live</span> Seat Availability';
+            renderLayouts();
+
+            // If the first live API request is still running, it will update the
+            // layout automatically when the fresh server data arrives.
+            if (!liveSheetDataPromise) fetchSheetData(false, true);
         }
 
         window.backToDashboard = function() {
@@ -419,8 +547,7 @@ function closeCustomAlert() {
             }
             return '';
         }
-
-        function normalizeSearchText(value) {
+function normalizeSearchText(value) {
             return String(value ?? '').trim().toLowerCase();
         }
 
@@ -1668,6 +1795,9 @@ receiptWindow.document.write(`
             <title>${safe(feeSelectedMember.uid)}</title>
             <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
             <style>
+html {
+    scroll-behavior: smooth;
+}
                 body { font-family: 'Poppins', sans-serif; padding: 25px; color: #334155; }
                 .receipt-box { max-width: 650px; margin: 0 auto; border: 2px solid #cbd5e1; padding: 25px; border-radius: 12px; background: #fff; }
                 .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 20px; }
@@ -1733,6 +1863,29 @@ body, html {
 .home-button:hover {
     background-color: #4338ca;
 }          
+
+
+/* FINAL QUICK SEAT MODAL FIX */
+#adminQuickModal {
+    display: none;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: auto !important;
+}
+#adminQuickModal .modal-card,
+#adminQuickModal select,
+#adminQuickModal button {
+    pointer-events: auto !important;
+}
+.seat {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
 
 </style>
         </head>
@@ -1916,7 +2069,8 @@ const input = document.getElementById("feeSearchInput");
         function createSeatNode(num, row, col) {
             const seat = document.createElement("div");
             const branchSeats = allData[activeBranch] || {};
-            const info = branchSeats[num] || { status: 'vacant' };
+            const info = branchSeats[String(num)] || branchSeats[num] || { status: 'vacant' };
+            info.status = normalizeSeatInfo(info).status;
             
             let seatImage = "Desk1.png", statusLabel = "Available";
             if (info.status === 'booked') { seatImage = "Desk2.png"; statusLabel = "Booked"; }
@@ -1934,7 +2088,15 @@ const input = document.getElementById("feeSearchInput");
                     Seat #${num}<br><span class="tooltip-status-text">${statusLabel}</span>
                 </div>
             `;
-            seat.onclick = () => { openAdminQuickModal(num, info); };
+            seat.addEventListener("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof window.openAdminQuickModal === "function") {
+                    window.openAdminQuickModal(num, info);
+                } else {
+                    console.error("openAdminQuickModal is not available.");
+                }
+            });
             return seat;
         }
 
@@ -1978,37 +2140,111 @@ const input = document.getElementById("feeSearchInput");
         }
 
         window.openAdminQuickModal = function(seatNum, seatInfo) {
-            quickSelectedSeatNum = seatNum;
-            document.getElementById("quickModalSeatNo").innerText = seatNum;
-            const detailsBox = document.getElementById("seatReadOnlyDetails");
-            if (seatInfo.status && seatInfo.status !== 'vacant') {
-                detailsBox.innerHTML = `<b>Branch:</b> ${activeBranch.toUpperCase()} | <b>Seat #:</b> ${seatNum}<br><b>Name:</b> ${seatInfo.studentName || seatInfo.name || 'N/A'}<br><b>Mobile:</b> ${seatInfo.mobile || seatInfo.phone || 'N/A'} | <b>UID:</b> ${seatInfo.uid || 'N/A'}`;
-            } else {
-                detailsBox.innerHTML = `<b>Seat #${seatNum}:</b> <span style="color: green; font-weight:600;">Vacant (Available)</span>`;
-            }
-            document.getElementById("quickModalNewStatus").value = seatInfo.status || 'vacant';
-            document.getElementById("quickBtnNotify").style.display = (!seatInfo.status || seatInfo.status === 'vacant') ? "none" : "block";
-            document.getElementById("adminQuickModal").style.display = "flex";
-        }
+            try {
+                quickSelectedSeatNum = String(seatNum);
 
-        window.applyQuickSeatStatusChange = function() {
-            const newStatus = document.getElementById("quickModalNewStatus").value;
-            if (!allData[activeBranch]) allData[activeBranch] = {};
-            
-            if (newStatus === 'vacant') {
-                allData[activeBranch][quickSelectedSeatNum] = { status: 'vacant' };
-            } else {
-                if (allData[activeBranch][quickSelectedSeatNum]) {
-                    allData[activeBranch][quickSelectedSeatNum].status = newStatus;
-                } else {
-                    allData[activeBranch][quickSelectedSeatNum] = { status: newStatus };
+                const modal = document.getElementById("adminQuickModal");
+                const seatNo = document.getElementById("quickModalSeatNo");
+                const detailsBox = document.getElementById("seatReadOnlyDetails");
+                const statusSelect = document.getElementById("quickModalNewStatus");
+                const notifyBtn = document.getElementById("quickBtnNotify");
+
+                if (!modal || !seatNo || !detailsBox || !statusSelect) {
+                    console.error("Quick seat modal elements missing.", {
+                        modal, seatNo, detailsBox, statusSelect
+                    });
+                    return;
                 }
+
+                const safeInfo = normalizeSeatInfo(seatInfo || {status: "vacant"});
+                const status = ["vacant", "waiting", "booked"].includes(safeInfo.status)
+                    ? safeInfo.status
+                    : "vacant";
+
+                seatNo.textContent = quickSelectedSeatNum;
+
+                if (status !== "vacant") {
+                    detailsBox.innerHTML =
+                        "<b>Branch:</b> " + String(activeBranch).toUpperCase() +
+                        " | <b>Seat #:</b> " + quickSelectedSeatNum +
+                        "<br><b>Name:</b> " + (safeInfo.studentName || safeInfo.name || "N/A") +
+                        "<br><b>Mobile:</b> " + (safeInfo.mobile || safeInfo.phone || "N/A") +
+                        " | <b>UID:</b> " + (safeInfo.uid || safeInfo.uidCode || "N/A");
+                } else {
+                    detailsBox.innerHTML =
+                        "<b>Seat #" + quickSelectedSeatNum +
+                        ":</b> <span style='color:green;font-weight:600;'>Vacant (Available)</span>";
+                }
+
+                statusSelect.value = status;
+
+                if (notifyBtn) {
+                    const hasMobile = String(safeInfo.mobile || safeInfo.phone || "").replace(/\D/g, "").length >= 10;
+                    notifyBtn.style.display = (status !== "vacant" && hasMobile) ? "block" : "none";
+                }
+
+                modal.style.display = "flex";
+                modal.style.visibility = "visible";
+                modal.style.opacity = "1";
+                modal.style.zIndex = "10000";
+                modal.setAttribute("aria-hidden", "false");
+
+                console.log("Quick seat modal opened:", quickSelectedSeatNum, safeInfo);
+            } catch (err) {
+                console.error("openAdminQuickModal error:", err);
             }
-            closeModal('adminQuickModal');
-            renderLayouts();
-            saveToSheet();
-            alert("Seat status updated successfully!");
-        }
+        };
+
+
+        window.closeAdminQuickSeatModal = function() {
+            const modal = document.getElementById("adminQuickModal");
+            if (modal) {
+                modal.style.display = "none";
+                modal.style.visibility = "hidden";
+                modal.style.opacity = "0";
+                modal.setAttribute("aria-hidden", "true");
+            }
+            quickSelectedSeatNum = null;
+        };
+        window.applyQuickSeatStatusChange = function() {
+            try {
+                if (quickSelectedSeatNum === null || quickSelectedSeatNum === undefined) {
+                    console.error("No seat selected.");
+                    return;
+                }
+
+                const statusSelect = document.getElementById("quickModalNewStatus");
+                const newStatus = statusSelect ? statusSelect.value : "vacant";
+
+                if (!["vacant", "waiting", "booked"].includes(newStatus)) {
+                    alert("Invalid seat status.");
+                    return;
+                }
+
+                if (!allData[activeBranch]) allData[activeBranch] = {};
+
+                const seatKey = String(quickSelectedSeatNum);
+                const oldInfo = normalizeSeatInfo(allData[activeBranch][seatKey] || {});
+
+                if (newStatus === "vacant") {
+                    allData[activeBranch][seatKey] = { status: "vacant" };
+                } else {
+                    allData[activeBranch][seatKey] = {
+                        ...oldInfo,
+                        status: newStatus
+                    };
+                }
+
+                window.closeAdminQuickSeatModal();
+                renderLayouts();
+                saveToSheet();
+
+                alert("Seat status updated successfully!");
+            } catch (err) {
+                console.error("applyQuickSeatStatusChange error:", err);
+                alert("Seat status update mein error aaya. Browser Console check karein.");
+            }
+        };
 
         window.notifyQuickStudentWhatsApp = function() {
             const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
@@ -2134,25 +2370,26 @@ const input = document.getElementById("feeSearchInput");
     </style>
 </head>
 <body>
-    <div id="adminGateOverlay" class="admin-gate-overlay">
-        <div class="admin-gate-card">
-            <div>
-                <img src="logo2.png" alt="Eminence Logo" style="width: 75px; height: 75px; display: block; margin: 0 auto 12px auto; border-radius: 50%; object-fit: cover; background: #cbd5e1;">
-                <h2>Eminence Library</h2>
-                <p>Admin Authentication Required</p>
-            </div>
-            <div class="form-group">
-                <label>Master Admin Password</label>
-                <input type="password" id="masterAdminPass" class="form-control" placeholder="Enter admin password">
-            </div>
-            <button type="button" class="btn-submit" onclick="loginMasterAdmin()">Login Dashboard</button>
-<a href="index.html#main-header" style="text-decoration: none; display: block; margin-top: 12px;">
-    <button type="button" class="home-btn" style="width: 100%; padding: 12px; background-color: #334155; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
-        Home Page
-    </button>
-</a>
+    
+<div id="adminGateOverlay" class="admin-gate-overlay">
+    <div class="admin-gate-card">
+        <div>
+            <img src="logo2.png" alt="Eminence Logo" style="width: 75px; height: 75px; display: block; margin: 0 auto 12px auto; border-radius: 50%; object-fit: cover; background: #cbd5e1;">
+            <h2>Eminence Library</h2>
+            <p>Admin Authentication Required</p>
         </div>
-    </div>
+        <div class="form-group">
+            <label>Master Admin Password</label>
+            <input type="password" id="masterAdminPass" class="form-control" placeholder="Enter admin password">
+        </div>
+        <button type="button" class="btn-submit" onclick="loginMasterAdmin()">Login Dashboard</button>
+       <a href="index.html?fromAdmin=true#main-header"
+   style="display: block; width: 100%; padding: 12px; background-color: #334155; color: white; text-align: center; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600; margin-top: 12px; box-sizing: border-box; cursor: pointer;">
+    Home Page
+</a> 
+       </div>
+</div>
+
     <div id="mainDashboardPortal" class="dashboard-container">
         <div class="windows-wrapper">
             <div class="admin-gate-card">
@@ -2233,7 +2470,7 @@ const input = document.getElementById("feeSearchInput");
         <div class="modal-card">
             <div class="modal-header">
                 <h3>Seat #<span id="quickModalSeatNo"></span> Details</h3>
-                <button type="button" class="modal-close" onclick="closeModal('adminQuickModal')">&times;</button>
+                <button type="button" class="modal-close" onclick="closeAdminQuickSeatModal()">&times;</button>
             </div>
             <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px; line-height: 1.5;" id="seatReadOnlyDetails"></div>
             <div class="form-group">
