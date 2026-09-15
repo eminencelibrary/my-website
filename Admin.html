@@ -1889,158 +1889,101 @@ body, html {
 
 </style>
         
-<style id="eminence-final-mobile-layout-fix">
+<style id="eminence-admin-mobile-vertical">
 /* =========================================================
-   FINAL MOBILE LAYOUT FIX
-   Dashboard cards must NEVER sit side-by-side on phones.
+   EMINENCE ADMIN — MOBILE VERTICAL DASHBOARD
+   CSS ONLY: does not modify login or application JavaScript.
    ========================================================= */
 
-html {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-}
+@media screen and (max-width: 1100px) {
 
-body {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    overflow-x: hidden !important;
-}
-
-/* Dashboard itself */
-#mainDashboardPortal {
-    width: 100% !important;
-    max-width: 1300px !important;
-    min-width: 0 !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-}
-
-/* Desktop: keep 3 cards in one row */
-.windows-wrapper {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* =========================================================
-   MOBILE / TABLET
-   Use a wider breakpoint because phone screenshots can have
-   high physical pixel dimensions while CSS viewport is small.
-   ========================================================= */
-@media screen and (max-width: 900px) {
-
+    html,
     body {
-        display: block !important;
-        padding: 10px !important;
-        margin: 0 !important;
-    }
-
-    #mainDashboardPortal {
-        display: flex !important;
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
+        overflow-x: hidden !important;
+    }
+
+    body {
+        box-sizing: border-box !important;
+        display: block !important;
+        margin: 0 !important;
+        padding: 10px !important;
+    }
+
+    #mainDashboardPortal {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
         margin: 0 auto !important;
         padding: 0 !important;
     }
 
+    /*
+      Original code uses:
+      .windows-wrapper { display:flex; flex-wrap:nowrap; }
+      Override that ONLY on small screens.
+    */
     #mainDashboardPortal .windows-wrapper {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-auto-rows: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
         gap: 16px !important;
         margin: 0 !important;
         padding: 0 !important;
-        overflow: visible !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper .admin-gate-card {
-        display: flex !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        flex: none !important;
-        margin: 0 !important;
-        padding: 25px 20px !important;
         box-sizing: border-box !important;
     }
 
-    #mainDashboardPortal .admin-gate-card * {
+    #mainDashboardPortal .windows-wrapper > .admin-gate-card {
+        display: flex !important;
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: auto !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    #mainDashboardPortal .windows-wrapper > .admin-gate-card + .admin-gate-card {
+        margin-top: 0 !important;
+    }
+
+    #mainDashboardPortal .admin-gate-card img {
         max-width: 100% !important;
     }
 
-    /* Prevent any child content from forcing the card wider */
     #mainDashboardPortal .admin-gate-card h2,
     #mainDashboardPortal .admin-gate-card p,
-    #mainDashboardPortal .admin-gate-card .portal-title {
+    #mainDashboardPortal .portal-title {
+        max-width: 100% !important;
         overflow-wrap: anywhere !important;
-        word-break: break-word !important;
-    }
-
-    /* Inner admin pages also stay inside viewport */
-    #liveSeatManagementContainer,
-    #feeManagementContainer,
-    #feeTrackerContainer {
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-width: 0 !important;
-        left: 0 !important;
-        right: auto !important;
-        overflow-x: hidden !important;
-        box-sizing: border-box !important;
-    }
-
-    #liveSeatManagementContainer header,
-    #feeManagementContainer header,
-    #feeTrackerContainer header {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-
-    .header-brand {
-        min-width: 0 !important;
-        max-width: 100% !important;
-    }
-
-    .main-logo-banner {
-        max-width: 145px !important;
-        width: auto !important;
-    }
-
-    .nav-buttons {
-        max-width: 100% !important;
-        min-width: 0 !important;
-        overflow-x: auto !important;
-        flex-wrap: nowrap !important;
     }
 }
 
-/* Very small phones */
-@media screen and (max-width: 480px) {
+/* Phone-specific sizing */
+@media screen and (max-width: 600px) {
+
     body {
         padding: 8px !important;
     }
 
-    #mainDashboardPortal {
-        width: 100% !important;
-    }
-
     #mainDashboardPortal .windows-wrapper {
-        grid-template-columns: 1fr !important;
         gap: 14px !important;
     }
 
-    #mainDashboardPortal .windows-wrapper .admin-gate-card {
+    #mainDashboardPortal .windows-wrapper > .admin-gate-card {
         width: 100% !important;
+        max-width: 100% !important;
         min-width: 0 !important;
-        padding: 22px 16px !important;
+        padding: 24px 16px !important;
         border-radius: 14px !important;
     }
 
@@ -2050,182 +1993,16 @@ body {
     }
 
     #mainDashboardPortal .portal-icon-img {
-        width: 43px !important;
-        height: 43px !important;
+        width: 44px !important;
+        height: 44px !important;
     }
 
     #mainDashboardPortal .portal-title {
         font-size: 1.15rem !important;
     }
-}
-</style>
 
-
-<style id="eminence-vertical-mobile-dashboard">
-/* =========================================================
-   EMINENCE ADMIN — FORCE VERTICAL MOBILE DASHBOARD
-   ========================================================= */
-
-/* Never allow the dashboard itself to become wider than viewport */
-html, body {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    overflow-x: hidden !important;
-}
-
-/* Mobile: ONE CARD PER ROW */
-@media (max-width: 900px) {
-
-    body {
-        display: block !important;
+    #mainDashboardPortal .btn-submit {
         width: 100% !important;
-        max-width: 100vw !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        overflow-x: hidden !important;
-    }
-
-    #mainDashboardPortal {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper {
-        /* Completely remove the old horizontal flex layout */
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card {
-        display: flex !important;
-        flex-direction: column !important;
-        width: 100% !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        height: auto !important;
-        min-height: 0 !important;
-        flex: none !important;
-        margin: 0 0 16px 0 !important;
-        padding: 25px 18px !important;
-        box-sizing: border-box !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card:last-child {
-        margin-bottom: 0 !important;
-    }
-
-    /* Keep every child inside the card */
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card > div,
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card > button,
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card img,
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card h2,
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card p {
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
-
-    #mainDashboardPortal .portal-title {
-        max-width: 100% !important;
-        overflow-wrap: break-word !important;
-    }
-}
-
-/* Small phones */
-@media (max-width: 480px) {
-
-    body {
-        padding: 7px !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card {
-        width: 100% !important;
-        margin-bottom: 12px !important;
-        padding: 22px 15px !important;
-        border-radius: 14px !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card .portal-icon-container {
-        width: 72px !important;
-        height: 72px !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card .portal-icon-img {
-        width: 43px !important;
-        height: 43px !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card h2 {
-        font-size: 1rem !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card .portal-title {
-        font-size: 1.15rem !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card p {
-        font-size: .8rem !important;
-        margin-bottom: 18px !important;
-    }
-
-    #mainDashboardPortal .windows-wrapper > .admin-gate-card .btn-submit {
-        width: 100% !important;
-    }
-}
-</style>
-
-
-<style id="eminence-mobile-force-layout">
-@media screen and (max-width: 900px) {
-    html, body {
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow-x: hidden !important;
-    }
-
-    #mainDashboardPortal {
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        box-sizing: border-box !important;
-        overflow: visible !important;
-    }
-
-    #mainDashboardPortal > .windows-wrapper {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-        overflow: visible !important;
-    }
-
-    #mainDashboardPortal > .windows-wrapper > .admin-gate-card {
-        display: flex !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        flex: none !important;
-        margin: 0 0 15px 0 !important;
-        box-sizing: border-box !important;
     }
 }
 </style>
@@ -2260,104 +2037,7 @@ html, body {
                 <div class="note">Note: The above fees are non-refundable, non-transferable &amp; non adjustable</div>
                 <div class="footer"><p>Thank you for studying with Eminence Library! -- Team Eminence</p></div>
             </div>
-        
-<script>
-/* =========================================================
-   MOBILE DASHBOARD HARD GUARD
-   The dashboard is switched to display:flex by loginMasterAdmin().
-   This guard immediately converts its card row to a vertical
-   stack whenever the viewport is phone/tablet sized.
-   ========================================================= */
-(function () {
-    function forceMobileDashboardLayout() {
-        var portal = document.getElementById("mainDashboardPortal");
-        if (!portal) return;
-
-        var wrapper = portal.querySelector(":scope > .windows-wrapper");
-        if (!wrapper) return;
-
-        var cards = wrapper.querySelectorAll(":scope > .admin-gate-card");
-        var isMobile = window.innerWidth <= 900;
-
-        if (isMobile) {
-            document.documentElement.style.width = "100%";
-            document.documentElement.style.maxWidth = "100%";
-            document.documentElement.style.overflowX = "hidden";
-
-            document.body.style.width = "100%";
-            document.body.style.maxWidth = "100vw";
-            document.body.style.minWidth = "0";
-            document.body.style.overflowX = "hidden";
-            document.body.style.margin = "0";
-            document.body.style.padding = "0";
-
-            portal.style.setProperty("width", "100vw", "important");
-            portal.style.setProperty("max-width", "100vw", "important");
-            portal.style.setProperty("min-width", "0", "important");
-            portal.style.setProperty("padding", "10px", "important");
-            portal.style.setProperty("box-sizing", "border-box", "important");
-            portal.style.setProperty("margin", "0", "important");
-
-            wrapper.style.setProperty("display", "block", "important");
-            wrapper.style.setProperty("width", "100%", "important");
-            wrapper.style.setProperty("max-width", "100%", "important");
-            wrapper.style.setProperty("min-width", "0", "important");
-            wrapper.style.setProperty("margin", "0", "important");
-            wrapper.style.setProperty("padding", "0", "important");
-            wrapper.style.setProperty("box-sizing", "border-box", "important");
-            wrapper.style.setProperty("overflow", "visible", "important");
-
-            cards.forEach(function(card) {
-                card.style.setProperty("display", "flex", "important");
-                card.style.setProperty("width", "100%", "important");
-                card.style.setProperty("max-width", "100%", "important");
-                card.style.setProperty("min-width", "0", "important");
-                card.style.setProperty("flex", "none", "important");
-                card.style.setProperty("box-sizing", "border-box", "important");
-                card.style.setProperty("margin-left", "0", "important");
-                card.style.setProperty("margin-right", "0", "important");
-                card.style.setProperty("margin-bottom", "15px", "important");
-            });
-        }
-    }
-
-    window.forceMobileDashboardLayout = forceMobileDashboardLayout;
-
-    function startGuard() {
-        forceMobileDashboardLayout();
-
-        /* Login changes the dashboard from none -> flex, so check again. */
-        setTimeout(forceMobileDashboardLayout, 0);
-        setTimeout(forceMobileDashboardLayout, 50);
-        setTimeout(forceMobileDashboardLayout, 250);
-        setTimeout(forceMobileDashboardLayout, 700);
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", startGuard);
-    } else {
-        startGuard();
-    }
-
-    window.addEventListener("resize", forceMobileDashboardLayout);
-    window.addEventListener("orientationchange", function () {
-        setTimeout(forceMobileDashboardLayout, 100);
-    });
-
-    /* Re-apply when dashboard visibility changes after login. */
-    var portal = document.getElementById("mainDashboardPortal");
-    if (portal && window.MutationObserver) {
-        new MutationObserver(function () {
-            forceMobileDashboardLayout();
-        }).observe(portal, {
-            attributes: true,
-            attributeFilter: ["style", "class"]
-        });
-    }
-})();
-</script>
-
-</body>
+        </body>
         </html>
     `);
 
