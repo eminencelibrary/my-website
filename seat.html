@@ -1165,6 +1165,13 @@ function onSeatDoubleClick(
                         false;
                 }
 
+                const uidFieldDefault =
+                    document.getElementById("newUid");
+
+                if (uidFieldDefault) {
+                    uidFieldDefault.value = "Guest";
+                }
+
                 const statusMsg =
                     document.getElementById(
                         "newMemberStatusMsg"
@@ -1239,6 +1246,13 @@ function onSeatDoubleClick(
 
         if (nameField) {
             nameField.readOnly = false;
+        }
+
+        const uidFieldDefault =
+            document.getElementById("newUid");
+
+        if (uidFieldDefault) {
+            uidFieldDefault.value = "Guest";
         }
 
         const statusMsg =
@@ -1329,7 +1343,7 @@ window.checkExistingMemberNew = function() {
         msgBox.style.display = "none";
 
         nameField.value = "";
-        uidField.value = "";
+        uidField.value = "Guest";
 
         nameField.readOnly = false;
 
@@ -1414,7 +1428,7 @@ window.checkExistingMemberNew = function() {
 
                     uidField.value =
                         seatInfo.uid ||
-                        "";
+                        "Guest";
 
                     nameField.readOnly =
                         true;
@@ -1624,7 +1638,7 @@ window.checkExistingMemberNew = function() {
             }
 
             nameField.value = "";
-            uidField.value = "";
+            uidField.value = "Guest";
 
             nameField.readOnly =
                 true;
@@ -1644,7 +1658,7 @@ window.checkExistingMemberNew = function() {
                 studentName;
 
             uidField.value =
-                studentUid;
+                studentUid || "Guest";
 
             nameField.readOnly =
                 true;
@@ -1675,7 +1689,7 @@ window.checkExistingMemberNew = function() {
            ================================================= */
 
         nameField.value = "";
-        uidField.value = "";
+        uidField.value = "Guest";
 
         nameField.readOnly =
             false;
@@ -1775,7 +1789,7 @@ function() {
             chosen.name || "";
 
         uidField.value =
-            chosen.uid || "";
+            chosen.uid || "Guest";
 
         nameField.readOnly =
             true;
@@ -1786,7 +1800,7 @@ function() {
     } else {
 
         nameField.value = "";
-        uidField.value = "";
+        uidField.value = "Guest";
 
         nameField.readOnly =
             true;
