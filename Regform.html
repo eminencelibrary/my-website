@@ -337,7 +337,7 @@
         <div class="modal-box">
             <div class="modal-icon">🎉</div>
             <h3>Registration Successful</h3>
-            <p id="successMsgText"></p>
+            <div id="successMsgText" style="color: #3c4043; font-size: 1rem; line-height: 1.5; margin-bottom: 20px; font-weight: 500;"></div>
             <button type="button" class="modal-btn" onclick="openPaymentChoicePopup()">OK</button>
         </div>
     </div>
@@ -1532,7 +1532,7 @@
                 resolve =>
                     setTimeout(
                         resolve,
-                        2000
+                        1000
                     )
             );
 
@@ -1570,25 +1570,18 @@
             // SUCCESS MESSAGE
             // =============================================
 
+let styledName = `<span style="color: green; font-weight: bold;">${memberName}</span>`;
             let msgText;
 
-            if (finalUid !==
-                "Registration Submitted") {
-
-                msgText =
-                    `Hi ${memberName} (${finalUid}), Eminence Library में रजिस्ट्रेशन करने के लिए आपका धन्यवाद, आपका रजिस्ट्रेशन नंबर "${finalUid}" है`;
-
+            if (finalUid !== "Registration Submitted") {
+                let styledUid = `<span style="color: green; font-weight: bold;">${finalUid}</span>`;
+                msgText = `Hi ${styledName}, Eminence Library में रजिस्ट्रेशन करने के लिए आपका धन्यवाद, आपका रजिस्ट्रेशन नंबर "${styledUid}" है`;
             } else {
-
-                msgText =
-                    `Hi ${memberName}, Eminence Library में आपका registration successfully submit हो गया है। आपका registration number Google Sheet में generate हो चुका है।`;
+                msgText = `Hi ${styledName}, Eminence Library में आपका registration successfully submit हो गया है।`;
             }
 
-
-            document.getElementById(
-                'successMsgText'
-            ).innerText =
-                msgText;
+            // innerText की जगह innerHTML का इस्तेमाल करें ताकि HTML टैग्स काम करें
+            document.getElementById('successMsgText').innerHTML = msgText;
 
 
             // =============================================
