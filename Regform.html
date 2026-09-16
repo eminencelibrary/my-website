@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eminence Library - Registration Form</title>
+    <!-- Google Fonts - Abhaya Libre import -->
+    <link href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fcf4ec;
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+        }
+        header { 
+            background-color: var(--primary-color); 
+            padding: 12px 25px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            width: 100%;
+        }
+
+        .header-banner {
+            background-color: #ff6605;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100px;
+        }
+        .header-logo {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            border-radius: 50%;
+            border: 2px solid white;
+            padding: 2px;
+            background: #ea6b1d;
+        }
+        .logo-box-nav { display: flex; align-items: center; }
+        .main-logo-banner { max-width: 260px; width: 100%; height: auto; display: block; }
+
+        .header-title-area h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            font-family: Georgia, serif;
+            color: black;
+            line-height: 1.1;
+        }
+        .header-title-area h1 span {
+            color: white;
+        }
+        .header-title-area p {
+            font-size: 0.8rem;
+            margin: 2px 0 0 0;
+            font-style: italic;
+            color: white;
+        }
+        .header-nav {
+            display: flex;
+            align-items: center;
+        }
+        .nav-btn {
+            background-color: white;
+            color: #ea6b1d;
+            border: none;
+            padding: 7px 16px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-btn:hover {
+            background-color: #fce8df;
+        }
+
+        /* Registration Form Heading Style */
+        .page-heading {
+            text-align: center;
+            font-family: 'Abhaya Libre', serif;
+            font-size: 2.2rem;
+            color: #ea6b1d;
+            margin-top: 25px;
+            margin-bottom: 0px;
+            font-weight: 700;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 20px auto 30px auto;
+            padding: 0 10px;
+        }
+
+        .form-section {
+            display: none;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(234, 107, 29, 0.15);
+            margin-bottom: 20px;
+            padding: 25px;
+            border: 1px solid #f0ded1;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .section-badge {
+            background-color: #ea6b1d;
+            color: white;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 3px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            color: #ea6b1d;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #202124;
+            font-size: 0.9rem;
+        }
+        .required {
+            color: #d93025;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+            background-color: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #ea6b1d;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(234, 107, 29, 0.15);
+        }
+
+        .filled-field {
+            background-color: #ea6b1d !important;
+            color: white !important;
+            border-color: #d25a13 !important;
+        }
+
+        .filled-field::placeholder {
+            color: #fce8df !important;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 65px;
+        }
+
+        .radio-group label {
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .radio-group input {
+            margin-right: 8px;
+            accent-color: #ea6b1d;
+        }
+
+        .file-upload {
+            border: 2px dashed #dadce0;
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+            background: #f8f9fa;
+            font-size: 0.9rem;
+        }
+
+        .conditional-box {
+            display: none;
+            background: #fdfaf7;
+            padding: 15px;
+            border: 1px dashed #ea6b1d;
+            border-radius: 6px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Popup Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            background: #fff;
+            width: 90%;
+            max-width: 400px;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(234, 107, 29, 0.3);
+            border: 2px solid #ea6b1d;
+        }
+
+        .modal-icon {
+            font-size: 40px;
+            color: #ea6b1d;
+            margin-bottom: 10px;
+        }
+
+        .modal-box h3 {
+            color: #ea6b1d;
+            margin-top: 0;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-box p {
+            color: #3c4043;
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .modal-btn {
+            background-color: #ea6b1d;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            width: 100%;
+        }
+
+        .modal-btn:hover {
+            background-color: #d25a13;
+        }
+
+        .modal-btn-secondary {
+            background-color: #f1f3f4;
+            color: #3c4043;
+            border: none;
+            padding: 10px 25px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        .modal-btn-secondary:hover {
+            background-color: #e4e6e7;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            border-top: 1px solid #f1f3f4;
+            padding-top: 15px;
+        }
+        .btn {
+            background-color: #ea6b1d;
+            color: white;
+            border: none;
+            padding: 9px 22px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #d25a13;
+        }
+        .btn-secondary {
+            background-color: #f1f3f4;
+            color: #3c4043;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Universal Custom Alert Popup -->
+    <div class="modal-overlay" id="customAlertPopup">
+        <div class="modal-box">
+            <div class="modal-icon" id="alertIcon">⚠️</div>
+            <h3 id="alertTitle">Notice</h3>
+            <p id="alertMsgText"></p>
+            <button type="button" class="modal-btn" onclick="closeCustomAlert()">OK</button>
+        </div>
+    </div>
+
+    <!-- Success & Registration UID Popup -->
+    <div class="modal-overlay" id="successPopup">
+        <div class="modal-box">
+            <div class="modal-icon">🎉</div>
+            <h3>Registration Successful</h3>
+            <p id="successMsgText"></p>
+            <button type="button" class="modal-btn" onclick="openPaymentChoicePopup()">OK</button>
+        </div>
+    </div>
+
+    <!-- Fee Payment Choice Popup (Yes/No) -->
+    <div class="modal-overlay" id="paymentChoicePopup">
+        <div class="modal-box">
+            <div class="modal-icon">❓</div>
+            <h3>Fee Payment</h3>
+            <p>क्या आप Eminence Library फ़ीस अभी जमा करना चाहते हैं ??</p>
+            <div>
+                <button type="button" class="modal-btn" onclick="openPaymentModePopup()" style="margin-bottom: 8px;">Yes</button>
+                <button type="button" class="modal-btn-secondary" onclick="redirectToHome()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Mode Choice Popup (Cash / Online) -->
+    <div class="modal-overlay" id="paymentModePopup">
+        <div class="modal-box">
+            <div class="modal-icon">💳</div>
+            <h3>Select Payment Mode</h3>
+            <p>कृपया भुगतान का तरीका चुनें:</p>
+            <div>
+                <button type="button" class="modal-btn" onclick="selectCashPayment()" style="margin-bottom: 10px;">By Cash at Library Counter</button>
+                <button type="button" class="modal-btn" onclick="selectOnlinePayment()">Online Payment Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-banner" id="main-header">
+        <div class="header-left">
+            <div class="logo-box-nav">
+                <img src="logo.png" alt="Eminence Library Banner" class="main-logo-banner">
+            </div>
+            <div class="header-title-area"></div>
+        </div>
+        <div class="header-nav">
+            <a href="index.html" class="nav-btn">🏠 HOME PAGE</a>
+        </div>
+    </div>
+
+    <!-- Header ke baad center mein Abhaya Libre font me Registration Form -->
+    <h1 class="page-heading">Registration Form</h1>
+
+    <div class="container">
+        <form id="libraryForm">
+
+            <!-- Section 1 -->
+            <div class="form-section active" id="section-1">
+                <span class="section-badge">Section 1 of 5</span>
+                <h2>Member Information</h2>
+                
+                <div class="form-group">
+                    <label>Select Eminence Library Branch <span class="required">*</span></label>
+                    <select id="branch" onchange="checkInput(this)"> <option value="" disabled selected>-- Choose Branch --</option> <option value="Eminence Core - 485 C, Basement, Shiv Circle, Devi Nagar Jaipur"> Eminence Core - 485 C, Basement, Shiv Circle, Devi Nagar Jaipur </option> <option value="Eminence Nexus - 717, Basement, Opp. Gali No.5 & 6, Devi Nagar, Jaipur"> Eminence Nexus - 717, Basement, Opp. Gali No.5 & 6, Devi Nagar, Jaipur </option> </select>
+                </div>
+
+                <div class="form-group">
+                    <label>What is your name? (Type in CAPITAL LETTERS) <span class="required">*</span></label>
+                    <input type="text" id="fullname" placeholder="Enter your full name" style="text-transform: uppercase;" oninput="checkInput(this)">
+                </div>
+
+                <div class="form-group">
+                    <label>Mobile Number <span class="required">*</span></label>
+                    <input type="text" id="mobile" placeholder="Enter mobile number" oninput="checkInput(this)">
+                </div>
+
+                <div class="form-group">
+                    <label>Email Id <span class="required">*</span></label>
+                    <input type="email" id="email" placeholder="Enter email id" oninput="checkInput(this)">
+                </div>
+
+                <div class="form-group">
+                    <label>Date of Birth <span class="required">*</span></label>
+                    <input type="date" id="dob" onchange="checkInput(this)">
+                </div>
+
+                <div class="form-group">
+                    <label>Gender <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="gender" value="Male"> Male</label>
+                        <label><input type="radio" name="gender" value="Female"> Female</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Address <span class="required">*</span></label>
+                    <textarea id="address" placeholder="Enter complete address" oninput="checkInput(this)"></textarea>
+                </div>
+
+                <div class="btn-container">
+                    <div></div>
+                    <button type="button" class="btn" onclick="nextSection(1)">Next</button>
+                </div>
+            </div>
+
+            <!-- Section 2 -->
+            <div class="form-section" id="section-2">
+                <span class="section-badge">Section 2 of 5</span>
+                <h2>Fees & Payment</h2>
+
+                <div class="form-group">
+                    <label>Choose Timings</label>
+		<div class="radio-group"> <label> <input type="radio" name="timing" value="I Shift (Morning 7:00 AM To 1:30 PM)" > I Shift (Morning 7:00 AM To 1:30 PM) </label> <label> 			<input type="radio" name="timing" value="II Shift (Noon 2:00 PM To 11:00 PM)" > II Shift (Noon 2:00 PM To 11:00 PM) </label> <label> <input type="radio" 				name="timing" value="Full Day (Morning 7:00 AM To 11:00 PM)" > Full Day (Morning 7:00 AM To 11:00 PM) </label> </div>                    
+
+                </div>
+
+                <div class="form-group">
+                    <label>Choose your fee as per your shift <span class="required">*</span></label>
+                <div class="radio-group"> <label> <input type="radio" name="fee_option" value="I Shift - ₹ 700" > I Shift - ₹ 700 </label> <label> <input type="radio" name="fee_option" 		value="II Shift - ₹ 700" > II Shift - ₹ 700 </label> <label> <input type="radio" name="fee_option" value="Full Day - ₹ 1000" > Full Day - ₹ 1000 </label> </div>    
+
+                </div>
+
+                <div class="btn-container">
+                    <button type="button" class="btn btn-secondary" onclick="prevSection(2)">Back</button>
+                    <button type="button" class="btn" onclick="nextSection(2)">Next</button>
+                </div>
+            </div>
+
+            <!-- Section 3 -->
+            <div class="form-section" id="section-3">
+                <span class="section-badge">Section 3 of 5</span>
+                <h2>Upload Your Recent Photo</h2>
+
+                <div class="form-group">
+                    <label>Upload your latest picture</label>
+                    <div class="file-upload">
+                        <input type="file" id="recent_photo" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button type="button" class="btn btn-secondary" onclick="prevSection(3)">Back</button>
+                    <button type="button" class="btn" onclick="nextSection(3)">Next</button>
+                </div>
+            </div>
+
+            <!-- Section 4 -->
+            <div class="form-section" id="section-4">
+                <span class="section-badge">Section 4 of 5</span>
+                <h2>Identity ID (Photo ID)</h2>
+
+                <div class="form-group">
+                    <label>Select ID Proof <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="id_type" value="Aadhaar" onclick="toggleIdFields()"> Aadhaar Card</label>
+                        <label><input type="radio" name="id_type" value="Pan" onclick="toggleIdFields()"> Pan Card</label>
+                        <label><input type="radio" name="id_type" value="Driving License" onclick="toggleIdFields()"> Driving License</label>
+                        <label><input type="radio" name="id_type" value="Student ID" onclick="toggleIdFields()"> Student ID</label>
+                        <label><input type="radio" name="id_type" value="Other" onclick="toggleIdFields()"> Other ID</label>
+                    </div>
+                </div>
+
+                <!-- 1. Aadhaar (Front & Back) -->
+                <div id="aadhaar-uploads" class="conditional-box">
+                    <div class="form-group">
+                        <label>Upload Aadhaar Front Side Image</label>
+                        <div class="file-upload"><input type="file" id="id_front" accept="image/*"></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Upload Aadhaar Back Side Image</label>
+                        <div class="file-upload"><input type="file" id="id_back" accept="image/*"></div>
+                    </div>
+                </div>
+
+                <!-- 2. Another ID (Single Image) -->
+                <div id="single-id-upload" class="conditional-box">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Upload ID Image</label>
+                        <div class="file-upload"><input type="file" id="single_id_image" accept="image/*"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Other ID (Name + Image) -->
+                <div id="other-id-box" class="conditional-box">
+                    <div class="form-group">
+                        <label>Enter Custom ID Name <span class="required">*</span></label>
+                        <input type="text" id="other_id_name" placeholder="e.g. Voter ID, Passport, etc." oninput="checkInput(this)">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Upload ID Image</label>
+                        <div class="file-upload"><input type="file" id="other_id_image" accept="image/*"></div>
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button type="button" class="btn btn-secondary" onclick="prevSection(4)">Back</button>
+                    <button type="button" class="btn" onclick="nextSection(4)">Next</button>
+                </div>
+            </div>
+
+            <!-- Section 5 -->
+            <div class="form-section" id="section-5">
+                <span class="section-badge">Section 5 of 5</span>
+                <h2>Confirmation</h2>
+
+                <div class="form-group">
+                    <label>I declare that all the information given by me is correct and I will be held responsible for any wrong information, Do you agree with this? <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="declaration" value="Yes"> Yes</label>
+                        <label><input type="radio" name="declaration" value="No"> No</label>
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button type="button" class="btn btn-secondary" onclick="prevSection(5)">Back</button>
+                    <button type="button" class="btn" onclick="submitForm()">Submit</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+<script>
+
+    let currentTab = 1;
+    const totalTabs = 5;
+    let isCashFlow = false;
+    let isSubmitting = false;
+
+    // =====================================================
+    // GOOGLE APPS SCRIPT URL
+    // =====================================================
+
+   const scriptURL = "https://script.google.com/macros/s/AKfycbwnuwk0WjzRuPhVChAvLQZ99QQ2ksUZ6fXfimqNAL7ud358WJB4GyiSUMD9IzBHnhTc/exec";
+    // =====================================================
+    // CUSTOM ALERT
+    // =====================================================
+
+    function showCustomAlert(
+        message,
+        title = "Alert",
+        icon = "⚠️"
+    ) {
+
+        document.getElementById(
+            'alertTitle'
+        ).innerText = title;
+
+        document.getElementById(
+            'alertMsgText'
+        ).innerText = message;
+
+        document.getElementById(
+            'alertIcon'
+        ).innerText = icon;
+
+        document.getElementById(
+            'customAlertPopup'
+        ).style.display = 'flex';
+    }
+
+
+    function closeCustomAlert() {
+
+        document.getElementById(
+            'customAlertPopup'
+        ).style.display = 'none';
+
+        if (isCashFlow) {
+
+            isCashFlow = false;
+
+            redirectToHome();
+        }
+    }
+
+
+    // =====================================================
+    // INPUT COLOR
+    // =====================================================
+
+    function checkInput(element) {
+
+        if (
+            element.value &&
+            element.value.trim() !== ""
+        ) {
+
+            element.classList.add(
+                'filled-field'
+            );
+
+        } else {
+
+            element.classList.remove(
+                'filled-field'
+            );
+        }
+    }
+
+
+    // =====================================================
+    // PAYMENT POPUPS
+    // =====================================================
+
+    function openPaymentChoicePopup() {
+
+        document.getElementById(
+            'successPopup'
+        ).style.display = 'none';
+
+        document.getElementById(
+            'paymentChoicePopup'
+        ).style.display = 'flex';
+    }
+
+
+    function openPaymentModePopup() {
+
+        document.getElementById(
+            'paymentChoicePopup'
+        ).style.display = 'none';
+
+        document.getElementById(
+            'paymentModePopup'
+        ).style.display = 'flex';
+    }
+
+
+    function selectCashPayment() {
+
+        document.getElementById(
+            'paymentModePopup'
+        ).style.display = 'none';
+
+        isCashFlow = true;
+
+        showCustomAlert(
+            'आपने "By Cash at Library Counter" चुना है। कृपया लाइब्रेरी काउंटर पर फीस जमा करें।',
+            'Payment Info',
+            '💰'
+        );
+    }
+
+
+    function selectOnlinePayment() {
+
+        window.location.href =
+            'Pay_fee.html';
+    }
+
+
+    // =====================================================
+    // HOME / RESET
+    // =====================================================
+
+    function redirectToHome() {
+
+        document.getElementById(
+            'customAlertPopup'
+        ).style.display = 'none';
+
+        document.getElementById(
+            'paymentChoicePopup'
+        ).style.display = 'none';
+
+        document.getElementById(
+            'paymentModePopup'
+        ).style.display = 'none';
+
+        document.getElementById(
+            'libraryForm'
+        ).reset();
+
+        let filledElements =
+            document.querySelectorAll(
+                '.filled-field'
+            );
+
+        filledElements.forEach(
+            el => el.classList.remove(
+                'filled-field'
+            )
+        );
+
+        document.getElementById(
+            'aadhaar-uploads'
+        ).style.display = 'none';
+
+        document.getElementById(
+            'single-id-upload'
+        ).style.display = 'none';
+
+        document.getElementById(
+            'other-id-box'
+        ).style.display = 'none';
+
+        currentTab = 1;
+
+        showTab(1);
+
+        isSubmitting = false;
+
+        const headerElement =
+            document.getElementById(
+                'main-header'
+            );
+
+        if (headerElement) {
+
+            headerElement.scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+    }
+
+
+    // =====================================================
+    // ID FIELDS
+    // =====================================================
+
+    function toggleIdFields() {
+
+        let selectedId =
+            document.querySelector(
+                'input[name="id_type"]:checked'
+            );
+
+        let aadhaarBox =
+            document.getElementById(
+                'aadhaar-uploads'
+            );
+
+        let singleBox =
+            document.getElementById(
+                'single-id-upload'
+            );
+
+        let otherBox =
+            document.getElementById(
+                'other-id-box'
+            );
+
+        let otherInputName =
+            document.getElementById(
+                'other_id_name'
+            );
+
+        if (selectedId) {
+
+            if (
+                selectedId.value ===
+                'Aadhaar'
+            ) {
+
+                aadhaarBox.style.display =
+                    'block';
+
+                singleBox.style.display =
+                    'none';
+
+                otherBox.style.display =
+                    'none';
+
+            }
+
+            else if (
+                selectedId.value ===
+                'Other'
+            ) {
+
+                aadhaarBox.style.display =
+                    'none';
+
+                singleBox.style.display =
+                    'none';
+
+                otherBox.style.display =
+                    'block';
+
+            }
+
+            else {
+
+                aadhaarBox.style.display =
+                    'none';
+
+                singleBox.style.display =
+                    'block';
+
+                otherBox.style.display =
+                    'none';
+            }
+
+            otherInputName.classList.remove(
+                'filled-field'
+            );
+
+            otherInputName.value = '';
+        }
+    }
+
+
+    // =====================================================
+    // TABS
+    // =====================================================
+
+    function showTab(n) {
+
+        for (
+            let i = 1;
+            i <= totalTabs;
+            i++
+        ) {
+
+            let sec =
+                document.getElementById(
+                    `section-${i}`
+                );
+
+            if (sec) {
+                sec.classList.remove(
+                    'active'
+                );
+            }
+        }
+
+        let target =
+            document.getElementById(
+                `section-${n}`
+            );
+
+        if (target) {
+
+            target.classList.add(
+                'active'
+            );
+
+            window.scrollTo({
+                top: 50,
+                behavior: 'smooth'
+            });
+        }
+    }
+
+
+    // =====================================================
+    // NEXT SECTION
+    // =====================================================
+
+    function nextSection(current) {
+
+        if (current === 1) {
+
+            if (
+                !document.getElementById(
+                    'branch'
+                ).value
+            ) {
+
+                showCustomAlert(
+                    'Please select a branch.'
+                );
+
+                return;
+            }
+
+            if (
+                !document.getElementById(
+                    'fullname'
+                ).value.trim()
+            ) {
+
+                showCustomAlert(
+                    'Please enter your full name.'
+                );
+
+                return;
+            }
+
+            if (
+                !document.getElementById(
+                    'mobile'
+                ).value.trim()
+            ) {
+
+                showCustomAlert(
+                    'Please enter your mobile number.'
+                );
+
+                return;
+            }
+
+            if (
+                !document.getElementById(
+                    'email'
+                ).value.trim()
+            ) {
+
+                showCustomAlert(
+                    'Please enter your email.'
+                );
+
+                return;
+            }
+
+            if (
+                !document.getElementById(
+                    'dob'
+                ).value
+            ) {
+
+                showCustomAlert(
+                    'Please select your date of birth.'
+                );
+
+                return;
+            }
+
+            if (
+                !document.querySelector(
+                    'input[name="gender"]:checked'
+                )
+            ) {
+
+                showCustomAlert(
+                    'Please select your gender.'
+                );
+
+                return;
+            }
+
+            if (
+                !document.getElementById(
+                    'address'
+                ).value.trim()
+            ) {
+
+                showCustomAlert(
+                    'Please enter your address.'
+                );
+
+                return;
+            }
+        }
+
+
+        else if (current === 2) {
+
+            if (
+                !document.querySelector(
+                    'input[name="fee_option"]:checked'
+                )
+            ) {
+
+                showCustomAlert(
+                    'Please choose your fee option.'
+                );
+
+                return;
+            }
+        }
+
+
+        else if (current === 4) {
+
+            let idType =
+                document.querySelector(
+                    'input[name="id_type"]:checked'
+                );
+
+            if (!idType) {
+
+                showCustomAlert(
+                    'Please select an ID proof.'
+                );
+
+                return;
+            }
+
+            if (
+                idType.value === 'Other' &&
+                !document.getElementById(
+                    'other_id_name'
+                ).value.trim()
+            ) {
+
+                showCustomAlert(
+                    'Please enter your custom ID name.'
+                );
+
+                return;
+            }
+        }
+
+
+        if (current < totalTabs) {
+
+            currentTab =
+                current + 1;
+
+            showTab(currentTab);
+        }
+    }
+
+
+    // =====================================================
+    // PREVIOUS SECTION
+    // =====================================================
+
+    function prevSection(current) {
+
+        if (current > 1) {
+
+            currentTab =
+                current - 1;
+
+            showTab(currentTab);
+        }
+    }
+
+
+    // =====================================================
+    // FILE -> BASE64
+    // =====================================================
+
+    function fileToBase64(file) {
+
+        return new Promise(
+            (resolve, reject) => {
+
+                if (!file) {
+                    resolve("");
+                    return;
+                }
+
+                const reader =
+                    new FileReader();
+
+                reader.onload = function () {
+                    resolve(
+                        reader.result
+                    );
+                };
+
+                reader.onerror =
+                    function () {
+                        reject(
+                            new Error(
+                                "Unable to read file."
+                            )
+                        );
+                    };
+
+                reader.readAsDataURL(file);
+            }
+        );
+    }
+
+
+    // =====================================================
+    // GET FILE DATA
+    // =====================================================
+
+    async function getFileBase64(id) {
+
+        const input =
+            document.getElementById(id);
+
+        if (
+            !input ||
+            !input.files ||
+            !input.files.length
+        ) {
+
+            return "";
+        }
+
+        return await fileToBase64(
+            input.files[0]
+        );
+    }
+
+
+    // =====================================================
+    // DISABLE SUBMIT
+    // =====================================================
+
+    function setSubmittingState(
+        submitting
+    ) {
+
+        const submitBtn =
+            document.querySelector(
+                '#section-5 .btn:not(.btn-secondary)'
+            );
+
+        if (!submitBtn) return;
+
+        if (submitting) {
+
+            submitBtn.innerText =
+                "Submitting...";
+
+            submitBtn.disabled = true;
+
+            submitBtn.style.opacity =
+                "0.7";
+
+            submitBtn.style.cursor =
+                "not-allowed";
+
+        } else {
+
+            submitBtn.innerText =
+                "Submit";
+
+            submitBtn.disabled = false;
+
+            submitBtn.style.opacity =
+                "1";
+
+            submitBtn.style.cursor =
+                "pointer";
+        }
+    }
+
+
+    // =====================================================
+    // JSONP - GET REAL UID
+    // =====================================================
+
+    function getRealUidByMobile(
+        mobile
+    ) {
+
+        return new Promise(
+            function(resolve) {
+
+                const callbackName =
+                    "registrationCallback_" +
+                    Date.now() +
+                    "_" +
+                    Math.floor(
+                        Math.random() * 10000
+                    );
+
+                const script =
+                    document.createElement(
+                        "script"
+                    );
+
+                const timeout =
+                    setTimeout(
+                        function () {
+
+                            cleanup();
+
+                            resolve(null);
+
+                        },
+                        15000
+                    );
+
+
+                window[callbackName] =
+                    function(result) {
+
+                        clearTimeout(
+                            timeout
+                        );
+
+                        cleanup();
+
+                        if (
+                            result &&
+                            result.status ===
+                            "success"
+                        ) {
+
+                            resolve(
+                                result
+                            );
+
+                        } else {
+
+                            resolve(null);
+                        }
+                    };
+
+
+                function cleanup() {
+
+                    try {
+
+                        delete window[
+                            callbackName
+                        ];
+
+                    } catch (e) {
+
+                        window[
+                            callbackName
+                        ] = undefined;
+                    }
+
+                    if (
+                        script.parentNode
+                    ) {
+
+                        script.parentNode
+                            .removeChild(
+                                script
+                            );
+                    }
+                }
+
+
+                const cleanMobile =
+                    String(mobile || "")
+                        .replace(
+                            /\D/g,
+                            ""
+                        )
+                        .slice(-10);
+
+
+                script.src =
+                    scriptURL +
+                    "?action=getRegistrationUid" +
+                    "&mobile=" +
+                    encodeURIComponent(
+                        cleanMobile
+                    ) +
+                    "&callback=" +
+                    encodeURIComponent(
+                        callbackName
+                    ) +
+                    "&t=" +
+                    Date.now();
+
+
+                document.body.appendChild(
+                    script
+                );
+            }
+        );
+    }
+
+
+    // =====================================================
+    // SUBMIT FORM
+    // =====================================================
+
+    async function submitForm() {
+
+        // Prevent double submission
+        if (isSubmitting) {
+            return;
+        }
+
+        // -------------------------------------------------
+        // DECLARATION
+        // -------------------------------------------------
+
+        let declaration =
+            document.querySelector(
+                'input[name="declaration"]:checked'
+            );
+
+        if (
+            !declaration ||
+            declaration.value !== 'Yes'
+        ) {
+
+            showCustomAlert(
+                'Please agree with the declaration.'
+            );
+
+            return;
+        }
+
+
+        let memberName = 
+    document.getElementById(
+        'fullname'
+    ).value.trim().toUpperCase();
+
+        // -------------------------------------------------
+        // ID TYPE
+        // -------------------------------------------------
+
+        let selectedId =
+            document.querySelector(
+                'input[name="id_type"]:checked'
+            );
+
+        if (!selectedId) {
+
+            showCustomAlert(
+                'Please select an ID proof.'
+            );
+
+            return;
+        }
+
+
+        // -------------------------------------------------
+        // START SUBMISSION
+        // -------------------------------------------------
+
+        isSubmitting = true;
+
+        setSubmittingState(true);
+
+
+        try {
+
+            // =============================================
+            // READ FILES
+            // =============================================
+
+            let recentPhoto =
+                await getFileBase64(
+                    'recent_photo'
+                );
+
+            let idFront = "";
+            let idBack = "";
+            let otherIdImage = "";
+            let singleIdImage = "";
+
+
+            if (
+                selectedId.value ===
+                'Aadhaar'
+            ) {
+
+                idFront =
+                    await getFileBase64(
+                        'id_front'
+                    );
+
+                idBack =
+                    await getFileBase64(
+                        'id_back'
+                    );
+
+            }
+
+            else if (
+                selectedId.value ===
+                'Other'
+            ) {
+
+                otherIdImage =
+                    await getFileBase64(
+                        'other_id_image'
+                    );
+
+            }
+
+            else {
+
+                singleIdImage =
+                    await getFileBase64(
+                        'single_id_image'
+                    );
+            }
+
+
+            // =============================================
+            // FORM DATA
+            // =============================================
+
+            const formData = {
+
+                branch:
+                    document.getElementById(
+                        'branch'
+                    ).value,
+
+                fullname:
+                    memberName,
+
+                mobile:
+                    document.getElementById(
+                        'mobile'
+                    ).value,
+
+                email:
+                    document.getElementById(
+                        'email'
+                    ).value,
+
+                dob:
+                    document.getElementById(
+                        'dob'
+                    ).value,
+
+                gender:
+                    document.querySelector(
+                        'input[name="gender"]:checked'
+                    ) ?
+                    document.querySelector(
+                        'input[name="gender"]:checked'
+                    ).value :
+                    '',
+
+                address:
+                    document.getElementById(
+                        'address'
+                    ).value,
+
+                timing:
+                    document.querySelector(
+                        'input[name="timing"]:checked'
+                    ) ?
+                    document.querySelector(
+                        'input[name="timing"]:checked'
+                    ).value :
+                    '',
+
+                fee_option:
+                    document.querySelector(
+                        'input[name="fee_option"]:checked'
+                    ) ?
+                    document.querySelector(
+                        'input[name="fee_option"]:checked'
+                    ).value :
+                    '',
+
+                id_type:
+                    selectedId.value,
+
+                other_id_name:
+                    document.getElementById(
+                        'other_id_name'
+                    ).value,
+
+                declaration:
+                    declaration.value,
+
+                recent_photo:
+                    recentPhoto,
+
+                id_front:
+                    idFront,
+
+                id_back:
+                    idBack,
+
+                single_id_image:
+                    singleIdImage,
+
+                other_id_image:
+                    otherIdImage
+            };
+
+
+            // =============================================
+            // URL ENCODE
+            // =============================================
+
+            const fetchBody =
+                new URLSearchParams();
+
+
+            Object.keys(formData)
+                .forEach(function(key) {
+
+                    fetchBody.append(
+                        key,
+                        formData[key] || ""
+                    );
+
+                });
+
+
+            // =============================================
+            // SEND TO GOOGLE APPS SCRIPT
+            // =============================================
+
+            await fetch(
+                scriptURL,
+                {
+                    method: 'POST',
+
+                    mode: 'no-cors',
+
+                    body: fetchBody
+                }
+            );
+
+
+            // =============================================
+            // WAIT A LITTLE FOR SHEET WRITE
+            // =============================================
+
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        2000
+                    )
+            );
+
+
+            // =============================================
+            // GET REAL UID
+            // =============================================
+
+            let uidResult =
+                await getRealUidByMobile(
+                    formData.mobile
+                );
+
+
+            let finalUid = "";
+
+            if (
+                uidResult &&
+                uidResult.uid
+            ) {
+
+                finalUid =
+                    uidResult.uid;
+
+            } else {
+
+                // Registration has probably succeeded,
+                // but UID lookup failed.
+                finalUid =
+                    "Registration Submitted";
+            }
+
+
+            // =============================================
+            // SUCCESS MESSAGE
+            // =============================================
+
+            let msgText;
+
+            if (finalUid !==
+                "Registration Submitted") {
+
+                msgText =
+                    `Hi ${memberName} (${finalUid}), Eminence Library में रजिस्ट्रेशन करने के लिए आपका धन्यवाद, आपका रजिस्ट्रेशन नंबर "${finalUid}" है`;
+
+            } else {
+
+                msgText =
+                    `Hi ${memberName}, Eminence Library में आपका registration successfully submit हो गया है। आपका registration number Google Sheet में generate हो चुका है।`;
+            }
+
+
+            document.getElementById(
+                'successMsgText'
+            ).innerText =
+                msgText;
+
+
+            // =============================================
+            // SHOW SUCCESS
+            // =============================================
+
+            document.getElementById(
+                'successPopup'
+            ).style.display =
+                'flex';
+
+
+        }
+
+        catch (error) {
+
+            console.error(
+                'Registration Error:',
+                error
+            );
+
+            showCustomAlert(
+                'Something went wrong. Please retry.',
+                'Registration Error',
+                '❌'
+            );
+
+            isSubmitting = false;
+
+            setSubmittingState(false);
+        }
+    }
+
+</script>
+    
+</body>
+</html>
