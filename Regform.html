@@ -427,7 +427,7 @@
             <div class="header-title-area"></div>
         </div>
         <div class="header-nav">
-            <a href="index.html" class="nav-btn">🏠 HOME PAGE</a>
+            <a href="index.html?fromAdmin=true#main-header" class="nav-btn" onclick="goRegistrationHome(); return false;">🏠 HOME PAGE</a>
         </div>
     </div>
 
@@ -731,6 +731,16 @@
             'Pay_fee.html';
     }
 
+
+    // =====================================================
+    // HOME PAGE NAVIGATION
+    // =====================================================
+
+    function goRegistrationHome() {
+        // Skip the index.html welcome/splash screen and open the main header directly.
+        localStorage.setItem('skipSplash', 'true');
+        window.location.href = 'index.html?fromAdmin=true#main-header';
+    }
 
     // =====================================================
     // HOME / RESET
