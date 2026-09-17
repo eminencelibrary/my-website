@@ -68,8 +68,8 @@
             background-color: white;
             color: #ea6b1d;
             border: none;
-            padding: 7px 18px;
-            font-size: 0.80rem;
+            padding: 7px 16px;
+            font-size: 0.85rem;
             font-weight: bold;
             border-radius: 20px;
             cursor: pointer;
@@ -318,7 +318,58 @@
             background-color: #f1f3f4;
             color: #3c4043;
         }
-    </style>
+    
+        /* Mobile Header / Home Button Fix */
+        @media (max-width: 600px) {
+            .header-banner {
+                height: auto;
+                min-height: 78px;
+                padding: 8px 10px;
+                gap: 8px;
+            }
+
+            .header-left {
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+
+            .main-logo-banner {
+                max-width: 205px;
+                width: 100%;
+                height: auto;
+            }
+
+            .header-nav {
+                flex: 0 0 auto;
+            }
+
+            .nav-btn {
+                padding: 7px 10px;
+                font-size: 0.72rem;
+                line-height: 1.1;
+                gap: 3px;
+                border-radius: 18px;
+                white-space: nowrap;
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .header-banner {
+                padding: 7px 8px;
+                gap: 5px;
+            }
+
+            .main-logo-banner {
+                max-width: 175px;
+            }
+
+            .nav-btn {
+                padding: 6px 8px;
+                font-size: 0.68rem;
+            }
+        }
+</style>
 </head>
 <body>
 
@@ -338,7 +389,7 @@
             <div class="modal-icon">🎉</div>
             <h3>Registration Successful</h3>
             <div id="successMsgText" style="color: #3c4043; font-size: 1rem; line-height: 1.5; margin-bottom: 20px; font-weight: 500;"></div>
-            <button type="button" id="successOkBtn" class="modal-btn" onclick="openPaymentChoicePopup()" style="display:none;">OK</button>
+            <button type="button" class="modal-btn" onclick="openPaymentChoicePopup()">OK</button>
         </div>
     </div>
 
@@ -1161,83 +1212,121 @@
     // JSONP - GET REAL UID
     // =====================================================
 
-    function getRealUidByMobile(mobile) {
-        return new Promise(function(resolve) {
-            const callbackName =
-                "registrationCallback_" + Date.now() + "_" +
-                Math.floor(Math.random() * 10000);
+    function getRealUidByMobile(
+        mobile
+    ) {
 
-            const script = document.createElement("script");
-            let finished = false;
+        return new Promise(
+            function(resolve) {
 
-            const timeout = setTimeout(function() {
-                finish(null);
-            }, 3000);
+                const callbackName =
+                    "registrationCallback_" +
+                    Date.now() +
+                    "_" +
+                    Math.floor(
+                        Math.random() * 10000
+                    );
 
-            function finish(result) {
-                if (finished) return;
-                finished = true;
-                clearTimeout(timeout);
-                cleanup();
-                resolve(result || null);
-            }
+                const script =
+                    document.createElement(
+                        "script"
+                    );
 
-            window[callbackName] = function(result) {
-                finish(result);
-            };
+                const timeout =
+                    setTimeout(
+                        function () {
 
-            function cleanup() {
-                try {
-                    delete window[callbackName];
-                } catch (e) {
-                    window[callbackName] = undefined;
+                            cleanup();
+
+                            resolve(null);
+
+                        },
+                        15000
+                    );
+
+
+                window[callbackName] =
+                    function(result) {
+
+                        clearTimeout(
+                            timeout
+                        );
+
+                        cleanup();
+
+                        if (
+                            result &&
+                            result.status ===
+                            "success"
+                        ) {
+
+                            resolve(
+                                result
+                            );
+
+                        } else {
+
+                            resolve(null);
+                        }
+                    };
+
+
+                function cleanup() {
+
+                    try {
+
+                        delete window[
+                            callbackName
+                        ];
+
+                    } catch (e) {
+
+                        window[
+                            callbackName
+                        ] = undefined;
+                    }
+
+                    if (
+                        script.parentNode
+                    ) {
+
+                        script.parentNode
+                            .removeChild(
+                                script
+                            );
+                    }
                 }
-                if (script.parentNode) {
-                    script.parentNode.removeChild(script);
-                }
+
+
+                const cleanMobile =
+                    String(mobile || "")
+                        .replace(
+                            /\D/g,
+                            ""
+                        )
+                        .slice(-10);
+
+
+                script.src =
+                    scriptURL +
+                    "?action=getRegistrationUid" +
+                    "&mobile=" +
+                    encodeURIComponent(
+                        cleanMobile
+                    ) +
+                    "&callback=" +
+                    encodeURIComponent(
+                        callbackName
+                    ) +
+                    "&t=" +
+                    Date.now();
+
+
+                document.body.appendChild(
+                    script
+                );
             }
-
-            const cleanMobile = String(mobile || "")
-                .replace(/\D/g, "")
-                .slice(-10);
-
-            script.src =
-                scriptURL +
-                "?action=getRegistrationUid" +
-                "&mobile=" + encodeURIComponent(cleanMobile) +
-                "&callback=" + encodeURIComponent(callbackName) +
-                "&t=" + Date.now();
-
-            document.body.appendChild(script);
-        });
-    }
-
-    // Keep checking in the background until the registration row is visible.
-    // This NEVER blocks the success popup.
-    async function updatePopupWithRealUid(mobile, memberName) {
-        const maxAttempts = 12;
-        const delayMs = 700;
-
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const result = await getRealUidByMobile(mobile);
-
-            if (result && result.uid) {
-                const styledName = `<span style="color: green; font-weight: bold;">${memberName}</span>`;
-                const styledUid = `<span style="color: green; font-weight: bold;">${result.uid}</span>`;
-
-                document.getElementById('successMsgText').innerHTML =
-                    `Hi ${styledName}, Eminence Library में रजिस्ट्रेशन करने के लिए आपका धन्यवाद, आपका रजिस्ट्रेशन नंबर "${styledUid}" है`;
-
-                // Show OK only after the real UID has arrived.
-                const okBtn = document.getElementById('successOkBtn');
-                if (okBtn) {
-                    okBtn.style.display = 'inline-block';
-                }
-                return;
-            }
-
-            await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
+        );
     }
 
 
@@ -1474,34 +1563,76 @@
             // SEND TO GOOGLE APPS SCRIPT
             // =============================================
 
-            // Do not wait for the Apps Script response.
-            // The POST continues in the background while the
-            // registration confirmation is shown immediately.
-            fetch(
+            await fetch(
                 scriptURL,
                 {
                     method: 'POST',
+
                     mode: 'no-cors',
+
                     body: fetchBody
                 }
-            ).catch(function(error) {
-                console.error('Registration background request:', error);
-            });
+            );
 
 
             // =============================================
-            // SHOW SUCCESS IMMEDIATELY
+            // WAIT A LITTLE FOR SHEET WRITE
             // =============================================
 
-            const styledName = `<span style="color: green; font-weight: bold;">${memberName}</span>`;
-            document.getElementById('successMsgText').innerHTML =
-                `Hi ${styledName}, Eminence Library में आपका Registration successfully submit हो गया है।<br><br><span id="uidLoadingText" style="color:#666;">Please Wait...</span>`;
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        1000
+                    )
+            );
 
-            // Fetch the real UID in the background after the popup is visible.
-            // The popup itself is never delayed by this lookup.
-            updatePopupWithRealUid(formData.mobile, memberName).catch(function(error) {
-                console.error('UID background lookup:', error);
-            });
+
+            // =============================================
+            // GET REAL UID
+            // =============================================
+
+            let uidResult =
+                await getRealUidByMobile(
+                    formData.mobile
+                );
+
+
+            let finalUid = "";
+
+            if (
+                uidResult &&
+                uidResult.uid
+            ) {
+
+                finalUid =
+                    uidResult.uid;
+
+            } else {
+
+                // Registration has probably succeeded,
+                // but UID lookup failed.
+                finalUid =
+                    "Registration Submitted";
+            }
+
+
+            // =============================================
+            // SUCCESS MESSAGE
+            // =============================================
+
+let styledName = `<span style="color: green; font-weight: bold;">${memberName}</span>`;
+            let msgText;
+
+            if (finalUid !== "Registration Submitted") {
+                let styledUid = `<span style="color: green; font-weight: bold;">${finalUid}</span>`;
+                msgText = `Hi ${styledName}, Eminence Library में रजिस्ट्रेशन करने के लिए आपका धन्यवाद, आपका रजिस्ट्रेशन नंबर "${styledUid}" है`;
+            } else {
+                msgText = `Hi ${styledName}, Eminence Library में आपका registration successfully submit हो गया है।`;
+            }
+
+            // innerText की जगह innerHTML का इस्तेमाल करें ताकि HTML टैग्स काम करें
+            document.getElementById('successMsgText').innerHTML = msgText;
 
 
             // =============================================
