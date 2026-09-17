@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+    // Detect direct return from standalone Fee Tracker before the page renders.
+    if (new URLSearchParams(window.location.search).get('returnToDashboard') === 'true') {
+        document.documentElement.classList.add('return-dashboard');
+    }
+</script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Eminence Library - Admin Master Portal & Fee Management</title>
@@ -62,7 +69,7 @@ function closeCustomAlert() {
         let existingMembersDB = {}; 
         let feeLibraryDataObject = []; 
         let feeSelectedMember = null;
-        let isAdminLoggedIn = false;
+        let isAdminLoggedIn = new URLSearchParams(window.location.search).get('returnToDashboard') === 'true';
         let quickSelectedSeatNum = null;
         let feeFlowState = 1; // 1: Update Fee, 2: Print Receipt, 3: WhatsApp
         let feeSaveInProgress = false;
@@ -315,24 +322,14 @@ function closeCustomAlert() {
         }
 
         function saveToSheet() {
-            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return Promise.resolve(false);
-
-            return fetch(LIVE_BOOKING_SCRIPT_URL, {
+            if (!LIVE_BOOKING_SCRIPT_URL.startsWith("http")) return;
+            fetch(LIVE_BOOKING_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify(allData)
             })
-            .then(response => {
-                if (!response.ok) throw new Error("Live Seat API HTTP " + response.status);
-                return response.text();
-            })
-            .then(result => {
-                fetchSheetData();
-                return true;
-            })
-            .catch(err => {
-                console.log("Error saving data: " + err);
-                return false;
-            });
+            .then(response => response.text())
+            .then(result => { fetchSheetData(); })
+            .catch(err => console.log("Error saving data: " + err));
         }
 
         setInterval(() => { if (isAdminLoggedIn) fetchSheetData(false, true); }, 3500);
@@ -361,6 +358,50 @@ function closeCustomAlert() {
                 if(feeMonthSelect) feeMonthSelect.value = month;
                 if(feeYearSelect) feeYearSelect.value = year;
                 updateCombinedFeeForMonth();
+
+                // Open Fee Tracker directly when returning from the standalone Fee Tracker page.
+                const adminUrlParams = new URLSearchParams(window.location.search);
+
+                // Return from standalone Fee Tracker directly to the authenticated dashboard.
+                if (adminUrlParams.get('returnToDashboard') === 'true') {
+                    setTimeout(() => {
+                        isAdminLoggedIn = true;
+                        const gate = document.getElementById('adminGateOverlay');
+                        const dashboard = document.getElementById('mainDashboardPortal');
+                        const feeContainer = document.getElementById('feeManagementContainer');
+                        const tracker = document.getElementById('feeTrackerContainer');
+
+                        if (gate) gate.style.display = 'none';
+                        if (feeContainer) feeContainer.style.display = 'none';
+                        if (tracker) tracker.style.display = 'none';
+                        if (dashboard) dashboard.style.display = 'flex';
+
+                        if (dashboard) {
+                            dashboard.scrollIntoView({ behavior: 'auto', block: 'start' });
+                        }
+                    }, 50);
+                }
+
+                if (adminUrlParams.get('openFeeTracker') === 'true') {
+                    setTimeout(() => {
+                        isAdminLoggedIn = true;
+                        const gate = document.getElementById('adminGateOverlay');
+                        const dashboard = document.getElementById('mainDashboardPortal');
+                        const tracker = document.getElementById('feeTrackerContainer');
+
+                        if (gate) gate.style.display = 'none';
+                        if (dashboard) dashboard.style.display = 'none';
+                        if (tracker) {
+                            tracker.style.display = 'block';
+                            tracker.scrollTop = 0;
+                        }
+
+                        // Keep the existing tracker initialization flow.
+                        if (typeof openFeeTrackerModal === 'function') {
+                            openFeeTrackerModal();
+                        }
+                    }, 50);
+                }
             } catch (error) {
                 console.error("Error during page load: ", error);
             }
@@ -1897,6 +1938,23 @@ body, html {
     pointer-events: auto !important;
 }
 
+
+
+/* =====================================================
+   DIRECT RETURN FROM STANDALONE FEE TRACKER
+   ===================================================== */
+html.return-dashboard #adminGateOverlay {
+    display: none !important;
+}
+html.return-dashboard #mainDashboardPortal {
+    display: flex !important;
+}
+html.return-dashboard #feeManagementContainer,
+html.return-dashboard #feeTrackerContainer,
+html.return-dashboard #liveSeatManagementContainer {
+    display: none !important;
+}
+
 </style>
         
 <style id="eminence-final-mobile-layout-fix">
@@ -2560,304 +2618,56 @@ const input = document.getElementById("feeSearchInput");
             }
             quickSelectedSeatNum = null;
         };
-        // ------------------------------------------------------------
-        // SEAT ALLOTMENT WHATSAPP NOTIFICATION
-        // Fee status is read from the live seat/member record first.
-        // If it is not present there, the latest Fee Updation record is
-        // used as a fallback.
-        // ------------------------------------------------------------
-        function normalizeFeeStatusForSeatMessage(value) {
-            const v = String(value ?? "").trim().toLowerCase();
-            if (!v) return "";
-
-            if (
-                v.includes("paid") ||
-                v.includes("active") ||
-                v.includes("fully paid") ||
-                v === "yes" ||
-                v === "true"
-            ) {
-                return "paid";
-            }
-
-            if (
-                v.includes("unpaid") ||
-                v.includes("un-paid") ||
-                v.includes("demo") ||
-                v.includes("guest") ||
-                v.includes("trial") ||
-                v.includes("pending")
-            ) {
-                return "guest";
-            }
-
-            return "";
-        }
-
-        function getSeatFeeStatus(info) {
-            if (!info || typeof info !== "object") return "guest";
-
-            // IMPORTANT: do not use generic "status" here because that is
-            // the seat status (vacant/waiting/booked), not fee status.
-            const statusKeys = [
-                "feeStatus",
-                "feesStatus",
-                "fee_status",
-                "fees_status",
-                "Fee Status",
-                "Fees Status",
-                "paymentStatus",
-                "payment_status",
-                "Payment Status",
-                "membershipStatus",
-                "subscriptionStatus",
-                "feePaymentStatus",
-                "feesPaymentStatus",
-                "paidStatus",
-                "feesPaidStatus",
-                "payment_status_label"
-            ];
-
-            for (const key of statusKeys) {
-                if (Object.prototype.hasOwnProperty.call(info, key)) {
-                    const normalized = normalizeFeeStatusForSeatMessage(info[key]);
-                    if (normalized) return normalized;
-                }
-            }
-
-            // Also support differently-cased/space-separated API keys.
-            const wanted = new Set(statusKeys.map(k =>
-                String(k).toLowerCase().replace(/[^a-z0-9]/g, "")
-            ));
-
-            for (const key of Object.keys(info)) {
-                const cleanKey = String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
-                if (wanted.has(cleanKey)) {
-                    const normalized = normalizeFeeStatusForSeatMessage(info[key]);
-                    if (normalized) return normalized;
-                }
-            }
-
-            // Fallback: latest matching Fee Updation entry.
-            try {
-                const uid = normalizeSearchText(
-                    info.uid || info.uidCode || info.UID || ""
-                );
-                const mobile = normalizeSearchMobile(
-                    info.mobile || info.mobileNumber || info.phone || info.mob || ""
-                );
-
-                if (Array.isArray(feeLibraryDataObject) && (uid || mobile)) {
-                    const matching = feeLibraryDataObject.filter(record => {
-                        const rUid = normalizeSearchText(
-                            getFeeHistoryField(record, "uid")
-                        );
-                        const rMobile = normalizeSearchMobile(
-                            getFeeHistoryField(record, "mobile")
-                        );
-
-                        return (
-                            (uid && rUid && uid === rUid) ||
-                            (mobile && rMobile && mobile === rMobile)
-                        );
-                    });
-
-                    if (matching.length) {
-                        const latest = matching[matching.length - 1];
-
-                        // If the source itself has a fee/payment status, use it.
-                        const latestStatusKeys = [
-                            "Fee Status",
-                            "Fees Status",
-                            "FeeStatus",
-                            "FeesStatus",
-                            "Payment Status",
-                            "PaymentStatus",
-                            "paymentStatus"
-                        ];
-
-                        for (const key of latestStatusKeys) {
-                            if (Object.prototype.hasOwnProperty.call(latest, key)) {
-                                const normalized = normalizeFeeStatusForSeatMessage(latest[key]);
-                                if (normalized) return normalized;
-                            }
-                        }
-
-                        // Demo / Guest / Unpaid can also be present in remark.
-                        const remark = normalizeFeeStatusForSeatMessage(
-                            getFeeHistoryField(latest, "remark")
-                        );
-                        if (remark) return remark;
-
-                        // A positive fee record is treated as paid.
-                        const amountRaw = String(
-                            getFeeHistoryField(latest, "amount") || ""
-                        ).replace(/,/g, "").replace(/[₹\s]/g, "");
-                        const amount = Number(amountRaw);
-                        if (!isNaN(amount) && amount > 0) return "paid";
-                    }
-                }
-            } catch (e) {
-                console.warn("Fee status fallback error:", e);
-            }
-
-            // If no fee-status information is available, keep the safer
-            // Guest wording rather than incorrectly claiming Paid.
-            return "guest";
-        }
-
-        function buildSeatAllotmentWhatsAppMessage(student, seatNumber, feeStatus, seatStatus) {
-            const memberName = String(
-                student.studentName || student.name || "Member"
-            ).trim();
-
-            const uid = String(
-                student.uid || student.uidCode || student.UID || ""
-            ).trim();
-
-            const memberIdentity = uid
-                ? `${memberName} (${uid})`
-                : memberName;
-
-            if (seatStatus === "waiting") {
-                return `Hi *${memberIdentity}*, आपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर *${seatNumber}* को *Guest* रूप में निर्धारित किया गया है, जो की *Fix Seat नहीं* है अपनी लाइब्रेरी फ़ीस का भुगतान करके आप इस Seat को अपने लिए Fix करा सकते हैं, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence`;
-            }
-
-            if (feeStatus === "paid") {
-                return `Hi *${memberIdentity}*, आपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर *${seatNumber}* निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence`;
-            }
-
-            return `Hi *${memberIdentity}*, आपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर *${seatNumber}* को *Guest रूप में *निर्धारित किया गया है, जो की Fix Seat नहीं है अपनी लाइब्रेरी फ़ीस का भुगतान करके आप इस Seat को अपने लिए Fix करा सकते हैं, हम आपके उज्जवल भविष्य की कामना करते हैं Happy Study -- Team Eminence`;
-        }
-
-        function openSeatAllotmentWhatsApp(student, seatNumber, feeStatus, preOpenedWindow) {
-            if (!student) return false;
-
-            let mobNum = String(
-                student.mobile || student.mobileNumber || student.phone || student.mob || ""
-            ).replace(/\D/g, "");
-
-            if (mobNum.length === 12 && mobNum.startsWith("91")) {
-                mobNum = mobNum.slice(2);
-            }
-            if (mobNum.length === 11 && mobNum.startsWith("0")) {
-                mobNum = mobNum.slice(1);
-            }
-
-            if (mobNum.length < 10) {
-                if (preOpenedWindow && !preOpenedWindow.closed) {
-                    preOpenedWindow.close();
-                }
-                alert("Seat update ho gaya, lekin member ka valid mobile number nahi mila.");
-                return false;
-            }
-
-            const msg = buildSeatAllotmentWhatsAppMessage(
-                student,
-                seatNumber,
-                feeStatus
-            );
-
-            const waUrl = `https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`;
-
-            // Open a tab synchronously from the click event so popup blockers
-            // do not block it while the Google Sheet save is completing.
-            if (preOpenedWindow && !preOpenedWindow.closed) {
-                preOpenedWindow.location.href = waUrl;
-            } else {
-                window.open(waUrl, "_blank");
-            }
-
-            return true;
-        }
-
         window.applyQuickSeatStatusChange = function() {
-            // Keep WhatsApp opening synchronous with the button click.
-            // Browsers can block window.open() if it happens after await/fetch.
             try {
-                if (quickSelectedSeatNum === null || quickSelectedSeatNum === undefined) return;
+                if (quickSelectedSeatNum === null || quickSelectedSeatNum === undefined) {
+                    console.error("No seat selected.");
+                    return;
+                }
 
                 const statusSelect = document.getElementById("quickModalNewStatus");
                 const newStatus = statusSelect ? statusSelect.value : "vacant";
+
                 if (!["vacant", "waiting", "booked"].includes(newStatus)) {
                     alert("Invalid seat status.");
                     return;
                 }
 
                 if (!allData[activeBranch]) allData[activeBranch] = {};
+
                 const seatKey = String(quickSelectedSeatNum);
                 const oldInfo = normalizeSeatInfo(allData[activeBranch][seatKey] || {});
-                const memberForMessage = {
-                    ...oldInfo,
-                    studentName: oldInfo.studentName || oldInfo.name || "",
-                    mobile: oldInfo.mobile || oldInfo.mobileNumber || oldInfo.phone || oldInfo.mob || "",
-                    uid: oldInfo.uid || oldInfo.uidCode || oldInfo.UID || ""
-                };
-
-                // Prepare and OPEN WhatsApp immediately, before any fetch/save.
-                // This guarantees the action remains a user-initiated popup.
-                let waOpened = false;
-                if (newStatus !== "vacant") {
-                    let mobileDigits = String(memberForMessage.mobile || "").replace(/\D/g, "");
-                    if (mobileDigits.length === 12 && mobileDigits.startsWith("91")) mobileDigits = mobileDigits.slice(2);
-                    if (mobileDigits.length === 11 && mobileDigits.startsWith("0")) mobileDigits = mobileDigits.slice(1);
-
-                    if (mobileDigits.length >= 10) {
-                        const feeStatus = getSeatFeeStatus(memberForMessage);
-                        const msg = buildSeatAllotmentWhatsAppMessage(memberForMessage, quickSelectedSeatNum, feeStatus, newStatus);
-                        const waUrl = `https://wa.me/91${mobileDigits}?text=${encodeURIComponent(msg)}`;
-                        const waWindow = window.open(waUrl, "_blank");
-                        waOpened = !!waWindow;
-                    }
-                }
 
                 if (newStatus === "vacant") {
                     allData[activeBranch][seatKey] = { status: "vacant" };
                 } else {
-                    allData[activeBranch][seatKey] = { ...oldInfo, status: newStatus };
+                    allData[activeBranch][seatKey] = {
+                        ...oldInfo,
+                        status: newStatus
+                    };
                 }
 
-                renderLayouts();
                 window.closeAdminQuickSeatModal();
+                renderLayouts();
+                saveToSheet();
 
-                // Save in background; do not wait before opening WhatsApp.
-                saveToSheet().then(saved => {
-                    if (!saved) console.warn("Seat status save failed after WhatsApp opening.");
-                });
-
-                if (newStatus !== "vacant" && !waOpened) {
-                    alert("Seat status save ho raha hai, lekin WhatsApp window browser ne block kar di. Chrome me is site ke pop-ups allow karein aur dobara Update Status karein.");
-                } else {
-                    alert(newStatus === "vacant"
-                        ? "Seat status updated successfully!"
-                        : "Seat status updated successfully. WhatsApp message ready for send .");
-                }
+                alert("Seat status updated successfully!");
             } catch (err) {
                 console.error("applyQuickSeatStatusChange error:", err);
                 alert("Seat status update mein error aaya. Browser Console check karein.");
             }
         };
 
-        // Manual WhatsApp button retained for compatibility.
-        // It now uses the same Paid / Guest message logic as automatic allotment.
         window.notifyQuickStudentWhatsApp = function() {
-            const student = allData[activeBranch]
-                ? allData[activeBranch][quickSelectedSeatNum]
-                : null;
-
-            if (!student) {
-                alert("No member found for this seat.");
-                return;
+            const student = allData[activeBranch] ? allData[activeBranch][quickSelectedSeatNum] : null;
+            let mobNum = student ? (student.mobile || student.phone || student.mob) : '';
+            if (student && mobNum) {
+                const msg = `*Eminence Library (${activeBranch.toUpperCase()}) - Seat Allotment*\n\nHello *${student.studentName || student.name}*,\nआपके रजिस्ट्रेशन को एक्टिव कर एमिनेंस लाइब्रेरी में सीट नंबर *${quickSelectedSeatNum}*निर्धारित किया गया है, हम आपके उज्जवल भविष्य की कामना करते हैं.Happy Study -- Team Eminence.\n\n`;
+                window.open(`https://wa.me/91${mobNum}?text=${encodeURIComponent(msg)}`, '_blank');
+            } else {
+                alert("No mobile number available for this seat.");
             }
-
-            const feeStatus = getSeatFeeStatus(student);
-            openSeatAllotmentWhatsApp(
-                normalizeSeatInfo(student),
-                quickSelectedSeatNum,
-                feeStatus,
-                null
-            );
-        };
+        }
 
         window.searchMember = function() {
             const query = document.getElementById("searchMemberInput").value.trim().toLowerCase();
@@ -3107,7 +2917,7 @@ const input = document.getElementById("feeSearchInput");
                     <div class="portal-title" style="color: #16a34a;">Fee Tracker</div>
                     <p>सदस्य की फीस हिस्ट्री ट्रैक करें।</p>
                 </div>
-                <button type="button" class="btn-submit" style="background: #16a34a; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);" onclick="window.location.href='Fee tracker.html';">Track Fee</button>
+                <button type="button" class="btn-submit" style="background: #16a34a; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);" onclick="sessionStorage.setItem('returnToFeeTracker','true'); window.location.href='Fee tracker.html';">Track Fee</button>
             </div>
         </div>
     </div>
