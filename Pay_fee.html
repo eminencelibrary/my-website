@@ -547,9 +547,9 @@
             nextBtn.style.pointerEvents = "auto";
 
             document.getElementById("selectedMemberInfo").innerHTML = `
-                👤 <b>${selectedMember.name}</b> |  🆔 <b>UID:</b> ${selectedMember.uid} <br>
+                👤 <b>${selectedMember.name}</b> |  🆔 <b>${selectedMember.uid}</b> <br>
                 📱 <b>${selectedMember.mobile}</b><br>
-                <span style="white-space: nowrap;">🏢 <b>Branch:</b> ${selectedMember.branch}</span>
+                <span style="display:block; overflow-wrap:anywhere; word-break:break-word; line-height:1.45;">🏢 <b>Branch:</b> ${selectedMember.branch}</span>
             `;
         }
 
